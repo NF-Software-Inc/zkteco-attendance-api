@@ -13,7 +13,7 @@ internal class UdpCommand(UdpConnection connection) : ICommand
 	public event CommandError? NotifyCommandError;
 
 	/// <inheritdoc/>
-	public int StartSession(string password)
+	public bool StartSession(int password)
 	{
 		if (Connection.Connect() == false)
 			NotifyCommandError?.Invoke("Failed initializing UDP connection to ZKTeco device.");
@@ -21,7 +21,7 @@ internal class UdpCommand(UdpConnection connection) : ICommand
 		_ = SendCommand(Commands.Connect);
 		_ = SendCommand(Commands.Authenticate, 8, password);
 
-		return Connection.ConnectionId;
+		return true;
 	}
 
 	/// <inheritdoc/>

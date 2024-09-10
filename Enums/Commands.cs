@@ -6,6 +6,11 @@
 internal enum Commands
 {
 	/// <summary>
+	/// Received an unknown response from the ZKTeco device.
+	/// </summary>
+	Unknown = 0,
+
+	/// <summary>
 	/// Establishes a connection with a ZKTeco device.
 	/// </summary>
 	Connect = 1_000,
@@ -48,5 +53,25 @@ internal enum Commands
 	/// <summary>
 	/// Logs into a ZKTeco device with the provided password.
 	/// </summary>
-	Authenticate = 1_102
+	Authenticate = 1_102,
+
+	/// <summary>
+	/// The command executed as expected.
+	/// </summary>
+	Success = 2_000,
+
+	/// <summary>
+	/// An error occurred during command execution.
+	/// </summary>
+	Error = 2_001,
+
+	/// <summary>
+	/// Return data is available after executing the command.
+	/// </summary>
+	Data = 2_002,
+
+	/// <summary>
+	/// The session needs to be authenticated.
+	/// </summary>
+	Unauthorized = 2_005
 }

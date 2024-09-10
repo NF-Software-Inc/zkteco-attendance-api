@@ -98,7 +98,7 @@ public class ZkTeco
 	/// Opens a connection with the ZKTeco device.
 	/// </summary>
 	/// <param name="password">The password to authenticate with the ZKTeco device.</param>
-	public bool Connect(string password = "0") => Connection.IsConnected || Command.StartSession(password) != 0;
+	public bool Connect(int password = 0) => Connection.IsConnected || Command.StartSession(password);
 
 	/// <summary>
 	/// Closes the connection with the ZKTeco device.

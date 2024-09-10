@@ -13,15 +13,29 @@ internal class TcpCommand(TcpConnection connection) : ICommand
 	public event CommandError? NotifyCommandError;
 
 	/// <inheritdoc/>
-	public int StartSession(string password)
+	public bool StartSession(int password)
 	{
 		if (Connection.Connect() == false)
 			NotifyCommandError?.Invoke("Failed initializing TCP connection to ZKTeco device.");
 
-		_ = SendCommand(Commands.Connect);
-		_ = SendCommand(Commands.Authenticate, 8, password);
+		var result = SendCommand(Commands.Connect);
 
-		return Connection.ConnectionId;
+		if (result == null)
+		{
+			NotifyCommandError?.Invoke("Failed starting session with ZKTeco device.");
+			return false;
+		}
+
+		var header = ZkPacketBase.ParseHeader(result.Take(8).ToArray());
+
+		Connection.ConnectionId = header.ConnectionId;
+
+		if (header.Command == Commands.Unauthorized)
+		{
+			_ = SendCommand(Commands.Authenticate, 8, password);
+		}
+
+		return true;
 	}
 
 	/// <inheritdoc/>
@@ -37,7 +51,7 @@ internal class TcpCommand(TcpConnection connection) : ICommand
 			packet.Data = Encoding.UTF8.GetBytes(data);
 
 		if (Connection.SendData(packet) == false)
-			NotifyCommandError?.Invoke("");
+			NotifyCommandError?.Invoke("Failed sending data to ZKTeco device.");
 
 		return Connection.ReceiveData(length);
 	}

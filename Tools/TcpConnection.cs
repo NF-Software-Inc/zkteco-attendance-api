@@ -1,5 +1,5 @@
-﻿using System.Net.Sockets;
-using System.Net;
+﻿using System.Net;
+using System.Net.Sockets;
 
 namespace zkteco_attendance_api;
 
@@ -109,12 +109,16 @@ internal class TcpConnection : IConnection
 		try
 		{
 			var response = new byte[4_096];
-			var received = Socket.Receive(response, length, SocketFlags.None);
-			var data = response.Take(received).ToArray();
+			var received = Socket.Receive(response, length + 8, SocketFlags.None);
+			var header = response.Take(8).ToArray();
+			var data = response.Skip(8).Take(received).ToArray();
+
+			if (header.Length == 0 || BitConverter.ToUInt16(header.Take(2).Reverse().ToArray(), 0) != TcpPacket.Header1 || BitConverter.ToUInt16(header.Skip(2).Take(2).Reverse().ToArray(), 0) != TcpPacket.Header2)
+				throw new Exception();
 
 			NotifyReceivedData?.Invoke(data);
 
-			return response.Take(received).ToArray();
+			return data;
 		}
 		catch
 		{

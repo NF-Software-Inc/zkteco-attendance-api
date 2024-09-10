@@ -11,10 +11,10 @@ internal interface ICommand
 	event CommandError? NotifyCommandError;
 
 	/// <summary>
-	/// Starts a session on the ZKTeco device and returns the session id.
+	/// Starts a session on the ZKTeco device.
 	/// </summary>
 	/// <param name="password">The password to authenticate to the device with.</param>
-	int StartSession(string password);
+	bool StartSession(int password);
 
 	/// <summary>
 	/// Issues a command to the connected ZKTeco device and returns the response.
