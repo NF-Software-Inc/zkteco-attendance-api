@@ -13,6 +13,10 @@
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<NoWarn>IDE0130</NoWarn>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Easy.Base" Version="1.1.*" />
 	</ItemGroup>

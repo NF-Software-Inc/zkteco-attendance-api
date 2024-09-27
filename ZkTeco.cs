@@ -103,5 +103,5 @@ public class ZkTeco
 	/// <summary>
 	/// Closes the connection with the ZKTeco device.
 	/// </summary>
-	public bool Disconnect() => Connection.IsConnected == false || Connection.Disconnect();
+	public bool Disconnect() => Connection.IsConnected == false || (Command.StopSession() && Connection.Disconnect());
 }

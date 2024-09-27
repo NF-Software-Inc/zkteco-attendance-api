@@ -17,12 +17,25 @@ internal interface ICommand
 	bool StartSession(int password);
 
 	/// <summary>
+	/// Closes the active session with the ZKTeco device.
+	/// </summary>
+	bool StopSession();
+
+	/// <summary>
 	/// Issues a command to the connected ZKTeco device and returns the response.
 	/// </summary>
 	/// <param name="command">The command to send.</param>
 	/// <param name="length">The amount of data to receive on the response.</param>
 	/// <param name="data">The information to send with the command.</param>
 	byte[]? SendCommand(Commands command, int length, string? data = null);
+
+	/// <summary>
+	/// Issues a command to the connected ZKTeco device and returns the response.
+	/// </summary>
+	/// <param name="command">The command to send.</param>
+	/// <param name="length">The amount of data to receive on the response.</param>
+	/// <param name="data">The information to send with the command.</param>
+	byte[]? SendCommand(Commands command, int length, byte[] data);
 }
 
 /// <param name="message">The error message from the ZKTeco device.</param>

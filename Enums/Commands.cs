@@ -56,6 +56,16 @@ internal enum Commands
 	Authenticate = 1_102,
 
 	/// <summary>
+	/// Informs the ZKTeco device that data is to be sent.
+	/// </summary>
+	PrepareData = 1_500,
+
+	/// <summary>
+	/// Sends data to the ZKTeco device.
+	/// </summary>
+	SendData = 1_501,
+
+	/// <summary>
 	/// The command executed as expected.
 	/// </summary>
 	Success = 2_000,
@@ -68,7 +78,7 @@ internal enum Commands
 	/// <summary>
 	/// Return data is available after executing the command.
 	/// </summary>
-	Data = 2_002,
+	DataAvailable = 2_002,
 
 	/// <summary>
 	/// The session needs to be authenticated.
