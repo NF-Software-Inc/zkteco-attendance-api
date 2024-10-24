@@ -7,94 +7,47 @@ namespace zkteco_attendance_api;
 /// </summary>
 internal class TcpCommand(TcpConnection connection) : ICommand
 {
-	private readonly TcpConnection Connection = connection;
+    private readonly TcpConnection Connection = connection;
 
-	/// <inheritdoc/>
-	public event CommandError? NotifyCommandError;
+    /// <inheritdoc/>
+    public event CommandError? NotifyCommandError;
 
-	/// <inheritdoc/>
-	public bool StartSession(int password)
-	{
-		if (Connection.Connect() == false)
-			NotifyCommandError?.Invoke("Failed initializing TCP connection to ZKTeco device.");
+    /// <inheritdoc/>
+    public byte[]? SendCommand(Commands command, string? data, int length = 8)
+    {
+        var packet = new TcpPacket()
+        {
+            Command = command,
+            ConnectionId = Connection.ConnectionId,
+            ResponseId = Connection.ResponseId
+        };
 
-		var result = SendCommand(Commands.Connect);
+        if (string.IsNullOrWhiteSpace(data) == false)
+            packet.Data = Encoding.UTF8.GetBytes(data);
 
-		if (result == null)
-		{
-			NotifyCommandError?.Invoke("Failed starting session with ZKTeco device.");
-			return false;
-		}
+        if (int.IsOddInteger(packet.Data.Length))
+            packet.Data = packet.Data.Concat([(byte)0x00]).ToArray();
 
-		var header = ZkPacketBase.ParseHeader(result.Take(8).ToArray());
+        if (Connection.SendData(packet) == false)
+            NotifyCommandError?.Invoke("Failed sending data to ZKTeco device.");
 
-		Connection.ConnectionId = header.ConnectionId;
+        return Connection.ReceiveData(length);
+    }
 
-		if (header.Command != Commands.Unauthorized)
-			return true;
+    /// <inheritdoc/>
+    public byte[]? SendCommand(Commands command, byte[] data, int length = 8)
+    {
+        var packet = new TcpPacket()
+        {
+            Command = command,
+            ConnectionId = Connection.ConnectionId,
+            ResponseId = Connection.ResponseId,
+            Data = data
+        };
 
-		result = SendCommand(Commands.Authenticate, 8, Functions.GeneratePassword(password, Connection.ConnectionId));
+        if (Connection.SendData(packet) == false)
+            NotifyCommandError?.Invoke("Failed sending data to ZKTeco device.");
 
-		if (result == null)
-		{
-			NotifyCommandError?.Invoke("Failed requesting authentication with ZKTeco device.");
-			return false;
-		}
-
-		header = ZkPacketBase.ParseHeader(result.Take(8).ToArray());
-
-		if (header.Command == Commands.Success)
-			return true;
-
-		NotifyCommandError?.Invoke("Failed authenticating with ZKTeco device.");
-		return false;
-	}
-
-	/// <inheritdoc/>
-	public bool StopSession()
-	{
-		var result = SendCommand(Commands.Disconnect);
-
-		if (result == null)
-		{
-			NotifyCommandError?.Invoke("Failed closing session with ZKTeco device.");
-			return false;
-		}
-
-		return ZkPacketBase.ParseHeader(result.Take(8).ToArray()).Command == Commands.Success;
-	}
-
-	/// <inheritdoc/>
-	public byte[]? SendCommand(Commands command, int length = 8, string? data = null)
-	{
-		var packet = new TcpPacket()
-		{
-			Command = command,
-			ConnectionId = Connection.ConnectionId
-		};
-
-		if (string.IsNullOrWhiteSpace(data) == false)
-			packet.Data = Encoding.UTF8.GetBytes(data);
-
-		if (Connection.SendData(packet) == false)
-			NotifyCommandError?.Invoke("Failed sending data to ZKTeco device.");
-
-		return Connection.ReceiveData(length);
-	}
-
-	/// <inheritdoc/>
-	public byte[]? SendCommand(Commands command, int length, byte[] data)
-	{
-		var packet = new TcpPacket()
-		{
-			Command = command,
-			ConnectionId = Connection.ConnectionId,
-			Data = data
-		};
-
-		if (Connection.SendData(packet) == false)
-			NotifyCommandError?.Invoke("Failed sending data to ZKTeco device.");
-
-		return Connection.ReceiveData(length);
-	}
+        return Connection.ReceiveData(length);
+    }
 }

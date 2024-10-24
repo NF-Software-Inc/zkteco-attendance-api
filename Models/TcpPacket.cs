@@ -18,9 +18,9 @@ internal class TcpPacket : ZkPacketBase, IZkPacket
 	/// <inheritdoc/>
 	public override byte[] ToArray()
 	{
-		var header1 = BitConverter.GetBytes(Convert.ToUInt16(Header1)).Reverse();
-		var header2 = BitConverter.GetBytes(Convert.ToUInt16(Header2)).Reverse();
-		var length = BitConverter.GetBytes(Convert.ToUInt32(Data.Length)).Reverse();
+		var header1 = BitConverter.GetBytes(Convert.ToUInt16(Header1));
+		var header2 = BitConverter.GetBytes(Convert.ToUInt16(Header2));
+		var length = BitConverter.GetBytes(Convert.ToUInt32(8 + Data.Length));
 
 		return header1
 			.Concat(header2)

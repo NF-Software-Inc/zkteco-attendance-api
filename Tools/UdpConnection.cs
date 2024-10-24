@@ -31,10 +31,13 @@ internal class UdpConnection : IConnection
 	public bool IsConnected => Client?.Client?.Connected ?? false;
 
 	/// <inheritdoc/>
-	public int ConnectionId { get; internal set; }
+	public int ConnectionId { get; set; }
 
-	/// <inheritdoc/>
-	public event SentData? NotifySentData;
+    /// <inheritdoc/>
+    public int ResponseId { get; set; } = ushort.MaxValue - 1;
+
+    /// <inheritdoc/>
+    public event SentData? NotifySentData;
 
 	/// <inheritdoc/>
 	public event ReceivedData? NotifyReceivedData;

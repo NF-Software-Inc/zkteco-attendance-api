@@ -11,6 +11,11 @@ internal enum Commands
 	Unknown = 0,
 
 	/// <summary>
+	/// Retrieves a machine configuration detail from the ZKTeco device.
+	/// </summary>
+	ReadConfiguration = 11,
+
+	/// <summary>
 	/// Establishes a connection with a ZKTeco device.
 	/// </summary>
 	Connect = 1_000,

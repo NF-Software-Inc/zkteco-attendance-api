@@ -13,12 +13,17 @@ internal interface IConnection
 	/// <summary>
 	/// The identifier for the current connection to the ZKTeco device.
 	/// </summary>
-	int ConnectionId { get; }
+	int ConnectionId { get; set; }
 
-	/// <summary>
-	/// Notifies data was sent to the ZKTeco device and returns the bytes that were sent.
-	/// </summary>
-	event SentData? NotifySentData;
+    /// <summary>
+    /// The identifier for the current response from the device.
+    /// </summary>
+    int ResponseId { get; set; }
+
+    /// <summary>
+    /// Notifies data was sent to the ZKTeco device and returns the bytes that were sent.
+    /// </summary>
+    event SentData? NotifySentData;
 
 	/// <summary>
 	/// Notifies data was received from the ZKTeco device and returns the bytes that were received.

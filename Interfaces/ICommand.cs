@@ -10,32 +10,21 @@ internal interface ICommand
 	/// </summary>
 	event CommandError? NotifyCommandError;
 
-	/// <summary>
-	/// Starts a session on the ZKTeco device.
-	/// </summary>
-	/// <param name="password">The password to authenticate to the device with.</param>
-	bool StartSession(int password);
+    /// <summary>
+    /// Issues a command to the connected ZKTeco device and returns the response.
+    /// </summary>
+    /// <param name="command">The command to send.</param>
+    /// <param name="data">The information to send with the command.</param>
+    /// <param name="length">The amount of data to receive on the response.</param>
+    byte[]? SendCommand(Commands command, string? data, int length);
 
-	/// <summary>
-	/// Closes the active session with the ZKTeco device.
-	/// </summary>
-	bool StopSession();
-
-	/// <summary>
-	/// Issues a command to the connected ZKTeco device and returns the response.
-	/// </summary>
-	/// <param name="command">The command to send.</param>
-	/// <param name="length">The amount of data to receive on the response.</param>
-	/// <param name="data">The information to send with the command.</param>
-	byte[]? SendCommand(Commands command, int length, string? data = null);
-
-	/// <summary>
-	/// Issues a command to the connected ZKTeco device and returns the response.
-	/// </summary>
-	/// <param name="command">The command to send.</param>
-	/// <param name="length">The amount of data to receive on the response.</param>
-	/// <param name="data">The information to send with the command.</param>
-	byte[]? SendCommand(Commands command, int length, byte[] data);
+    /// <summary>
+    /// Issues a command to the connected ZKTeco device and returns the response.
+    /// </summary>
+    /// <param name="command">The command to send.</param>
+    /// <param name="data">The information to send with the command.</param>
+    /// <param name="length">The amount of data to receive on the response.</param>
+    byte[]? SendCommand(Commands command, byte[] data, int length);
 }
 
 /// <param name="message">The error message from the ZKTeco device.</param>

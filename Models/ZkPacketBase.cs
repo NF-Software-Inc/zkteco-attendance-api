@@ -1,66 +1,73 @@
-﻿namespace zkteco_attendance_api;
+﻿using easy_core;
+
+namespace zkteco_attendance_api;
 
 /// <summary>
 /// Base class to construct messages for communicating with ZKTeco devices.
 /// </summary>
 internal class ZkPacketBase : IZkPacket
 {
-	/// <inheritdoc/>
-	public Commands Command { get; init; }
+    /// <inheritdoc/>
+    public Commands Command { get; init; }
 
-	/// <inheritdoc/>
-	public int ConnectionId { get; init; }
+    /// <inheritdoc/>
+    public int ConnectionId { get; init; }
 
-	/// <inheritdoc/>
-	public int ResponseId { get; set; }
+    /// <inheritdoc/>
+    public int ResponseId { get; set; }
 
-	/// <inheritdoc/>
-	public byte[] Data { get; set; } = [];
+    /// <inheritdoc/>
+    public byte[] Data { get; set; } = [];
 
-	/// <inheritdoc/>
-	public virtual byte[] ToArray()
-	{
-		if (ResponseId > ushort.MaxValue)
-			ResponseId = 1;
+    /// <inheritdoc/>
+    public virtual byte[] ToArray()
+    {
+        var current = 0;
+        var items = new int[] { (int)Command, ConnectionId, ResponseId };
+        var data = Data.Partition(2, false).Select(x => (int)BitConverter.ToUInt16(x, 0)); // NOTE: need to handle odd lengthed arrays
 
-		var command = BitConverter.GetBytes(Convert.ToUInt16(Command)).Reverse();
-		var checksum = BitConverter.GetBytes(Convert.ToUInt16(0)).Reverse();
-		var connection = BitConverter.GetBytes(Convert.ToUInt16(ConnectionId)).Reverse();
-		var response = BitConverter.GetBytes(Convert.ToUInt16(ResponseId)).Reverse();
+        foreach (var item in items.Concat(data))
+        {
+            current += item;
 
-		var array = command
-			.Concat(checksum)
-			.Concat(connection)
-			.Concat(response)
-			.Concat(Data)
-			.ToArray();
+            if (current > ushort.MaxValue)
+                current -= ushort.MaxValue;
+        }
 
-		var current = 0;
+        current = ~current;
 
-		for (var i = 0; i < 8 + Data.Length; i +=2)
-		{
-			current += array[i];
+        if (current < 0)
+            current += ushort.MaxValue;
 
-			if (current > ushort.MaxValue)
-				current -= ushort.MaxValue;
-		}
+        ResponseId++;
 
-		checksum = BitConverter.GetBytes(Convert.ToUInt16(current)).Reverse();
-		array[2] = checksum.First();
-		array[3] = checksum.Last();
+        if (ResponseId >= ushort.MaxValue)
+            ResponseId -= ushort.MaxValue;
 
-		return array;
-	}
+        var command = BitConverter.GetBytes(Convert.ToUInt16(Command));
+        var checksum = BitConverter.GetBytes(Convert.ToUInt16(current));
+        var connection = BitConverter.GetBytes(Convert.ToUInt16(ConnectionId));
+        var response = BitConverter.GetBytes(Convert.ToUInt16(ResponseId));
 
-	public static IZkPacket ParseHeader(byte[] header)
-	{
-		var command = BitConverter.ToUInt16(header.Take(2).Reverse().ToArray(), 0);
+        var array = command
+            .Concat(checksum)
+            .Concat(connection)
+            .Concat(response)
+            .Concat(Data)
+            .ToArray();
 
-		return new ZkPacketBase()
-		{
-			Command = Enum.IsDefined(typeof(Commands), command) ? (Commands)command : Commands.Unknown,
-			ConnectionId = BitConverter.ToUInt16(header.Skip(4).Take(2).Reverse().ToArray(), 0),
-			ResponseId = BitConverter.ToUInt16(header.Skip(6).Take(2).Reverse().ToArray(), 0)
-		};
-	}
+        return array;
+    }
+
+    public static IZkPacket ParseHeader(byte[] header)
+    {
+        var command = (int)BitConverter.ToUInt16(header[..2], 0);
+
+        return new ZkPacketBase()
+        {
+            Command = Enum.IsDefined(typeof(Commands), command) ? (Commands)command : Commands.Unknown,
+            ConnectionId = BitConverter.ToUInt16(header[4..6], 0),
+            ResponseId = BitConverter.ToUInt16(header[6..8], 0)
+        };
+    }
 }

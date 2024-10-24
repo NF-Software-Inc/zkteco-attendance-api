@@ -16,7 +16,7 @@ internal static class Functions
 
 		encoded += session;
 
-		var bytes = BitConverter.GetBytes((uint)encoded).Reverse().ToArray();
+		var bytes = BitConverter.GetBytes((uint)encoded);
 
 		bytes = BitConverter
 			.GetBytes(BitConverter.ToUInt16([(byte)(bytes[2] ^ 'S'), (byte)(bytes[3] ^ 'O')]))
@@ -25,7 +25,7 @@ internal static class Functions
 
 		bytes[0] = (byte)(bytes[0] ^ (0xFF & 50));
 		bytes[1] = (byte)(bytes[1] ^ (0xFF & 50));
-		bytes[1] = 0xFF & 50;
+		bytes[2] = 0xFF & 50;
 		bytes[3] = (byte)(bytes[3] ^ (0xFF & 50));
 
 		return bytes;

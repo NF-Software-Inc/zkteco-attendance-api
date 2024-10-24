@@ -33,7 +33,10 @@ internal class TcpConnection : IConnection
 	public bool IsConnected => Socket.Connected;
 
 	/// <inheritdoc/>
-	public int ConnectionId { get; internal set; }
+	public int ConnectionId { get; set; }
+
+	/// <inheritdoc/>
+	public int ResponseId { get; set; } = ushort.MaxValue - 1;
 
 	/// <inheritdoc/>
 	public event SentData? NotifySentData;
@@ -110,10 +113,10 @@ internal class TcpConnection : IConnection
 		{
 			var response = new byte[4_096];
 			var received = Socket.Receive(response, length + 8, SocketFlags.None);
-			var header = response.Take(8).ToArray();
-			var data = response.Skip(8).Take(received).ToArray();
+			var header = response[..8];
+			var data = response.Skip(8).Take(received - 8).ToArray();
 
-			if (header.Length == 0 || BitConverter.ToUInt16(header.Take(2).Reverse().ToArray(), 0) != TcpPacket.Header1 || BitConverter.ToUInt16(header.Skip(2).Take(2).Reverse().ToArray(), 0) != TcpPacket.Header2)
+			if (header.Length == 0 || BitConverter.ToUInt16(header[..2], 0) != TcpPacket.Header1 || BitConverter.ToUInt16(header[2..4], 0) != TcpPacket.Header2)
 				throw new Exception();
 
 			NotifyReceivedData?.Invoke(data);
