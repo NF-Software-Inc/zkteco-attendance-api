@@ -59,6 +59,10 @@ internal class ZkPacketBase : IZkPacket
         return array;
     }
 
+    /// <summary>
+    /// Parses the provided byte array into a packet.
+    /// </summary>
+    /// <param name="header">The data to parse.</param>
     public static IZkPacket ParseHeader(byte[] header)
     {
         var command = (int)BitConverter.ToUInt16(header[..2], 0);

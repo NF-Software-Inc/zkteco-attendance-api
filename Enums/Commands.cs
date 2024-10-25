@@ -16,6 +16,11 @@ internal enum Commands
 	ReadConfiguration = 11,
 
 	/// <summary>
+	/// Checks to see how many records of each type exist on the ZKTeco device.
+	/// </summary>
+	CheckStorage = 50,
+
+	/// <summary>
 	/// Establishes a connection with a ZKTeco device.
 	/// </summary>
 	Connect = 1_000,
@@ -56,6 +61,11 @@ internal enum Commands
 	WakeUp = 1_007,
 
 	/// <summary>
+	/// Returns the firmware edition running on the ZKTeco device.
+	/// </summary>
+	FirmwareVersion = 1_100,
+
+	/// <summary>
 	/// Logs into a ZKTeco device with the provided password.
 	/// </summary>
 	Authenticate = 1_102,
@@ -69,6 +79,11 @@ internal enum Commands
 	/// Sends data to the ZKTeco device.
 	/// </summary>
 	SendData = 1_501,
+
+	/// <summary>
+	/// Clears any open buffers on the machine.
+	/// </summary>
+	ClearBuffers = 1_502,
 
 	/// <summary>
 	/// The command executed as expected.

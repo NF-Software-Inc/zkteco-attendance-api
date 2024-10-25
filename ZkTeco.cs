@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using easy_core;
+using System.Net;
 using System.Text;
 
 namespace zkteco_attendance_api;
@@ -138,11 +139,10 @@ public class ZkTeco
 
         Connection.ResponseId = header.ResponseId;
 
-        if (header.Command == Commands.Success)
-            return true;
+        if (header.Command != Commands.Success)
+            NotifyCommandError?.Invoke("Failed authenticating with ZKTeco device.");
 
-        NotifyCommandError?.Invoke("Failed authenticating with ZKTeco device.");
-        return false;
+        return header.Command == Commands.Success;
     }
 
     /// <summary>
@@ -168,6 +168,10 @@ public class ZkTeco
             Connection.ConnectionId = 0;
             Connection.ResponseId = ushort.MaxValue - 1;
         }
+        else
+        {
+            NotifyCommandError?.Invoke("Failed closing session with ZKTeco device.");
+        }
 
         return header.Command == Commands.Success && Connection.Disconnect();
     }
@@ -178,12 +182,12 @@ public class ZkTeco
     public string? GetDeviceExtendedFormat() => GetDeviceConfiguration("~ExtendFmt");
 
     /// <summary>
-    /// Returns the face version of the connected ZKTeco device.
+    /// Returns the face algorithm of the connected ZKTeco device.
     /// </summary>
     public string? GetDeviceFaceVersion() => GetDeviceConfiguration("ZKFaceVersion");
     
     /// <summary>
-    /// Returns the fingerprint version of the connected ZKTeco device.
+    /// Returns the fingerprint algorithm of the connected ZKTeco device.
     /// </summary>
     public string? GetDeviceFingerprintVersion() => GetDeviceConfiguration("~ZKFPVersion");
     
@@ -213,7 +217,7 @@ public class ZkTeco
     public string? GetDeviceOldFirmwareVersion() => GetDeviceConfiguration("CompatOldFirmware");
 
     /// <summary>
-    /// Returns the platform name of the connected ZKTeco device.
+    /// Returns the platform information of the connected ZKTeco device.
     /// </summary>
     public string? GetDevicePlatform() => GetDeviceConfiguration("~Platform");
     
@@ -238,13 +242,169 @@ public class ZkTeco
 
         if (result == null || result.Length < DefaultHeaderLength)
         {
-            NotifyCommandError?.Invoke("Failed getting MAC address from ZKTeco device.");
+            NotifyCommandError?.Invoke("Failed getting configuration detail from ZKTeco device.");
             return null;
         }
 
         var header = ZkPacketBase.ParseHeader(result[..DefaultHeaderLength]);
 
         Connection.ResponseId = header.ResponseId;
+
+        if (header.Command != Commands.Success)
+        {
+            NotifyCommandError?.Invoke("Failed getting configuration detail from ZKTeco device.");
+            return null;
+        }
+
         return Encoding.UTF8.GetString(result[DefaultHeaderLength..]).Split('=').Last();
+    }
+
+    /// <summary>
+    /// Enables the connected ZKTeco device and allows user activity.
+    /// </summary>
+    public bool EnableDevice()
+    {
+        var result = Command.SendCommand(Commands.EnableDevice, [], DefaultResponseLength);
+
+        if (result == null || result.Length < DefaultHeaderLength)
+        {
+            NotifyCommandError?.Invoke("Failed enabling ZKTeco device.");
+            return false;
+        }
+
+        var header = ZkPacketBase.ParseHeader(result[..DefaultHeaderLength]);
+
+        Connection.ResponseId = header.ResponseId;
+        return header.Command == Commands.Success;
+    }
+
+    /// <summary>
+    /// Locks the ZKTeco device to prevent user activity.
+    /// </summary>
+    public bool DisableDevice()
+    {
+        var result = Command.SendCommand(Commands.DisableDevice, [], DefaultResponseLength);
+
+        if (result == null || result.Length < DefaultHeaderLength)
+        {
+            NotifyCommandError?.Invoke("Failed disabling ZKTeco device.");
+            return false;
+        }
+
+        var header = ZkPacketBase.ParseHeader(result[..DefaultHeaderLength]);
+
+        Connection.ResponseId = header.ResponseId;
+        return header.Command == Commands.Success;
+    }
+    
+    /// <summary>
+    /// Reboots the ZKTeco device.
+    /// </summary>
+    public bool RestartDevice()
+    {
+        var result = Command.SendCommand(Commands.Restart, [], DefaultResponseLength);
+
+        if (result == null || result.Length < DefaultHeaderLength)
+        {
+            NotifyCommandError?.Invoke("Failed restarting ZKTeco device.");
+            return false;
+        }
+
+        var header = ZkPacketBase.ParseHeader(result[..DefaultHeaderLength]);
+
+        Connection.ResponseId = header.ResponseId;
+        return header.Command == Commands.Success;
+    }
+
+    /// <summary>
+    /// Turns off the ZKTeco device.
+    /// </summary>
+    public bool ShutdownDevice()
+    {
+        var result = Command.SendCommand(Commands.PowerOff, [], DefaultResponseLength);
+
+        if (result == null || result.Length < DefaultHeaderLength)
+        {
+            NotifyCommandError?.Invoke("Failed turning off ZKTeco device.");
+            return false;
+        }
+
+        var header = ZkPacketBase.ParseHeader(result[..DefaultHeaderLength]);
+
+        Connection.ResponseId = header.ResponseId;
+        return header.Command == Commands.Success;
+    }
+    
+    /// <summary>
+    /// Empties any open buffers on teh ZKTeco device.
+    /// </summary>
+    public bool ClearBuffer()
+    {
+        var result = Command.SendCommand(Commands.ClearBuffers, [], DefaultResponseLength);
+
+        if (result == null || result.Length < DefaultHeaderLength)
+        {
+            NotifyCommandError?.Invoke("Failed clearing buffer on ZKTeco device.");
+            return false;
+        }
+
+        var header = ZkPacketBase.ParseHeader(result[..DefaultHeaderLength]);
+
+        Connection.ResponseId = header.ResponseId;
+        return header.Command == Commands.Success;
+    }
+
+    /// <summary>
+    /// Returns the currently active firmware edition on the ZKTeco device.
+    /// </summary>
+    public string? GetFirmwareVersion()
+    {
+        var result = Command.SendCommand(Commands.FirmwareVersion, [], 1_024);
+
+        if (result == null || result.Length < DefaultHeaderLength)
+        {
+            NotifyCommandError?.Invoke("Failed getting firmware version from ZKTeco device.");
+            return null;
+        }
+
+        var header = ZkPacketBase.ParseHeader(result[..DefaultHeaderLength]);
+
+        Connection.ResponseId = header.ResponseId;
+        return Encoding.UTF8.GetString(result[DefaultHeaderLength..]);
+    }
+    
+    /// <summary>
+    /// Returns the current counts of stored items on the ZKTeco device.
+    /// </summary>
+    public RecordCounts? GetStorageDetails()
+    {
+        var result = Command.SendCommand(Commands.CheckStorage, [], 1_024);
+
+        if (result == null || result.Length < DefaultHeaderLength)
+        {
+            NotifyCommandError?.Invoke("Failed getting storage details from ZKTeco device.");
+            return null;
+        }
+
+        var header = ZkPacketBase.ParseHeader(result[..DefaultHeaderLength]);
+        var data = result[DefaultHeaderLength..].Partition(4, false).Select(x => BitConverter.ToInt32(x, 0)).ToList();
+
+        Connection.ResponseId = header.ResponseId;
+
+        if (header.Command != Commands.Success || data.Count < 20)
+        {
+            NotifyCommandError?.Invoke("Failed getting storage details from ZKTeco device.");
+            return null;
+        }
+
+        return new RecordCounts(data[4], data[18], data[15], data[8], data[19], data[16], data[6], data[17], data[14]);
+    }
+
+    /// <summary>
+    /// Returns a list of users that exist on the ZKTeco device.
+    /// </summary>
+    public List<ZkTecoUser>? GetUsers()
+    {
+        return null;
     }
 }
