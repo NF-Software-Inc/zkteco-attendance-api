@@ -57,6 +57,15 @@ internal interface IConnection
 	/// </summary>
 	/// <param name="length">The amount of data to receive.</param>
 	byte[] ReceiveData(int length);
+
+	/// <summary>
+	/// Receives the specified amount of data in a stream and returns it as an array.
+	/// </summary>
+	/// <param name="length">The amount of data to receive.</param>
+	/// <remarks>
+	/// Useful for large data reads (ie. over 4KB).
+	/// </remarks>
+	public byte[] ReceiveBufferedData(int length);
 }
 
 /// <param name="sent">The data that was sent to the ZKTeco device.</param>

@@ -11,6 +11,11 @@ internal enum Commands
 	Unknown = 0,
 
 	/// <summary>
+	/// Retrieves user data from the ZKTeco device.
+	/// </summary>
+	ReadUsers = 9,
+
+	/// <summary>
 	/// Retrieves a machine configuration detail from the ZKTeco device.
 	/// </summary>
 	ReadConfiguration = 11,
@@ -84,6 +89,16 @@ internal enum Commands
 	/// Clears any open buffers on the machine.
 	/// </summary>
 	ClearBuffers = 1_502,
+
+	/// <summary>
+	/// Informs the ZKTeco device that a buffered read is being requested.
+	/// </summary>
+	PrepareBuffers = 1_503,
+
+	/// <summary>
+	/// Reads a chunk from the buffered read request.
+	/// </summary>
+	ReadBuffer = 1_504,
 
 	/// <summary>
 	/// The command executed as expected.

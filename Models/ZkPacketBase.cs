@@ -7,6 +7,8 @@ namespace zkteco_attendance_api;
 /// </summary>
 internal class ZkPacketBase : IZkPacket
 {
+    internal const int DefaultHeaderLength = 8;
+
     /// <inheritdoc/>
     public Commands Command { get; init; }
 
@@ -24,7 +26,7 @@ internal class ZkPacketBase : IZkPacket
     {
         var current = 0;
         var items = new int[] { (int)Command, ConnectionId, ResponseId };
-        var data = Data.Partition(2, false).Select(x => (int)BitConverter.ToUInt16(x, 0)); // NOTE: need to handle odd lengthed arrays
+        var data = Data.Partition(2, false).Select(x => (int)BitConverter.ToUInt16(x, 0));
 
         foreach (var item in items.Concat(data))
         {
@@ -65,13 +67,13 @@ internal class ZkPacketBase : IZkPacket
     /// <param name="header">The data to parse.</param>
     public static IZkPacket ParseHeader(byte[] header)
     {
-        var command = (int)BitConverter.ToUInt16(header[..2], 0);
+        var command = (int)BitConverter.ToUInt16(header, 0);
 
         return new ZkPacketBase()
         {
             Command = Enum.IsDefined(typeof(Commands), command) ? (Commands)command : Commands.Unknown,
-            ConnectionId = BitConverter.ToUInt16(header[4..6], 0),
-            ResponseId = BitConverter.ToUInt16(header[6..8], 0)
+            ConnectionId = BitConverter.ToUInt16(header, 4),
+            ResponseId = BitConverter.ToUInt16(header, 6)
         };
     }
 }

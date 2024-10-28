@@ -16,7 +16,7 @@ internal interface ICommand
     /// <param name="command">The command to send.</param>
     /// <param name="data">The information to send with the command.</param>
     /// <param name="length">The amount of data to receive on the response.</param>
-    byte[]? SendCommand(Commands command, string? data, int length);
+    IZkPacket? SendCommand(Commands command, string? data, int length);
 
     /// <summary>
     /// Issues a command to the connected ZKTeco device and returns the response.
@@ -24,7 +24,15 @@ internal interface ICommand
     /// <param name="command">The command to send.</param>
     /// <param name="data">The information to send with the command.</param>
     /// <param name="length">The amount of data to receive on the response.</param>
-    byte[]? SendCommand(Commands command, byte[] data, int length);
+    IZkPacket? SendCommand(Commands command, byte[] data, int length);
+
+    /// <summary>
+    /// Issues a command the the connected ZKTeco device for a buffered read operation and returns the response.
+    /// </summary>
+    /// <param name="command">The command to send.</param>
+    /// <param name="data">The information to send with the command.</param>
+    /// <param name="length">The amount of data to receive on the response.</param>
+    IZkPacket? SendBufferedCommand(Commands command, byte[] data, int length);
 }
 
 /// <param name="message">The error message from the ZKTeco device.</param>

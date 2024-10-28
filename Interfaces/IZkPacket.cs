@@ -8,12 +8,12 @@ internal interface IZkPacket
 	/// <summary>
 	/// The operation to execute on the ZKTeco device.
 	/// </summary>
-	Commands Command { get; }
+	Commands Command { get; init; }
 
 	/// <summary>
 	/// The session to connect to on the ZKTeco device.
 	/// </summary>
-	int ConnectionId { get; }
+	int ConnectionId { get; init; }
 
 	/// <summary>
 	/// The identifier for the response from the device.
