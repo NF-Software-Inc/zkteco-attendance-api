@@ -1,7 +1,7 @@
 # Easy Password Validator
 
 [![MIT](https://img.shields.io/github/license/thirstyape/zkteco-attendance-api)](https://github.com/thirstyape/zkteco-attendance-api/blob/master/LICENSE)
-[![NuGet](https://img.shields.io/nuget/v/zkteco-attendance-api.svg)](https://www.nuget.org/packages/zkteco-attendance-api/)
+[![NuGet](https://img.shields.io/nuget/v/zkteco-attendance-api.svg)](https://www.nuget.org/packages/ZkTeco.Attendance.API/)
 
 This project was created to provide an easy to use interface to interact with ZKTeco attendance recording devices for .NET.
 
@@ -16,7 +16,7 @@ These instuctions can be used to acquire and implement the library.
 To use this library:
 
 * Clone a copy of the repository
-* Reference the [NuGet package](https://www.nuget.org/packages/zkteco-attendance-api/)
+* Reference the [NuGet package](https://www.nuget.org/packages/ZkTeco.Attendance.API/)
 
 ### Usage
 
