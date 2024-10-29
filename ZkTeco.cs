@@ -366,6 +366,24 @@ public class ZkTeco
 
         _ = ClearBuffer();
 
-        return null;
+        var users = new List<ZkTecoUser>();
+        var counts = GetStorageDetails(); // NOTE: this does not work here but when called prior to buffered read is ok
+
+        var size = counts != null ? (packet.Data.Length - 4) / counts.Users : 72;
+
+        foreach (var item in packet.Data.Skip(4).Partition(size, false))
+        {
+            var index = BitConverter.ToUInt16(item, 0);
+            var privilege = Enum.IsDefined(typeof(Privilege), (int)item[2]) ? (Privilege)(int)item[2] : Privilege.Default;
+            var password = Encoding.UTF8.GetString(item[3..11]);
+            var name = Encoding.UTF8.GetString(item[11..36]).Split('\0').First();
+            var card = BitConverter.ToInt32(item, 36);
+            var group = Encoding.UTF8.GetString(item[41..48]).Split('\0').First();
+            var id = Encoding.UTF8.GetString(item[48..]).Split('\0').First();
+
+            users.Add(new ZkTecoUser(index, name, password, privilege, group, id, card));
+        }
+
+        return users;
     }
 }
