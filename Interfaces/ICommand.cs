@@ -31,8 +31,7 @@ internal interface ICommand
     /// </summary>
     /// <param name="command">The command to send.</param>
     /// <param name="data">The information to send with the command.</param>
-    /// <param name="length">The amount of data to receive on the response.</param>
-    IZkPacket? SendBufferedCommand(Commands command, byte[] data, int length);
+    IZkPacket? SendBufferedCommand(Commands command, byte[] data);
 }
 
 /// <param name="message">The error message from the ZKTeco device.</param>

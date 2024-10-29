@@ -11,6 +11,7 @@ public class ZkTeco
 {
     private readonly IConnection Connection;
     private readonly ICommand Command;
+    private readonly ZkDeviceSettings? Settings;
 
     /// <summary>
     /// Prepares the class for communications with a ZKTeco device.
@@ -71,6 +72,36 @@ public class ZkTeco
     }
 
     /// <summary>
+    /// Prepares the class for communications with a ZKTeco device.
+    /// </summary>
+    /// <param name="settings">The object containing device configuration parameters.</param>
+    public ZkTeco(ZkDeviceSettings settings)
+    {
+        var address = IPAddress.Parse(settings.Ip);
+
+        if (settings.UseTcp)
+        {
+            var connection = new TcpConnection(address, settings.Port);
+
+            Connection = connection;
+            Command = new TcpCommand(connection);
+        }
+        else
+        {
+            var connection = new UdpConnection(address, settings.Port);
+
+            Connection = connection;
+            Command = new UdpCommand(connection);
+        }
+
+        Connection.NotifyReceivedData += Connection_NotifyReceivedData;
+        Connection.NotifySentData += Connection_NotifySentData;
+        Command.NotifyCommandError += Command_NotifyCommandError;
+
+        Settings = settings;
+    }
+
+    /// <summary>
     /// Disconnects from the ZKTeco device.
     /// </summary>
     ~ZkTeco()
@@ -120,6 +151,9 @@ public class ZkTeco
 
         if (packet.Command != Commands.Unauthorized)
             return true;
+
+        if (password == 0 && Settings != null)
+            password = Settings.Password;
 
         packet = Command.SendCommand(Commands.Authenticate, Functions.GeneratePassword(password, Connection.ConnectionId), ZkPacketBase.DefaultHeaderLength);
 
@@ -355,21 +389,28 @@ public class ZkTeco
     /// </summary>
     public List<ZkTecoUser>? GetUsers()
     {
-        var data = BitConverter.GetBytes(5).Concat(BitConverter.GetBytes(0)).ToArray();
-        var packet = Command.SendBufferedCommand(Commands.ReadUsers, data, 1_024);
+        var users = new List<ZkTecoUser>();
+        var counts = GetStorageDetails();
 
-        if (packet == null || packet.Command != Commands.SendData)
+        if (counts != null && counts.Users == 0)
+            return users;
+
+        var data = BitConverter.GetBytes(5).Concat(BitConverter.GetBytes(0)).ToArray();
+        var packet = Command.SendBufferedCommand(Commands.ReadUsers, data);
+
+        if (packet == null || packet.Command != Commands.Success)
         {
             NotifyCommandError?.Invoke("Failed preparing read of users on ZKTeco device.");
             return null;
         }
 
-        _ = ClearBuffer();
-
-        var users = new List<ZkTecoUser>();
-        var counts = GetStorageDetails(); // NOTE: this does not work here but when called prior to buffered read is ok
-
         var size = counts != null ? (packet.Data.Length - 4) / counts.Users : 72;
+
+        if (size != 72)
+        {
+            NotifyCommandError?.Invoke($"User size not supported. Supported size is 72, actual is {size}.");
+            return null;
+        }
 
         foreach (var item in packet.Data.Skip(4).Partition(size, false))
         {
@@ -385,5 +426,69 @@ public class ZkTeco
         }
 
         return users;
+    }
+
+    public List<ZkTecoAttendance>? GetAttendance()
+    {
+        var attendances = new List<ZkTecoAttendance>();
+        var counts = GetStorageDetails();
+
+        if (counts != null && counts.Records == 0)
+            return attendances;
+
+        var data = BitConverter.GetBytes(0).Concat(BitConverter.GetBytes(0)).ToArray();
+        var packet = Command.SendBufferedCommand(Commands.ReadAttendance, data);
+
+        if (packet == null || packet.Command != Commands.Success)
+        {
+            NotifyCommandError?.Invoke("Failed preparing reading attendance data on ZKTeco device.");
+            return null;
+        }
+
+        var size = counts != null ? (packet.Data.Length - 4) / counts.Records : 40;
+
+        if (size != 40)
+        {
+            NotifyCommandError?.Invoke($"Attendance size not supported. Supported size is 40, actual is {size}.");
+            return null;
+        }
+
+        foreach (var item in packet.Data.Skip(4).Partition(size, false))
+        {
+            var index = BitConverter.ToUInt16(item, 0);
+            var id = Encoding.UTF8.GetString(item[2..26]).Split('\0').First();
+            var status = item[26];
+            var time = Encoding.UTF8.GetString(item[27..31]).Split('\0').First();
+            var punch = item[31];
+
+            attendances.Add(new ZkTecoAttendance(index, ConvertDate(time), id, status, punch));
+        }
+
+        return attendances;
+    }
+
+    private DateTime ConvertDate(string date)
+    {
+        if (int.TryParse(date, out var remaining) == false)
+            return DateTime.MinValue;
+
+        var seconds = remaining % 60;
+        remaining = (int)Math.Floor(remaining / 60.0M);
+
+        var minutes = remaining % 60;
+        remaining = (int)Math.Floor(remaining / 60.0M);
+
+        var hours = remaining % 24;
+        remaining = (int)Math.Floor(remaining / 24.0M);
+
+        var day = (remaining % 31) + 1;
+        remaining = (int)Math.Floor(remaining / 31.0M);
+
+        var month = (remaining % 12) + 1;
+        remaining = (int)Math.Floor(remaining / 12.0M);
+
+        var year = remaining + 2_000;
+
+        return new DateTime(year, month, day, hours, minutes, seconds);
     }
 }

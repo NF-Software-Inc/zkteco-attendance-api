@@ -78,7 +78,7 @@ internal class UdpConnection : IConnection
     }
 
     /// <inheritdoc/>
-    public bool SendData(IZkPacket packet) => SendData(packet.ToArray());
+    public bool SendPacket(IZkPacket packet) => SendData(packet.ToArray());
 
     /// <inheritdoc/>
     public bool SendData(byte[] data)
@@ -100,6 +100,9 @@ internal class UdpConnection : IConnection
     }
 
     /// <inheritdoc/>
+    public byte[] ReceivePacket(int length) => ReceiveData(length);
+
+    /// <inheritdoc/>
     public byte[] ReceiveData(int length)
     {
         if (IsConnected == false)
@@ -119,7 +122,7 @@ internal class UdpConnection : IConnection
     }
 
     /// <inheritdoc/>
-    public byte[] ReceiveBufferedData(int length)
+    public byte[] ReceiveBufferedPacket(int length)
     {
         if (IsConnected == false)
             return [];
@@ -127,22 +130,15 @@ internal class UdpConnection : IConnection
         try
         {
             using var stream = new MemoryStream();
-            var first = true;
 
             while (length > 0)
             {
                 var received = Client.Receive(ref Endpoint);
 
-                if (first)
-                {
-                    stream.Write(received);
-                    first = false;
-                }
-                else
-                {
-                    stream.Write(received, 8, received.Length - 8);
-                }
+                if (received.Length < 8)
+                    throw new Exception("Invalid UDP packet.");
 
+                stream.Write(received, 8, received.Length - 8);
                 length -= (received.Length - 8);
             }
 

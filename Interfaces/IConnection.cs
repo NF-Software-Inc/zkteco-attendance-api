@@ -40,32 +40,35 @@ internal interface IConnection
 	/// </summary>
 	bool Disconnect();
 
-	/// <summary>
-	/// Sends the provided packet to the ZKTeco device.
-	/// </summary>
-	/// <param name="packet">The packet to send.</param>
-	bool SendData(IZkPacket packet);
+    /// <summary>
+    /// Sends the provided data to the ZKTeco device.
+    /// </summary>
+    /// <param name="data">The data to send.</param>
+    bool SendData(byte[] data);
+
+    /// <summary>
+    /// Receives the specified amount of data from the ZKTeco device.
+    /// </summary>
+    /// <param name="length">The amount of data to receive.</param>
+    byte[] ReceiveData(int length);
+
+    /// <summary>
+    /// Sends the provided packet to the ZKTeco device.
+    /// </summary>
+    /// <param name="packet">The packet to send.</param>
+    bool SendPacket(IZkPacket packet);
 
 	/// <summary>
-	/// Sends the provided data to the ZKTeco device.
-	/// </summary>
-	/// <param name="data">The data to send.</param>
-	bool SendData(byte[] data);
-
-	/// <summary>
-	/// Receives the specified amount of data from the ZKTeco device.
+	/// Receives a packet with the specified length from the ZKTeco device.
 	/// </summary>
 	/// <param name="length">The amount of data to receive.</param>
-	byte[] ReceiveData(int length);
+	byte[] ReceivePacket(int length);
 
 	/// <summary>
-	/// Receives the specified amount of data in a stream and returns it as an array.
+	/// Receives a packet with the specified length in a stream and returns it as an array.
 	/// </summary>
 	/// <param name="length">The amount of data to receive.</param>
-	/// <remarks>
-	/// Useful for large data reads (ie. over 4KB).
-	/// </remarks>
-	public byte[] ReceiveBufferedData(int length);
+	byte[] ReceiveBufferedPacket(int length);
 }
 
 /// <param name="sent">The data that was sent to the ZKTeco device.</param>

@@ -82,7 +82,7 @@ internal class TcpConnection : IConnection
     }
 
     /// <inheritdoc/>
-    public bool SendData(IZkPacket packet) => SendData(packet.ToArray());
+    public bool SendPacket(IZkPacket packet) => SendData(packet.ToArray());
 
     /// <inheritdoc/>
     public bool SendData(byte[] data)
@@ -104,6 +104,24 @@ internal class TcpConnection : IConnection
     }
 
     /// <inheritdoc/>
+    public byte[] ReceivePacket(int length)
+    {
+        try
+        {
+            var received = ReceiveData(length + 8);
+
+            if (received.Length < 8 || BitConverter.ToUInt16(received, 0) != TcpPacket.Header1 || BitConverter.ToUInt16(received, 2) != TcpPacket.Header2)
+                throw new Exception("Invalid TCP header.");
+
+            return received.Skip(8).Take(received.Length - 8).ToArray();
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    /// <inheritdoc/>
     public byte[] ReceiveData(int length)
     {
         if (IsConnected == false)
@@ -111,13 +129,9 @@ internal class TcpConnection : IConnection
 
         try
         {
-            var buffer = new byte[length + 8];
-            var received = Socket.Receive(buffer, length + 8, SocketFlags.None);
-
-            if (received < 4 || BitConverter.ToUInt16(buffer, 0) != TcpPacket.Header1 || BitConverter.ToUInt16(buffer, 2) != TcpPacket.Header2)
-                throw new Exception("Invalid TCP header.");
-
-            var data = buffer.Skip(8).Take(received - 8).ToArray();
+            var buffer = new byte[length];
+            var received = Socket.Receive(buffer, length, SocketFlags.None);
+            var data = buffer.Take(received).ToArray();
 
             NotifyReceivedData?.Invoke(data);
             return data;
@@ -129,7 +143,7 @@ internal class TcpConnection : IConnection
     }
 
     /// <inheritdoc/>
-    public byte[] ReceiveBufferedData(int length)
+    public byte[] ReceiveBufferedPacket(int length)
     {
         if (IsConnected == false)
             return [];
@@ -139,7 +153,7 @@ internal class TcpConnection : IConnection
             using var stream = new MemoryStream();
             var first = true;
 
-            length += 8;
+            length += 16;
 
             while (length > 0)
             {
@@ -149,7 +163,7 @@ internal class TcpConnection : IConnection
 
                 if (first)
                 {
-                    if (received < 4 || BitConverter.ToUInt16(buffer, 0) != TcpPacket.Header1 || BitConverter.ToUInt16(buffer, 2) != TcpPacket.Header2)
+                    if (received < 8 || BitConverter.ToUInt16(buffer, 0) != TcpPacket.Header1 || BitConverter.ToUInt16(buffer, 2) != TcpPacket.Header2)
                         throw new Exception("Invalid TCP header.");
 
                     stream.Write(buffer, 8, received - 8);
@@ -163,7 +177,7 @@ internal class TcpConnection : IConnection
                 length -= received;
             }
 
-            var data = stream.ToArray();
+            var data = stream.ToArray().Skip(8).ToArray();
 
             NotifyReceivedData?.Invoke(data);
             return data;

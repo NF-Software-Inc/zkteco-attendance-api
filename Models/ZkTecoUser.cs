@@ -8,6 +8,6 @@
 /// <param name="Password">Password to access the device.</param>
 /// <param name="Privilege">This sets the level of actions that a user may perform, regular employees are 'common users' while the IT admins may be 'superadmins'.</param>
 /// <param name="Group">New users are by default on group 1, but there may be 100 different groups, a user can only belong to one group, they could inherit permissions and settings from the group to which they belong.</param>
-/// <param name="UserId">This could be the working ID, students ID, license ID, but should be unique..</param>
+/// <param name="UserId">This unique identifier for the user.</param>
 /// <param name="Card">This corresponds to the number of an RFID card, this depends on the verify style.</param>
 public record class ZkTecoUser(int Index, string Name, string? Password, Privilege Privilege, string? Group, string UserId, int Card);

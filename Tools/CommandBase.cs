@@ -14,7 +14,7 @@ internal abstract class CommandBase<TPacket>(IConnection connection, int maxBuff
     public virtual event CommandError? NotifyCommandError;
 
     /// <inheritdoc cref="ICommand.SendCommand(Commands, string?, int)" />
-    public virtual IZkPacket? SendCommand(Commands command, string? data, int length = 8)
+    public virtual IZkPacket? SendCommand(Commands command, string? data, int length)
     {
         var packet = new TPacket()
         {
@@ -29,10 +29,10 @@ internal abstract class CommandBase<TPacket>(IConnection connection, int maxBuff
         if (int.IsOddInteger(packet.Data.Length))
             packet.Data = packet.Data.Concat([(byte)0x00]).ToArray();
 
-        if (Connection.SendData(packet) == false)
+        if (Connection.SendPacket(packet) == false)
             NotifyCommandError?.Invoke("Failed sending data to ZKTeco device.");
 
-        var response = Connection.ReceiveData(length);
+        var response = Connection.ReceivePacket(length);
 
         if (response == null || response.Length < ZkPacketBase.DefaultHeaderLength)
             return null;
@@ -47,7 +47,7 @@ internal abstract class CommandBase<TPacket>(IConnection connection, int maxBuff
     }
 
     /// <inheritdoc cref="ICommand.SendCommand(Commands, byte[], int)" />
-    public virtual IZkPacket? SendCommand(Commands command, byte[] data, int length = 8)
+    public virtual IZkPacket? SendCommand(Commands command, byte[] data, int length)
     {
         var packet = new TPacket()
         {
@@ -57,10 +57,10 @@ internal abstract class CommandBase<TPacket>(IConnection connection, int maxBuff
             Data = data
         };
 
-        if (Connection.SendData(packet) == false)
+        if (Connection.SendPacket(packet) == false)
             NotifyCommandError?.Invoke("Failed sending data to ZKTeco device.");
 
-        var response = Connection.ReceiveData(length);
+        var response = Connection.ReceivePacket(length);
 
         if (response == null || response.Length < ZkPacketBase.DefaultHeaderLength)
             return null;
@@ -74,23 +74,51 @@ internal abstract class CommandBase<TPacket>(IConnection connection, int maxBuff
         return result;
     }
 
-    /// <inheritdoc cref="ICommand.SendBufferedCommand(Commands, byte[], int)" />
-    public virtual IZkPacket? SendBufferedCommand(Commands command, byte[] data, int length)
+    /// <inheritdoc cref="ICommand.SendBufferedCommand(Commands, byte[])" />
+    public virtual IZkPacket? SendBufferedCommand(Commands command, byte[] data)
     {
+        var valid = new Commands[] { Commands.Success, Commands.SendData };
         var combined = new byte[] { 0x01 }.Concat(BitConverter.GetBytes((ushort)(int)command)).Concat(data).ToArray();
-        var request = SendCommand(Commands.PrepareBuffers, combined, length);
-
-        if (request == null || request.Command != Commands.Success || request.Data.Length < 5)
+        var request = SendCommand(Commands.PrepareBuffers, combined, 1_024);
+        
+        if (request == null || valid.Contains(request.Command) == false || (request.Command == Commands.Success && request.Data.Length < 5) || (request.Command == Commands.SendData && request.Data.Length < 4))
         {
             NotifyCommandError?.Invoke("Invalid response received during buffered read on ZKTeco device.");
             return null;
         }
 
+        if (request.Command == Commands.Success)
+            return GetBufferData(request.Data);
+        else if (request.Command == Commands.SendData)
+            return GetRemainingData(request.Data);
+        else
+            return null;
+    }
+
+    protected virtual IZkPacket GetRemainingData(byte[] data)
+    {
+        var total = BitConverter.ToInt32(data) + 4;
+        var remaining = Array.Empty<byte>();
+
+        if (total - data.Length > 0)
+            remaining = Connection.ReceiveData(total - data.Length);
+
+        return new ZkPacketBase()
+        {
+            Command = Commands.Success,
+            ConnectionId = Connection.ConnectionId,
+            ResponseId = Connection.ResponseId,
+            Data = data.Concat(remaining).ToArray()
+        };
+    }
+
+    protected virtual IZkPacket? GetBufferData(byte[] data)
+    {
         using var stream = new MemoryStream();
 
-        var size = BitConverter.ToInt32(request.Data, 1);
+        var size = BitConverter.ToInt32(data, 1);
         var start = 0;
-        var first = true;
+        var final = Array.Empty<byte>();
 
         while (size > 0)
         {
@@ -105,27 +133,36 @@ internal abstract class CommandBase<TPacket>(IConnection connection, int maxBuff
                 break;
             }
 
-            var block = Connection.ReceiveBufferedData(current + ZkPacketBase.DefaultHeaderLength);
+            var block = Connection.ReceiveBufferedPacket(current);
 
-            if (first && block.Length > 0)
+            if (block.Length == 0)
             {
-                stream.Write(block);
-                first = false;
+                NotifyCommandError?.Invoke("Invalid data block received during buffered read on ZKTeco device.");
+                break;
             }
-            else if (block.Length > 0)
-            {
-                stream.Write(block, 8, block.Length - 8);
-            }
+
+            stream.Write(block);
+            final = Connection.ReceivePacket(ZkPacketBase.DefaultHeaderLength);
 
             size -= current;
             start += current;
         }
 
-        var completed = stream.ToArray();
-        var result = ZkPacketBase.ParseHeader(completed[..ZkPacketBase.DefaultHeaderLength]);
+        if (final.Length < 8)
+        {
+            NotifyCommandError?.Invoke("Invalid final packet received during buffered read on ZKTeco device.");
+            return null;
+        }
 
-        if (completed.Length > ZkPacketBase.DefaultHeaderLength)
-            result.Data = completed[ZkPacketBase.DefaultHeaderLength..];
+        var result = ZkPacketBase.ParseHeader(final);
+
+        if (stream.Length > 0)
+            result.Data = stream.ToArray();
+
+        var packet = SendCommand(Commands.ClearBuffers, [], ZkPacketBase.DefaultHeaderLength);
+
+        if (packet == null || packet.Command != Commands.Success)
+            NotifyCommandError?.Invoke("Failed clearing buffer on ZKTeco device.");
 
         return result;
     }

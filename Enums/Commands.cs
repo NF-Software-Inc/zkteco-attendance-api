@@ -20,6 +20,16 @@ internal enum Commands
 	/// </summary>
 	ReadConfiguration = 11,
 
+    /// <summary>
+    /// Retrieves attendance data from the ZKTeco device.
+    /// </summary>
+    ReadAttendance = 13,
+
+	/// <summary>
+	/// CLears all attendance data from the ZKTeco device.
+	/// </summary>
+    DeleteAttendance = 15,
+
 	/// <summary>
 	/// Checks to see how many records of each type exist on the ZKTeco device.
 	/// </summary>
@@ -108,7 +118,7 @@ internal enum Commands
 	/// <summary>
 	/// An error occurred during command execution.
 	/// </summary>
-	Error = 2_001,
+	FailedExecute = 2_001,
 
 	/// <summary>
 	/// Return data is available after executing the command.
@@ -118,5 +128,15 @@ internal enum Commands
 	/// <summary>
 	/// The session needs to be authenticated.
 	/// </summary>
-	Unauthorized = 2_005
+	Unauthorized = 2_005,
+
+	/// <summary>
+	/// The buffered read failed to prepare.
+	/// </summary>
+	FailedMemoryAllocation = 4_989,
+
+	/// <summary>
+	/// The device could not locate the requested data.
+	/// </summary>
+	FailedFindingData = 4_991
 }
