@@ -428,6 +428,141 @@ public class ZkTeco
         return users;
     }
 
+    /// <summary>
+    /// Adds a new user to the ZKTeco device with the provided values.
+    /// </summary>
+    /// <param name="name">The full name of the user to add.</param>
+    /// <param name="userId">The unique identifier to assign to the user.</param>
+    public ZkTecoUser? CreateUser(string name, string userId)
+    {
+        var users = GetUsers();
+
+        var max = users.MaxOrDefault(x => x.Index, 0);
+        var user = new ZkTecoUser(max + 1, name[..24], null, Privilege.Default, null, userId[..24], 0);
+
+        var nameBytes = new byte[24];
+        var bytes = Encoding.UTF8.GetBytes(user.Name);
+
+        for (var i = 0; i < nameBytes.Length && i < bytes.Length; i++)
+            nameBytes[i] = bytes[i];
+
+        var id = new byte[24];
+        bytes = Encoding.UTF8.GetBytes(user.UserId);
+
+        for (var i = 0; i < id.Length && i < bytes.Length; i++)
+            id[i] = bytes[i];
+
+        var data = BitConverter.GetBytes((ushort)user.Index)
+            .Append((byte)(int)user.Privilege)
+            .Concat(new byte[8])
+            .Concat(nameBytes)
+            .Concat(BitConverter.GetBytes(user.Card))
+            .Append((byte)0x00)
+            .Concat(new byte[7])
+            .Append((byte)0x00)
+            .Concat(id)
+            .ToArray();
+
+        var packet = Command.SendCommand(Commands.CreateUser, data, 1_024);
+
+        if (packet == null)
+        {
+            NotifyCommandError?.Invoke("Failed creating user on ZKTeco device.");
+            return null;
+        }
+
+        return user;
+    }
+
+    /// <summary>
+    /// Adds a new user to the ZKTeco device with the provided values.
+    /// </summary>
+    /// <param name="user">The details of the user to create.</param>
+    public bool CreateUser(ZkTecoUser user)
+    {
+        var password = new byte[8];
+        var bytes = Encoding.UTF8.GetBytes(user.Password ?? string.Empty);
+
+        for (var i = 0; i < password.Length && i < bytes.Length; i++)
+            password[i] = bytes[i];
+
+        var name = new byte[24];
+        bytes = Encoding.UTF8.GetBytes(user.Name);
+
+        for (var i = 0; i < name.Length && i < bytes.Length; i++)
+            name[i] = bytes[i];
+
+        var group = new byte[7];
+        bytes = Encoding.UTF8.GetBytes(user.Group ?? string.Empty);
+
+        for (var i = 0; i < group.Length && i < bytes.Length; i++)
+            group[i] = bytes[i];
+
+        var id = new byte[24];
+        bytes = Encoding.UTF8.GetBytes(user.UserId);
+
+        for (var i = 0; i < id.Length && i < bytes.Length; i++)
+            id[i] = bytes[i];
+
+        var data = BitConverter.GetBytes((ushort)user.Index)
+            .Append((byte)(int)user.Privilege)
+            .Concat(password)
+            .Concat(name)
+            .Concat(BitConverter.GetBytes(user.Card))
+            .Append((byte)0x00)
+            .Concat(group)
+            .Append((byte)0x00)
+            .Concat(id)
+            .ToArray();
+
+        var packet = Command.SendCommand(Commands.CreateUser, data, 1_024);
+
+        if (packet == null)
+        {
+            NotifyCommandError?.Invoke("Failed creating user on ZKTeco device.");
+            return false;
+        }
+
+        return packet.Command == Commands.Success;
+    }
+
+    /// <summary>
+    /// Deletes all attendance records on the ZKTeco device.
+    /// </summary>
+    /// <param name="index">The device specific uid of the user to delete.</param>
+    public bool DeleteUser(int index)
+    {
+        var packet = Command.SendCommand(Commands.DeleteUser, BitConverter.GetBytes((ushort)index), ZkPacketBase.DefaultHeaderLength);
+
+        if (packet == null)
+        {
+            NotifyCommandError?.Invoke("Failed deleting user from ZKTeco device.");
+            return false;
+        }
+
+        return packet.Command == Commands.Success;
+    }
+
+    /// <summary>
+    /// Deletes all attendance records on the ZKTeco device.
+    /// </summary>
+    /// <param name="user">The user to delete.</param>
+    public bool DeleteUser(ZkTecoUser user)
+    {
+        var packet = Command.SendCommand(Commands.DeleteUser, BitConverter.GetBytes((ushort)user.Index), ZkPacketBase.DefaultHeaderLength);
+
+        if (packet == null)
+        {
+            NotifyCommandError?.Invoke("Failed deleting user from ZKTeco device.");
+            return false;
+        }
+
+        return packet.Command == Commands.Success;
+    }
+
+    /// <summary>
+    /// Returns all attendance records on the ZKTeco device.
+    /// </summary>
     public List<ZkTecoAttendance>? GetAttendance()
     {
         var attendances = new List<ZkTecoAttendance>();
@@ -458,7 +593,7 @@ public class ZkTeco
             var index = BitConverter.ToUInt16(item, 0);
             var id = Encoding.UTF8.GetString(item[2..26]).Split('\0').First();
             var status = item[26];
-            var time = Encoding.UTF8.GetString(item[27..31]).Split('\0').First();
+            var time = BitConverter.ToInt32(item, 27);
             var punch = item[31];
 
             attendances.Add(new ZkTecoAttendance(index, ConvertDate(time), id, status, punch));
@@ -467,27 +602,40 @@ public class ZkTeco
         return attendances;
     }
 
-    private DateTime ConvertDate(string date)
+    /// <summary>
+    /// Deletes all attendance records on the ZKTeco device.
+    /// </summary>
+    public bool ClearAttendance()
     {
-        if (int.TryParse(date, out var remaining) == false)
-            return DateTime.MinValue;
+        var packet = Command.SendCommand(Commands.DeleteAttendance, [], ZkPacketBase.DefaultHeaderLength);
 
-        var seconds = remaining % 60;
-        remaining = (int)Math.Floor(remaining / 60.0M);
+        if (packet == null)
+        {
+            NotifyCommandError?.Invoke("Failed clearing attendance data on ZKTeco device.");
+            return false;
+        }
 
-        var minutes = remaining % 60;
-        remaining = (int)Math.Floor(remaining / 60.0M);
+        return packet.Command == Commands.Success;
+    }
 
-        var hours = remaining % 24;
-        remaining = (int)Math.Floor(remaining / 24.0M);
+    private DateTime ConvertDate(int value)
+    {
+        var seconds = value % 60;
+        value = (int)Math.Floor(value / 60.0M);
 
-        var day = (remaining % 31) + 1;
-        remaining = (int)Math.Floor(remaining / 31.0M);
+        var minutes = value % 60;
+        value = (int)Math.Floor(value / 60.0M);
 
-        var month = (remaining % 12) + 1;
-        remaining = (int)Math.Floor(remaining / 12.0M);
+        var hours = value % 24;
+        value = (int)Math.Floor(value / 24.0M);
 
-        var year = remaining + 2_000;
+        var day = (value % 31) + 1;
+        value = (int)Math.Floor(value / 31.0M);
+
+        var month = (value % 12) + 1;
+        value = (int)Math.Floor(value / 12.0M);
+
+        var year = value + 2_000;
 
         return new DateTime(year, month, day, hours, minutes, seconds);
     }

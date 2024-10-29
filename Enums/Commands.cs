@@ -11,9 +11,14 @@ internal enum Commands
 	Unknown = 0,
 
 	/// <summary>
-	/// Retrieves user data from the ZKTeco device.
+	/// Adds a new user to the ZKTeco device.
 	/// </summary>
-	ReadUsers = 9,
+	CreateUser = 8,
+
+    /// <summary>
+    /// Retrieves user data from the ZKTeco device.
+    /// </summary>
+    ReadUsers = 9,
 
 	/// <summary>
 	/// Retrieves a machine configuration detail from the ZKTeco device.
@@ -26,9 +31,14 @@ internal enum Commands
     ReadAttendance = 13,
 
 	/// <summary>
-	/// CLears all attendance data from the ZKTeco device.
+	/// Clears all attendance data from the ZKTeco device.
 	/// </summary>
     DeleteAttendance = 15,
+
+	/// <summary>
+	/// Delets a user from the ZKTeco device.
+	/// </summary>
+    DeleteUser = 18,
 
 	/// <summary>
 	/// Checks to see how many records of each type exist on the ZKTeco device.
@@ -131,12 +141,67 @@ internal enum Commands
 	Unauthorized = 2_005,
 
 	/// <summary>
-	/// The buffered read failed to prepare.
+	/// The current session has used too much memory.
+	/// </summary>
+	MemoryOverflow = 4_987,
+
+	/// <summary>
+	/// Not enough memory left for the current session.
+	/// </summary>
+	InsufficientMemory = 4_988,
+
+	/// <summary>
+	/// The buffered read failed to prepare. Occurs when no data is available.
 	/// </summary>
 	FailedMemoryAllocation = 4_989,
 
 	/// <summary>
-	/// The device could not locate the requested data.
+	/// The storage on the device is full.
 	/// </summary>
-	FailedFindingData = 4_991
+	DatabaseFull = 4_990,
+
+	/// <summary>
+	/// The device could not locate the requested data. Occurs when feature does not exist on device.
+	/// </summary>
+	FailedFindingData = 4_991,
+
+    /// <summary>
+    /// Error while trying to delete a record.
+    /// </summary>
+    FailedDeletingData = 4_992,
+
+    /// <summary>
+    /// Error while trying to read a record.
+    /// </summary>
+    FailedReadingData = 4_993,
+
+    /// <summary>
+    /// Error while trying to update an existing record.
+    /// </summary>
+    FailedUpdatingData = 4_994,
+
+	/// <summary>
+	/// Error while trying to create a new record.
+	/// </summary>
+	FailedAddingData = 4_995,
+
+	/// <summary>
+	/// A parameter sent to the device was incorrect.
+	/// </summary>
+	FailedParameterValidation = 4_996,
+
+	/// <summary>
+	/// Amount of data sent to the device was incorrect.
+	/// </summary>
+	IncorrectDataLength = 4_997,
+
+    /// <summary>
+    /// Error while trying to write a device parameter.
+    /// </summary>
+    FailedParameterWrite = 4_998,
+
+	/// <summary>
+	/// Error while trying to read a device parameter.
+	/// </summary>
+	FailedParameterRead = 4_999
 }
