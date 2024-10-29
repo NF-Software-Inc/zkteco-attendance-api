@@ -6,18 +6,62 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Company>NF Software Inc.</Company>
+		<Authors>NF Software Inc.</Authors>
 		<Copyright>Copyright 2024 $(Company)</Copyright>
 		<AssemblyVersion>1.0.0.0</AssemblyVersion>
 		<FileVersion>1.0.0.0</FileVersion>
 		<Version>1.0.0</Version>
-		<OutputType>Library</OutputType>
+		<PackageId>ZkTeco.Attendance.API</PackageId>
+		<PackageTags>ZK ZkTeco Attendance API Time Clock Punch</PackageTags>
+		<RepositoryUrl>https://github.com/thirstyape/zkteco-attendance-api</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/thirstyape/zkteco-attendance-api</PackageProjectUrl>
+		<Description>
+			This project was created to provide an easy to use interface to interact with ZKTeco attendance recording devices.
+			It allows querying device details, querying user details, querying attendance records, creating users, deleting users, and more.
+		</Description>
+		<PackageReleaseNotes>
+			1.0.0
+			Initial release
+		</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<PropertyGroup>
 		<NoWarn>IDE0130</NoWarn>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<DocumentationFile>$(ProjectDir)..\$(AssemblyName).xml</DocumentationFile>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageIcon>icon.png</PackageIcon>
+		<RepositoryType>git</RepositoryType>
+		<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+		<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release'">
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.*" PrivateAssets="All"/>
+	</ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Easy.Base" Version="1.1.*" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\icon.png">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+		<None Include="..\LICENSE">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
 	</ItemGroup>
 </Project>
