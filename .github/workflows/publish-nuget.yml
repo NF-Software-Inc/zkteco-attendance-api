@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: publish-nuget
+on:
+  workflow_call:
+    inputs:
+      build:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      deploy:
+        required: true
+        type: boolean
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  GitHubUsername: NF-Software-Inc
+  PackageName: ${{ github.workspace }}\Temp-NuGet\ZkTeco.Attendance.API.${{ inputs.version }}.nupkg
+  PublishVersion: ${{ inputs.version }}.${{ inputs.build }}
+  TempDirectory: ${{ github.workspace }}/Temp-NuGet
+
+jobs:
+  package:
+    name: Build NuGet Package
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v4.2.2
+      with:
+        submodules: true
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4.3.1
+      with:
+        dotnet-version: 8.0.x
+    - name: Install Dependencies
+      run: dotnet restore
+    - run: mkdir ${{ env.TempDirectory }}
+    - name: Build & Pack
+      run: |
+        dotnet build --configuration Release
+        dotnet pack --configuration Release --output ${{ env.TempDirectory }} /p:AssemblyVersion=${{ env.PublishVersion }} /p:Version=${{ inputs.version }} /p:FileVersion=${{ env.PublishVersion }}
+    - uses: actions/upload-artifact@v4.6.2
+      with:
+        name: NuGet-Unsigned
+        if-no-files-found: error
+        retention-days: 2
+        path: ${{ env.TempDirectory }}/*.nupkg
+  deploy:
+    name: Deploy To NuGet & GitHub
+    runs-on: windows-2022
+    needs: [ package ]
+    if: ${{ inputs.deploy }}
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - run: New-Item -Type Directory -Path ${{ env.TempDirectory }}
+      - uses: actions/download-artifact@v4.2.1
+        with:
+          name: NuGet-Unsigned
+          path: ${{ env.TempDirectory }}
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4.3.1
+        with:
+          dotnet-version: 8.0.x
+      - name: Install Intermediate Certificates
+        run: |
+          New-Item -Type File -Path ${{ env.TempDirectory }}\intermediate-1.cer -Value "${{ vars.GLOBALSIGN_INTERMEDIATE_1 }}"
+          New-Item -Type File -Path ${{ env.TempDirectory }}\intermediate-2.cer -Value "${{ vars.GLOBALSIGN_INTERMEDIATE_2 }}"
+          Import-Certificate -FilePath ${{ env.TempDirectory }}\intermediate-1.cer -CertStoreLocation Cert:\LocalMachine\CA
+          Import-Certificate -FilePath ${{ env.TempDirectory }}\intermediate-2.cer -CertStoreLocation Cert:\LocalMachine\CA
+      - name: Sign Package
+        run: |
+          dotnet tool install --global --version 3.2.3 NuGetKeyVaultSignTool
+          NuGetKeyVaultSignTool sign ${{ env.PackageName }} --file-digest sha256 --timestamp-rfc3161 http://timestamp.sectigo.com --timestamp-digest sha256 --azure-key-vault-url ${{ vars.AZURE_KEY_VAULT }} --azure-key-vault-tenant-id ${{ secrets.AZURE_TENANT_ID }} --azure-key-vault-client-id ${{ secrets.AZURE_CLIENT_ID }} --azure-key-vault-client-secret "${{ secrets.AZURE_CLIENT_SECRET }}" --azure-key-vault-certificate ${{ vars.AZURE_CODE_SIGN_CERTIFICATE }}
+      - name: Verify Signed Package
+        run: NuGetKeyVaultSignTool verify ${{ env.PackageName }}
+      - name: Add to Release
+        run: gh release upload ${{ inputs.version }} ${{ env.PackageName }} --repo NF-Software-Inc/zkteco-attendance-api
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Deploy NuGet package
+        run: dotnet nuget push ${{ env.PackageName }} --api-key "${{ secrets.NUGET_APIKEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
