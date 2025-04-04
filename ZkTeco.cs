@@ -367,6 +367,80 @@ namespace zkteco_attendance_api
 		}
 
 		/// <summary>
+		/// Clears any errors on the ZKTeco device.
+		/// </summary>
+		public bool ClearError()
+		{
+			var packet1 = Command.SendCommand(Commands.FailedExecute, Array.Empty<byte>(), 1_024);
+			var packet2 = Command.SendCommand(Commands.ClearError, Array.Empty<byte>(), 1_024);
+			var packet3 = Command.SendCommand(Commands.ClearError, Array.Empty<byte>(), 1_024);
+			var packet4 = Command.SendCommand(Commands.ClearError, Array.Empty<byte>(), 1_024);
+
+			if (packet1 == null)
+			{
+				NotifyCommandError?.Invoke("Failed clearing error on ZKTeco device 1.");
+				return false;
+			}
+			else if (packet2 == null || packet3 == null || packet4 == null)
+			{
+				NotifyCommandError?.Invoke("Failed clearing error on ZKTeco device 2.");
+				return false;
+			}
+
+			return packet1.Command == Commands.Success && packet2.Command == Commands.Success;
+		}
+
+		/// <summary>
+		/// Returns the current time on the ZKTeco device.
+		/// </summary>
+		public DateTime? GetTime()
+		{
+			var packet = Command.SendCommand(Commands.GetTime, Array.Empty<byte>(), 1_024);
+
+			if (packet == null)
+			{
+				NotifyCommandError?.Invoke("Failed getting time from ZKTeco device.");
+				return null;
+			}
+
+			var time = BitConverter.ToInt32(packet.Data);
+			return ConvertDate(time);
+		}
+
+		/// <summary>
+		/// Sets the current time on the ZKTeco device to the current time on the local device.
+		/// </summary>
+		public bool SetTime()
+		{
+			var packet = Command.SendCommand(Commands.SetTime, BitConverter.GetBytes(ConvertDate(DateTime.Now)), ZkPacketBase.DefaultHeaderLength);
+
+			if (packet == null)
+			{
+				NotifyCommandError?.Invoke("Failed setting time on ZKTeco device.");
+				return false;
+			}
+
+			return packet.Command == Commands.Success;
+		}
+
+		/// <summary>
+		/// Sets the current time on the ZKTeco device.
+		/// </summary>
+		/// <param name="time">The time to set on the ZKTeco device.</param>
+		public bool SetTime(DateTime time)
+		{
+			var packet = Command.SendCommand(Commands.SetTime, BitConverter.GetBytes(ConvertDate(time)), ZkPacketBase.DefaultHeaderLength);
+
+			if (packet == null)
+			{
+				NotifyCommandError?.Invoke("Failed setting time on ZKTeco device.");
+				return false;
+			}
+
+			return packet.Command == Commands.Success;
+		}
+
+		/// <summary>
 		/// Returns the currently active firmware edition on the ZKTeco device.
 		/// </summary>
 		public string? GetFirmwareVersion()
@@ -486,6 +560,7 @@ namespace zkteco_attendance_api
 				return null;
 			}
 
+			_ = RefreshData();
 			return user;
 		}
 
@@ -538,7 +613,7 @@ namespace zkteco_attendance_api
 				return false;
 			}
 
-			return packet.Command == Commands.Success;
+			return packet.Command == Commands.Success && RefreshData();
 		}
 
 		/// <summary>
@@ -555,7 +630,7 @@ namespace zkteco_attendance_api
 				return false;
 			}
 
-			return packet.Command == Commands.Success;
+			return packet.Command == Commands.Success && RefreshData();
 		}
 
 		/// <summary>
@@ -572,7 +647,7 @@ namespace zkteco_attendance_api
 				return false;
 			}
 
-			return packet.Command == Commands.Success;
+			return packet.Command == Commands.Success && RefreshData();
 		}
 
 		/// <summary>
@@ -631,6 +706,76 @@ namespace zkteco_attendance_api
 			}
 
 			return packet.Command == Commands.Success;
+		}
+
+		/// <summary>
+		/// Sets the display text on the ZKTeco device.
+		/// </summary>
+		/// <param name="text">The text to display on the ZKTeco device.</param>
+		/// <param name="line">The line to display the text on.</param>
+		public bool SetDisplayText(string text, short line = 1)
+		{
+			var data = BitConverter.GetBytes(line)
+				.Append((byte)0x00)
+				.Concat(Encoding.UTF8.GetBytes(text))
+				.ToArray();
+
+			var packet = Command.SendCommand(Commands.SetDisplay, data, ZkPacketBase.DefaultHeaderLength);
+
+			if (packet == null)
+			{
+				NotifyCommandError?.Invoke("Failed setting display text on ZKTeco device.");
+				return false;
+			}
+
+			return packet.Command == Commands.Success;
+		}
+
+		/// <summary>
+		/// Clears the display text on the ZKTeco device.
+		/// </summary>
+		public bool ClearDisplayText()
+		{
+			var packet = Command.SendCommand(Commands.ClearDisplay, Array.Empty<byte>(), ZkPacketBase.DefaultHeaderLength);
+
+			if (packet == null)
+			{
+				NotifyCommandError?.Invoke("Failed clearing display text on ZKTeco device.");
+				return false;
+			}
+
+			return packet.Command == Commands.Success;
+		}
+
+		/// <summary>
+		/// Refreshes the data on the ZKTeco device.
+		/// </summary>
+		/// <remarks>
+		/// This is required to be able to read the attendance records after adding or deleting users. This will be automatically called when creating or deleting users.
+		/// </remarks>
+		public bool RefreshData()
+		{
+			var packet = Command.SendCommand(Commands.RefreshData, Array.Empty<byte>(), ZkPacketBase.DefaultHeaderLength);
+
+			if (packet == null)
+			{
+				NotifyCommandError?.Invoke("Failed refreshing data on ZKTeco device.");
+				return false;
+			}
+
+			return packet.Command == Commands.Success;
+		}
+
+		private int ConvertDate(DateTime value)
+		{
+			var year = value.Year - 2_000;
+			var month = value.Month - 1;
+			var day = value.Day - 1;
+			var hours = value.Hour;
+			var minutes = value.Minute;
+			var seconds = value.Second;
+
+			return (int)(year * 12 * 31 * 24 * 60 * 60 + month * 31 * 24 * 60 * 60 + day * 24 * 60 * 60 + hours * 60 * 60 + minutes * 60 + seconds);
 		}
 
 		private DateTime ConvertDate(int value)
