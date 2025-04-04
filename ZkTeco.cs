@@ -387,7 +387,7 @@ namespace zkteco_attendance_api
 				return false;
 			}
 
-			return packet1.Command == Commands.Success && packet2.Command == Commands.Success;
+			return packet1.Command == Commands.Success && packet2.Command == Commands.Success && packet3.Command == Commands.Success && packet4.Command == Commands.Success;
 		}
 
 		/// <summary>
