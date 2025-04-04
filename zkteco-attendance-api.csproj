@@ -1,9 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>netstandard2.1</TargetFramework>
 		<RootNamespace>$(MSBuildProjectName.Replace("-", "_"))</RootNamespace>
-		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Company>NF Software Inc.</Company>
 		<Authors>NF Software Inc.</Authors>
@@ -42,11 +41,7 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(Configuration)' == 'Release'">
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.*" PrivateAssets="All"/>
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Easy.Base" Version="1.1.*" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.*" PrivateAssets="All" />
 	</ItemGroup>
 
 	<ItemGroup>
