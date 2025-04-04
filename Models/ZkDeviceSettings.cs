@@ -1,10 +1,44 @@
-﻿namespace zkteco_attendance_api;
+﻿namespace zkteco_attendance_api
+{
+	/// <summary>
+	/// Defines properties required to connect to a ZKTeco device.
+	/// </summary>
+	public class ZkDeviceSettings
+	{
+		public ZkDeviceSettings(string ip)
+		{
+			Ip = ip;
+			Port = 4_370;
+			UseTcp = true;
+			Password = 0;
+		}
 
-/// <summary>
-/// Defines properties required to connect to a ZKTeco device.
-/// </summary>
-/// <param name="Ip">The IP address of the device.</param>
-/// <param name="Port">The port used for communication with the device.</param>
-/// <param name="UseTcp">Specifies whether to use TCP or UDP for communication.</param>
-/// <param name="Password">The password to authenticate with the device.</param>
-public record class ZkDeviceSettings(string Ip, int Port = 4_370, bool UseTcp = true, int Password = 0);
+		public ZkDeviceSettings(string ip, int port, bool useTcp, int password)
+		{
+			Ip = ip;
+			Port = port;
+			UseTcp = useTcp;
+			Password = password;
+		}
+
+		/// <summary>
+		/// The IP address of the ZKTeco device.
+		/// </summary>
+		public string Ip { get; set; }
+
+		/// <summary>
+		/// The port used for communication with the device.
+		/// </summary>
+		public int Port { get; set; }
+
+		/// <summary>
+		/// Specifies whether to use TCP or UDP for communication.
+		/// </summary>
+		public bool UseTcp { get; set; }
+
+		/// <summary>
+		/// The password to authenticate with the device.
+		/// </summary>
+		public int Password { get; set; }
+	}
+}

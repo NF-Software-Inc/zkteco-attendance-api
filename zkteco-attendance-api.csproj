@@ -1,16 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>netstandard2.1</TargetFramework>
 		<RootNamespace>$(MSBuildProjectName.Replace("-", "_"))</RootNamespace>
-		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Company>NF Software Inc.</Company>
 		<Authors>NF Software Inc.</Authors>
 		<Copyright>Copyright 2024 $(Company)</Copyright>
-		<AssemblyVersion>1.0.0.0</AssemblyVersion>
-		<FileVersion>1.0.0.0</FileVersion>
-		<Version>1.0.0</Version>
+		<AssemblyVersion>1.1.0.0</AssemblyVersion>
+		<FileVersion>1.1.0.0</FileVersion>
+		<Version>1.1.0</Version>
 		<PackageId>ZkTeco.Attendance.API</PackageId>
 		<PackageTags>ZK ZkTeco Attendance API Time Clock Punch</PackageTags>
 		<RepositoryUrl>https://github.com/NF-Software-Inc/zkteco-attendance-api</RepositoryUrl>
@@ -20,6 +19,7 @@
 			It allows querying device details, querying user details, querying attendance records, creating users, deleting users, and more.
 		</Description>
 		<PackageReleaseNotes>
+			1.1.0 Update to target .NET Standard 2.1
 			1.0.0 Initial release
 		</PackageReleaseNotes>
 	</PropertyGroup>
@@ -42,11 +42,7 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(Configuration)' == 'Release'">
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.*" PrivateAssets="All"/>
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Easy.Base" Version="1.1.*" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.*" PrivateAssets="All" />
 	</ItemGroup>
 
 	<ItemGroup>
