@@ -1,7 +1,9 @@
 # ZKTeco Attendance API
 
-[![MIT](https://img.shields.io/github/license/thirstyape/zkteco-attendance-api)](https://github.com/thirstyape/zkteco-attendance-api/blob/master/LICENSE)
+[![MIT](https://img.shields.io/github/license/NF-Software-Inc/zkteco-attendance-api)](https://github.com/NF-Software-Inc/zkteco-attendance-api/blob/master/LICENSE)
 [![NuGet](https://img.shields.io/nuget/v/ZkTeco.Attendance.API.svg)](https://www.nuget.org/packages/ZkTeco.Attendance.API/)
+[![Build](https://img.shields.io/github/actions/workflow/status/NF-Software-Inc/zkteco-attendance-api/build.yml)](https://github.com/NF-Software-Inc/zkteco-attendance-api/actions/workflows/build.yml)
+[![Publish](https://img.shields.io/github/actions/workflow/status/NF-Software-Inc/zkteco-attendance-api/publish.yml?label=publish)](https://github.com/NF-Software-Inc/zkteco-attendance-api/actions/workflows/publish.yml)
 
 This project was created to provide an easy to use interface to interact with ZKTeco attendance recording devices for .NET.
 

@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: publish
+on:
+    workflow_dispatch:
+      inputs:
+        targets:
+          description: Targets
+          required: true
+          type: string
+        version:
+          description: Version
+          required: true
+          type: string
+        build:
+          description: Build
+          type: string
+        deploy:
+          description: Deploy
+          required: true
+          type: boolean
+          default: false
+    release:
+      types: [ published ]
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      Targets: ${{ steps.set-values.outputs.Targets }}
+      Version: ${{ steps.set-values.outputs.Version }}
+      Build: ${{ steps.set-values.outputs.Build }}
+      Deploy: ${{ steps.set-values.outputs.Deploy }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Update Environment Variables
+        id: set-values
+        run: |
+          if [[ '${{ github.event_name }}' == 'workflow_dispatch' ]]; then
+            echo "Targets=${{ github.event.inputs.targets }}" >> "$GITHUB_OUTPUT"
+            echo "Version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "Build=${{ github.event.inputs.build || github.run_number }}" >> "$GITHUB_OUTPUT"
+            echo "Deploy=${{ github.event.inputs.deploy }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "Targets=${{ github.event.release.name }}" >> "$GITHUB_OUTPUT"
+            echo "Version=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "Build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+            echo "Deploy=${{ github.event_name == 'release' }}" >> "$GITHUB_OUTPUT"
+          fi
+  nuget:
+    needs: [ prepare ]
+    if: ${{ contains(needs.prepare.outputs.Targets, 'All') || contains(needs.prepare.outputs.Targets, 'NuGet') }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-nuget.yml
+    with:
+      build: ${{ needs.prepare.outputs.Build }}
+      version: ${{ needs.prepare.outputs.Version }}
+      deploy: ${{ needs.prepare.outputs.Deploy == 'true' }}
+    secrets: inherit
