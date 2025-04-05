@@ -5,6 +5,21 @@
 	/// </summary>
 	public class RecordCounts
 	{
+		public RecordCounts() { }
+
+		public RecordCounts(int users, int availableUsers, int maximumUsers, int records, int availableRecords, int maximumRecords, int fingers, int availableFingers, int maximumFingers)
+		{
+			Users = users;
+			AvailableUsers = availableUsers;
+			MaximumUsers = maximumUsers;
+			Records = records;
+			AvailableRecords = availableRecords;
+			MaximumRecords = maximumRecords;
+			Fingers = fingers;
+			AvailableFingers = availableFingers;
+			MaximumFingers = maximumFingers;
+		}
+
 		/// <summary>
 		/// The number of user accounts on the device.
 		/// </summary>

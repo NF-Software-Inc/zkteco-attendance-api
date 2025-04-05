@@ -5,6 +5,23 @@
 	/// </summary>
 	public class ZkTecoUser
 	{
+		public ZkTecoUser() 
+		{
+			Name = string.Empty;
+			UserId = string.Empty;
+		}
+
+		public ZkTecoUser(string userId, string name, int index, string? password, Privilege privilege, string? group, int card)
+		{
+			UserId = userId;
+			Name = name;
+			Index = index;
+			Password = password;
+			Privilege = privilege;
+			Group = group;
+			Card = card;
+		}
+
 		/// <summary>
 		/// This is an internal index associated with the user, it is used in a large set of commands to refer to a given user, a 'common user' doesn't have knowledge of this number, and it may be different across different devices.
 		/// </summary>

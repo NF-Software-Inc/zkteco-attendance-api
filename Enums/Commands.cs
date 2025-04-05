@@ -46,6 +46,26 @@
 		CheckStorage = 50,
 
 		/// <summary>
+		/// Writes a display message on the ZKTeco device.
+		/// </summary>
+		SetDisplay = 66,
+
+		/// <summary>
+		/// Deletes all text messages from on the display of the ZKTeco device.
+		/// </summary>
+		ClearDisplay = 67,
+
+		/// <summary>
+		/// Gets the current time from the ZKTeco device.
+		/// </summary>
+		GetTime = 201,
+
+		/// <summary>
+		/// Sets the time on the ZKTeco device.
+		/// </summary>
+		SetTime = 202,
+
+		/// <summary>
 		/// Establishes a connection with a ZKTeco device.
 		/// </summary>
 		Connect = 1_000,
@@ -84,6 +104,11 @@
 		/// Returns a ZKTeco device from the sleep or idle mode to active mode.
 		/// </summary>
 		WakeUp = 1_007,
+
+		/// <summary>
+		/// Refreshes the data stores on the ZKTeco device.
+		/// </summary>
+		RefreshData = 1_013,
 
 		/// <summary>
 		/// Returns the firmware edition running on the ZKTeco device.
@@ -203,6 +228,11 @@
 		/// <summary>
 		/// Error while trying to read a device parameter.
 		/// </summary>
-		FailedParameterRead = 4_999
+		FailedParameterRead = 4_999,
+
+		/// <summary>
+		/// Resets any error codes on the device.
+		/// </summary>
+		ClearError = 65_535
 	}
 }
