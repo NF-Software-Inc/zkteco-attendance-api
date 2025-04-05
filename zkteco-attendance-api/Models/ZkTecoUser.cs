@@ -5,7 +5,7 @@
 	/// </summary>
 	public class ZkTecoUser
 	{
-		public ZkTecoUser() 
+		public ZkTecoUser()
 		{
 			Name = string.Empty;
 			UserId = string.Empty;

@@ -27,6 +27,7 @@ jobs:
         dotnet-version: 8.0.x
     - name: Install dependencies
       run: dotnet restore
+      working-directory: ./zkteco-attendance-api
     - name: Build
       run: dotnet build --configuration Release
-  
+      working-directory: ./zkteco-attendance-api
