@@ -179,27 +179,128 @@
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="User Management">
-    <div class="columns is-variable is-1">
-        <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
-        </div>
+    <EditForm Model="UserDetailsPlaceholder">
+        <div class="columns is-variable is-1">
+            <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetUsers'>
+                    <span class="material-icons icon">groups</span>
+                    <span>Get Users</span>
+                </button>
 
-        <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
-            <EditForm Model="UserDetailsPlaceholder">
+                <hr class="my-4" />
 
-            </EditForm>
+                <div class="field">
+                    <Label TValue="object" DisplayText="Name" />
+                    <div class="control has-icons-left">
+                        <InputText class="input" @bind-Value="NewUser.Name" disabled="@DisableControls" />
+                        <span class="material-icons icon is-left">title</span>
+                        <div class="help is-danger">
+                            <ValidationMessage For="() => NewUser.Name" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <Label TValue="object" DisplayText="Password" />
+                    <div class="control has-icons-left">
+                        <InputPassword class="input" @bind-Value="NewUser.Password" disabled="@DisableControls" />
+                        <div class="help is-danger">
+                            <ValidationMessage For="() => NewUser.Password" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <Label TValue="object" DisplayText="Privilege" />
+                    <div class="control has-icons-left has-icons-right">
+                        <InputSelectEnum class='is-fullwidth' @bind-Value=NewUser.Privilege disabled="@DisableControls" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <Label TValue="object" DisplayText="Group" />
+                    <div class="control has-icons-left">
+                        <InputText class="input" @bind-Value="NewUser.Group" disabled="@DisableControls" />
+                        <span class="material-icons icon is-left">title</span>
+                        <div class="help is-danger">
+                            <ValidationMessage For="() => NewUser.Group" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <Label TValue="object" DisplayText="User Id" />
+                    <div class="control has-icons-left">
+                        <InputText class="input" @bind-Value="NewUser.UserId" disabled="@DisableControls" />
+                        <span class="material-icons icon is-left">title</span>
+                        <div class="help is-danger">
+                            <ValidationMessage For="() => NewUser.UserId" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <Label TValue="object" DisplayText="RFID Card" />
+                    <div class="control has-icons-left">
+                        <InputNumber class="input" @bind-Value="NewUser.Card" disabled="@DisableControls" />
+                        <span class="material-icons icon is-left">numbers</span>
+                        <div class="help is-danger">
+                            <ValidationMessage For="() => NewUser.Card" />
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@(DisableControls || DisableCreateUser)" @onclick='CreateUser'>
+                    <span class="material-icons icon">person_add</span>
+                    <span>Create User</span>
+                </button>
+            </div>
+
+            <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+                <Table class="is-fullwidth is-hoverable is-striped is-size-6">
+                    <TableHead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Name</th>
+                            <th>Password</th>
+                            <th>Privilege</th>
+                            <th>Group</th>
+                            <th>Card</th>
+                            <th>&nbsp;</th>
+                        </tr>
+                    </TableHead>
+                    <TableBody>
+                        <Virtualize Items="Users" Context="user" SpacerElement="tr">
+                            <tr>
+                                <TableData>@user.UserId</TableData>
+                                <TableData>@user.Name</TableData>
+                                <TableData>@user.Password</TableData>
+                                <TableData>@user.Privilege.ToString()</TableData>
+                                <TableData>@user.Group</TableData>
+                                <TableData>@user.Card</TableData>
+                                <td>
+                                    <button type="button" class="button is-small is-danger is-fullwidth my-1" disabled="@DisableControls" @onclick='() => DeleteUser(user)'>
+                                        <span class="material-icons icon">delete_forever</span>
+                                        <span>Delete</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </Virtualize>
+                    </TableBody>
+                </Table>
+            </div>
         </div>
-    </div>
+    </EditForm>
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Attendance Management">
-    <div class="columns is-variable is-1">
-        <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
-        </div>
+    <EditForm Model="AttendanceDetailsPlaceholder">
+        <div class="columns is-variable is-1">
+            <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+            </div>
 
-        <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
-            <EditForm Model="AttendanceDetailsPlaceholder">
-
-            </EditForm>
+            <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+            </div>
         </div>
-    </div>
+    </EditForm>
 </Panel>

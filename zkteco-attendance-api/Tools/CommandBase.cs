@@ -13,7 +13,7 @@ namespace zkteco_attendance_api
 		protected readonly IConnection Connection;
 		protected readonly int MaxBufferSize;
 
-		internal CommandBase(IConnection connection, int maxBufferSize) 
+		internal CommandBase(IConnection connection, int maxBufferSize)
 		{
 			Connection = connection;
 			MaxBufferSize = maxBufferSize;

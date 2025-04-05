@@ -9,6 +9,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 {
 	private readonly PageModel InputModel = new();
 	private ZkTeco? ZkTecoClock;
+	private readonly ZkTecoUser NewUser = new();
 
 	private readonly PlaceholderModel DeviceDetailsPlaceholder = new();
 	private readonly PlaceholderModel UserDetailsPlaceholder = new();
@@ -27,6 +28,9 @@ public sealed partial class Home : ComponentBase, IDisposable
 		string.IsNullOrWhiteSpace(InputModel.Password);
 
 	private bool DisableControls => ZkTecoClock == null || ZkTecoClock.IsConnected == false;
+
+	private bool DisableCreateUser => string.IsNullOrWhiteSpace(NewUser.Name) ||
+		string.IsNullOrWhiteSpace(NewUser.UserId);
 
 	private readonly TooltipOptions TooltipTop = TooltipOptions.Top | TooltipOptions.HasArrow | TooltipOptions.Multiline;
 
@@ -70,7 +74,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
-			DeviceDetailsMessage = "Not connected to ZKTeco clock.";
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 			return;
 		}
 
@@ -191,6 +195,51 @@ public sealed partial class Home : ComponentBase, IDisposable
 		}
 
 		ZkTecoClock.ClearDisplayText();
+	}
+
+	private void GetUsers()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		Users.Clear();
+
+		var users = ZkTecoClock.GetUsers();
+
+		if (users != null)
+			Users.AddRange(users);
+	}
+
+	private void CreateUser()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		var existing = ZkTecoClock.GetUsers();
+		var index = existing != null && existing.Count > 0 ? existing.Max(x => x.Index) + 1 : 1;
+
+		NewUser.Index = index;
+
+		if (ZkTecoClock.CreateUser(NewUser))
+			Users.Add(NewUser);
+	}
+
+	private void DeleteUser(ZkTecoUser user)
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		if (ZkTecoClock.DeleteUser(user))
+			Users.Remove(user);
 	}
 
 	private void Reset()
