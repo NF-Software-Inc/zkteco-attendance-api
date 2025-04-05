@@ -23,6 +23,7 @@
 
         <!-- App Identifier -->
         <ApplicationId>com.nfsoftwareinc.zktecoconfigurator</ApplicationId>
+		<ApplicationIdGuid>075C15C6-985B-4F8F-BEE9-FA5FC56AE759</ApplicationIdGuid>
 
         <!-- Versions -->
         <ApplicationDisplayVersion>1.1.1</ApplicationDisplayVersion>
@@ -35,8 +36,14 @@
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
         <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
-		<DefaultLanguage>en</DefaultLanguage>
+		<DefaultLanguage>en-us</DefaultLanguage>
     </PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
+		<AndroidPackageFormat>aab</AndroidPackageFormat>
+		<AndroidUseAapt2>True</AndroidUseAapt2>
+		<AndroidCreatePackagePerAbi>False</AndroidCreatePackagePerAbi>
+	</PropertyGroup>
 
     <ItemGroup>
 		<!-- App Icon -->
