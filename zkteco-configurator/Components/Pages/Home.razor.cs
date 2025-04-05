@@ -9,24 +9,30 @@ public sealed partial class Home : ComponentBase, IDisposable
 {
 	private readonly PageModel InputModel = new();
 	private ZkTeco? ZkTecoClock;
+
+	private PlaceholderModel DeviceDetailsPlaceholder = new();
+	private PlaceholderModel UserDetailsPlaceholder = new();
+	private PlaceholderModel AttendanceDetailsPlaceholder = new();
+
 	private string? ConnectionStatusMessage;
+	private string? DeviceDetailsMessage;
+
+	private RecordCounts? DeviceStorageCounts;
+	private readonly List<ZkTecoUser> Users = [];
+	private readonly List<ZkTecoAttendance> Attendances = [];
 
 	private bool DisableSubmit => string.IsNullOrWhiteSpace(InputModel.IpAddress) ||
 		InputModel.Port < 1 ||
 		InputModel.Port > 65_535 ||
 		string.IsNullOrWhiteSpace(InputModel.Password);
 
+	private bool DisableControls => ZkTecoClock == null || ZkTecoClock.IsConnected == false;
+
 	private readonly TooltipOptions TooltipTop = TooltipOptions.Top | TooltipOptions.HasArrow | TooltipOptions.Multiline;
-	private readonly TooltipOptions TooltipRight = TooltipOptions.Right | TooltipOptions.HasArrow | TooltipOptions.Multiline;
 
 	private void OnConnect()
 	{
-		if (ZkTecoClock != null && ZkTecoClock.IsConnected)
-		{
-			ZkTecoClock.Disconnect();
-			ZkTecoClock = null;
-		}
-
+		Reset();
 		ZkTecoClock = new ZkTeco(InputModel.IpAddress!, InputModel.Port, InputModel.UseTcp);
 
 		if (int.TryParse(InputModel.Password, out int password) == false)
@@ -43,6 +49,51 @@ public sealed partial class Home : ComponentBase, IDisposable
 		{
 			ConnectionStatusMessage = "Connected!";
 		}
+	}
+
+	private void GetDeviceDetails()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			DeviceDetailsMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		DeviceDetailsMessage = string.Empty;
+
+		DeviceDetailsMessage += "Time: " + ZkTecoClock.GetTime()?.ToString("G") + Environment.NewLine;
+		DeviceDetailsMessage += "Name: " + ZkTecoClock.GetDeviceName() + Environment.NewLine;
+		DeviceDetailsMessage += "IP: " + ZkTecoClock.GetDeviceIp() + Environment.NewLine;
+		DeviceDetailsMessage += "Subnet: " + ZkTecoClock.GetDeviceSubnetMask() + Environment.NewLine;
+		DeviceDetailsMessage += "Gateway IP: " + ZkTecoClock.GetDeviceGatewayIp() + Environment.NewLine;
+		DeviceDetailsMessage += "MAC: " + ZkTecoClock.GetDeviceMac() + Environment.NewLine;
+		DeviceDetailsMessage += "Serial: " + ZkTecoClock.GetDeviceSerial() + Environment.NewLine;
+
+		DeviceDetailsMessage += "Format: " + ZkTecoClock.GetDeviceExtendedFormat() + Environment.NewLine;
+		DeviceDetailsMessage += "User Format: " + ZkTecoClock.GetDeviceUserExtendedFormat() + Environment.NewLine;
+		DeviceDetailsMessage += "Face Version: " + ZkTecoClock.GetDeviceFaceVersion() + Environment.NewLine;
+		DeviceDetailsMessage += "Fingerprint Version: " + ZkTecoClock.GetDeviceFingerprintVersion() + Environment.NewLine;
+		DeviceDetailsMessage += "Firmware Version: " + ZkTecoClock.GetFirmwareVersion() + Environment.NewLine;
+		DeviceDetailsMessage += "Old Firmware Version: " + ZkTecoClock.GetDeviceOldFirmwareVersion() + Environment.NewLine;
+		DeviceDetailsMessage += "Platform: " + ZkTecoClock.GetDevicePlatform() + Environment.NewLine;
+
+		DeviceStorageCounts = ZkTecoClock.GetStorageDetails();
+	}
+
+	private void Reset()
+	{
+		if (ZkTecoClock != null && ZkTecoClock.IsConnected)
+		{
+			ZkTecoClock.Disconnect();
+			ZkTecoClock = null;
+		}
+
+		ConnectionStatusMessage = null;
+		DeviceDetailsMessage = null;
+		DeviceStorageCounts = null;
+
+		Users.Clear();
+		Attendances.Clear();
 	}
 
 	private class PageModel
@@ -72,13 +123,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 		public string? Password { get; set; } = "0";
 	}
 
+	private class PlaceholderModel { }
+
 	/// <inheritdoc />
 	public void Dispose()
 	{
-		if (ZkTecoClock != null && ZkTecoClock.IsConnected)
-		{
-			ZkTecoClock.Disconnect();
-			ZkTecoClock = null;
-		}
+		Reset();
 	}
 }

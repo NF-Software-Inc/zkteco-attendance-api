@@ -68,3 +68,73 @@
         <SubmitButton class="is-fullwidth mb-4" disabled="@DisableSubmit" DisplayText="Connect" Icon="time_auto" />
     </EditForm>
 </Panel>
+
+<Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
+    <div class="columns is-variable is-1">
+        <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+            <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetDeviceDetails'>
+                <span class="material-icons icon">play_arrow</span>
+                <span>Get Device Details</span>
+            </button>
+        </div>
+
+        <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+            <EditForm Model="DeviceDetailsPlaceholder">
+                @if (DeviceStorageCounts != null)
+                {
+                    <Level class="has-text-centered">
+                        <LevelItem Heading="User Count" Title='@DeviceStorageCounts.Users.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Attendance Count" Title='@DeviceStorageCounts.Records.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Fingerprint Count" Title='@DeviceStorageCounts.Fingers.ToString("N0")' style="width: 33.33333%" />
+                    </Level>
+
+                    <Level class="has-text-centered">
+                        <LevelItem Heading="Remaining Users" Title='@DeviceStorageCounts.AvailableUsers.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Remaining Attendance Records" Title='@DeviceStorageCounts.AvailableRecords.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Remaining Fingerprints" Title='@DeviceStorageCounts.AvailableFingers.ToString("N0")' style="width: 33.33333%" />
+                    </Level>
+
+                    <Level class="has-text-centered">
+                        <LevelItem Heading="Max Users" Title='@DeviceStorageCounts.MaximumUsers.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Max Attendance Records" Title='@DeviceStorageCounts.MaximumRecords.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Max Fingerprints" Title='@DeviceStorageCounts.MaximumFingers.ToString("N0")' style="width: 33.33333%" />
+                    </Level>
+                }
+
+                <div class="field">
+                    <Label TValue="object" DisplayText="Device Details" />
+                    <div class="control has-icons-left">
+                        <InputTextArea class="input textarea is-info is-fullwidth" @bind-Value="DeviceDetailsMessage" rows="12" readonly />
+                        <span class="material-icons icon is-left">description</span>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</Panel>
+
+<Panel class="pt-2 px-2 mb-0 is-size-7" Title="User Management">
+    <div class="columns is-variable is-1">
+        <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+        </div>
+
+        <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+            <EditForm Model="UserDetailsPlaceholder">
+
+            </EditForm>
+        </div>
+    </div>
+</Panel>
+
+<Panel class="pt-2 px-2 mb-0 is-size-7" Title="Attendance Management">
+    <div class="columns is-variable is-1">
+        <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+        </div>
+
+        <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+            <EditForm Model="AttendanceDetailsPlaceholder">
+
+            </EditForm>
+        </div>
+    </div>
+</Panel>
