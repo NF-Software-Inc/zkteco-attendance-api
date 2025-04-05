@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: publish-windows
+on:
+  workflow_call:
+    inputs:
+      architecture:
+        required: true
+        type: string
+      build:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  GitHubUsername: NF-Software-Inc
+  PublishVersion: ${{ inputs.version }}.${{ inputs.build }}
+  TempDirectory: ${{ github.workspace }}\Temp-Windows-${{ inputs.architecture }}
+
+jobs:
+  publish:
+    name: Publish ZKTeco Configurator Windows ${{ inputs.architecture }}
+    runs-on: windows-2022
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+    - uses: actions/checkout@v4.2.2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4.3.1
+      with:
+        dotnet-version: 9.0.x
+    - name: Install MAUI
+      run: dotnet workload install maui-windows
+      working-directory: .\zkteco-configurator
+    - run: New-Item -Type Directory -Path ${{ env.TempDirectory }}
+    - name: Set Environment Variables
+      run: |
+        if ("${{ inputs.architecture }}" -eq "arm64") {
+          echo "BUILD_ARGUMENTS=-p:AssemblyVersion=${{ env.PublishVersion }} -p:Version=${{ inputs.version }} -p:FileVersion=${{ env.PublishVersion }} -p:ApplicationVersion=${{ inputs.build }} -p:ApplicationDisplayVersion=${{ inputs.version }} -p:UseMonoRuntime=false -p:Platform=Arm64" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "PUBLISH_DIRECTORY=${{ github.workspace }}\zkteco-configurator\bin\Arm64\Release\net9.0-windows10.0.19041.0\win-arm64\AppPackages\zkteco-configurator_${{ inputs.version }}.0_Test" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+        } else {
+          echo "BUILD_ARGUMENTS=-p:AssemblyVersion=${{ env.PublishVersion }} -p:Version=${{ inputs.version }} -p:FileVersion=${{ env.PublishVersion }} -p:ApplicationVersion=${{ inputs.build }} -p:ApplicationDisplayVersion=${{ inputs.version }} -p:UseMonoRuntime=false" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "PUBLISH_DIRECTORY=${{ github.workspace }}\zkteco-configurator\bin\Release\net9.0-windows10.0.19041.0\win-x64\AppPackages\zkteco-configurator_${{ inputs.version }}.0_Test" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+        }
+    - name: Save Certificates
+      run: |
+        New-Item -Type File -Path ${{ env.TempDirectory }}\public.cer -Value "${{ vars.GLOBALSIGN_PUBLIC }}"
+        New-Item -Type File -Path ${{ env.TempDirectory }}\intermediate-1.cer -Value "${{ vars.GLOBALSIGN_INTERMEDIATE_1 }}"
+        New-Item -Type File -Path ${{ env.TempDirectory }}\intermediate-2.cer -Value "${{ vars.GLOBALSIGN_INTERMEDIATE_2 }}"
+    - name: Update Manifest
+      run: |
+        $certificate = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 '${{ env.TempDirectory }}\public.cer'
+        $xml = [Xml] (Get-Content '${{ github.workspace }}\zkteco-configurator\Platforms\Windows\Package.appxmanifest')
+        $xml.Package.Identity.Publisher = $certificate.Subject
+        $xml.Package.Identity.Version = '${{ inputs.version }}.0'
+        $xml.Package.Properties.PublisherDisplayName = $certificate.Subject -replace "(CN=)(.*?),.*", '$2'
+        $xml.Save('${{ github.workspace }}\zkteco-configurator\Platforms\Windows\Package.appxmanifest')
+    - name: Publish
+      run: dotnet publish -c Release -r win-${{ inputs.architecture }} -f net9.0-windows10.0.19041.0 ${{ env.BUILD_ARGUMENTS }}
+      working-directory: .\zkteco-configurator
+    - name: Sign Package
+      run: |
+        dotnet tool install --global --version 6.0.1 AzureSignTool
+        AzureSignTool.exe sign -fd sha256 -td sha256 -tr http://timestamp.sectigo.com -kvu ${{ vars.AZURE_KEY_VAULT }} -kvt ${{ secrets.AZURE_TENANT_ID }} -kvi ${{ secrets.AZURE_CLIENT_ID }} -kvs "${{ secrets.AZURE_CLIENT_SECRET }}" -kvc ${{ vars.AZURE_CODE_SIGN_CERTIFICATE }} -ac ${{ env.TempDirectory }}\intermediate-1.cer -ac ${{ env.TempDirectory }}\intermediate-2.cer ${{ env.PUBLISH_DIRECTORY }}\zkteco-configurator_${{ inputs.version }}.0_${{ inputs.architecture }}.msix
+        Copy-Item '${{ env.TempDirectory }}\public.cer' -Destination '${{ env.PUBLISH_DIRECTORY }}\zkteco-configurator_${{ inputs.version }}.0_${{ inputs.architecture }}.cer'
+    - name: Add to Release
+      run: gh release upload ${{ inputs.version }} ${{ env.PUBLISH_DIRECTORY }}\zkteco-configurator_${{ inputs.version }}.0_${{ inputs.architecture }}.msix
+      env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/upload-artifact@v4.6.2
+      with:
+        name: zkteco-configurator-windows-${{ inputs.architecture }}
+        if-no-files-found: error
+        retention-days: 7
+        path: ${{ env.PUBLISH_DIRECTORY }}\*

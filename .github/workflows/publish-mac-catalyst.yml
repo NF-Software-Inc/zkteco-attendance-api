@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: publish-mac-catalyst
+on:
+  workflow_call:
+    inputs:
+      build:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  GitHubUsername: NF-Software-Inc
+  PublishVersion: ${{ inputs.version }}.${{ inputs.build }}
+  TempDirectory: ${{ github.workspace }}/Temp-Mac-Catalyst
+
+jobs:
+  publish:
+    name: Publish ZKTeco Configurator Mac Catalyst
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4.2.2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4.3.1
+      with:
+        dotnet-version: 9.0.x
+    - name: Install MAUI
+      run: dotnet workload install ios maui-android maui-maccatalyst
+      working-directory: ./zkteco-configurator
+    - run: mkdir ${{ env.TempDirectory }}
+    - uses: apple-actions/import-codesign-certs@v3
+      with: 
+        p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE }}
+        p12-password: ${{ secrets.APPLE_DEVELOPER_PASSWORD }}
+    - name: Download Provisioning Profile
+      uses: apple-actions/download-provisioning-profiles@v3
+      with: 
+        bundle-id: com.nfsoftwareinc.zktecoconfigurator
+        profile-type: 'MAC_APP_STORE'
+        issuer-id: ${{ secrets.APPLE_ISSUER_ID }}
+        api-key-id: ${{ secrets.APPLE_API_KEY_ID }}
+        api-private-key: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+    - name: Publish
+      run: |
+        mv '/Users/runner/Library/MobileDevice/Provisioning Profiles/${{ secrets.APPLE_MACOS_PROVISIONING_ID }}.mobileprovision' '/Users/runner/Library/MobileDevice/Provisioning Profiles/${{ secrets.APPLE_MACOS_PROVISIONING_ID }}.provisionprofile'
+        sudo xcode-select -s /Applications/Xcode_16.2.app
+        sudo xcode-select -switch /Applications/Xcode_16.2.app/Contents/Developer
+        dotnet publish -c Release -f net9.0-maccatalyst -p:MtouchLink=SdkOnly -p:CreatePackage=true -p:UseHardenedRuntime=true -p:EnableCodeSigning=true -p:EnablePackageSigning=true -p:CodesignKey="${{ secrets.APPLE_DISTRIBUTION_NAME }}" -p:CodesignProvision="ZKTeco Configurator Mac Store" -p:CodesignEntitlements="Platforms/MacCatalyst/Entitlements.plist" -p:PackageSigningKey="${{ secrets.APPLE_DEVELOPER_NAME }}" -p:AssemblyVersion=${{ env.PublishVersion }} -p:Version=${{ inputs.version }} -p:FileVersion=${{ env.PublishVersion }} -p:ApplicationVersion=${{ inputs.build }} -p:ApplicationDisplayVersion=${{ inputs.version }}
+      working-directory: ./zkteco-configurator
+    - name: Add to Release
+      run: gh release upload ${{ inputs.version }} ${{ github.workspace }}/zkteco-configurator/bin/Release/net9.0-maccatalyst/publish/zkteco-configurator-${{ inputs.version }}.pkg
+      env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/upload-artifact@v4.6.2
+      with:
+        name: zkteco-configurator-maccatalyst
+        if-no-files-found: error
+        retention-days: 7
+        path: ${{ github.workspace }}/zkteco-configurator/bin/Release/net9.0-maccatalyst/publish/*.pkg

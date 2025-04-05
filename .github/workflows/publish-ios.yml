@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: publish-ios
+on:
+  workflow_call:
+    inputs:
+      build:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  GitHubUsername: NF-Software-Inc
+  PublishVersion: ${{ inputs.version }}.${{ inputs.build }}
+  TempDirectory: ${{ github.workspace }}/Temp-iOS
+
+jobs:
+  publish:
+    name: Publish ZKTeco Configurator iOS
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4.2.2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4.3.1
+      with:
+        dotnet-version: 9.0.x
+    - name: Install MAUI
+      run: dotnet workload install maccatalyst maui-android maui-ios
+      working-directory: ./zkteco-configurator
+    - run: mkdir ${{ env.TempDirectory }}
+    - uses: apple-actions/import-codesign-certs@v3
+      with: 
+        p12-file-base64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE }}
+        p12-password: ${{ secrets.APPLE_DISTRIBUTION_PASSWORD }}
+    - name: Download Provisioning Profile
+      id: provisioning
+      uses: apple-actions/download-provisioning-profiles@v3
+      with: 
+        bundle-id: com.nfsoftwareinc.zktecoconfigurator
+        profile-type: 'IOS_APP_STORE'
+        issuer-id: ${{ secrets.APPLE_ISSUER_ID }}
+        api-key-id: ${{ secrets.APPLE_API_KEY_ID }}
+        api-private-key: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+    - name: Publish
+      run: |
+        sudo xcode-select -s /Applications/Xcode_16.2.app
+        sudo xcode-select -switch /Applications/Xcode_16.2.app/Contents/Developer
+        dotnet publish -c Release -f net9.0-ios -p:ArchiveOnBuild=true -p:RuntimeIdentifier=ios-arm64 -p:EnableAssemblyILStripping=false -p:CodesignKey="${{ secrets.APPLE_DISTRIBUTION_NAME }}" -p:CodesignProvision="ZKTeco Configurator App Store" -p:AssemblyVersion=${{ env.PublishVersion }} -p:Version=${{ inputs.version }} -p:FileVersion=${{ env.PublishVersion }} -p:ApplicationVersion=${{ inputs.build }} -p:ApplicationDisplayVersion=${{ inputs.version }}
+      working-directory: ./zkteco-configurator
+    - name: Add to Release
+      run: gh release upload ${{ inputs.version }} ${{ github.workspace }}/zkteco-configurator/bin/Release/net9.0-ios/ios-arm64/publish/zkteco-configurator.ipa
+      env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/upload-artifact@v4.6.2
+      with:
+        name: zkteco-configurator-ios
+        if-no-files-found: error
+        retention-days: 7
+        path: ${{ github.workspace }}/zkteco-configurator/bin/Release/net9.0-ios/ios-arm64/publish/*.ipa

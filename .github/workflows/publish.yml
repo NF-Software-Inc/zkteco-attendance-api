@@ -49,6 +49,26 @@ jobs:
             echo "Build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
             echo "Deploy=${{ github.event_name == 'release' }}" >> "$GITHUB_OUTPUT"
           fi
+  android:
+    needs: [ prepare ]
+    if: ${{ contains(needs.prepare.outputs.Targets, 'All') || contains(needs.prepare.outputs.Targets, 'MAUI') || contains(needs.prepare.outputs.Targets, 'Android') }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-android.yml
+    with:
+      build: ${{ needs.prepare.outputs.Build }}
+      version: ${{ needs.prepare.outputs.Version }}
+    secrets: inherit
+  ios:
+    needs: [ prepare ]
+    if: ${{ contains(needs.prepare.outputs.Targets, 'DISABLED') }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-ios.yml
+    with:
+      build: ${{ needs.prepare.outputs.Build }}
+      version: ${{ needs.prepare.outputs.Version }}
+    secrets: inherit
   nuget:
     needs: [ prepare ]
     if: ${{ contains(needs.prepare.outputs.Targets, 'All') || contains(needs.prepare.outputs.Targets, 'NuGet') }}
@@ -59,4 +79,36 @@ jobs:
       build: ${{ needs.prepare.outputs.Build }}
       version: ${{ needs.prepare.outputs.Version }}
       deploy: ${{ needs.prepare.outputs.Deploy == 'true' }}
+    secrets: inherit
+  mac-catalyst:
+    needs: [ prepare ]
+    if: ${{ contains(needs.prepare.outputs.Targets, 'DISABLED') }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-mac-catalyst.yml
+    with:
+      build: ${{ needs.prepare.outputs.Build }}
+      version: ${{ needs.prepare.outputs.Version }}
+    secrets: inherit
+  windows-arm64:
+    needs: [ prepare ]
+    if: ${{ contains(needs.prepare.outputs.Targets, 'All') || contains(needs.prepare.outputs.Targets, 'MAUI') || contains(needs.prepare.outputs.Targets, 'Windows') }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-windows.yml
+    with:
+      architecture: arm64
+      build: ${{ needs.prepare.outputs.Build }}
+      version: ${{ needs.prepare.outputs.Version }}
+    secrets: inherit
+  windows-x64:
+    needs: [ prepare ]
+    if: ${{ contains(needs.prepare.outputs.Targets, 'All') || contains(needs.prepare.outputs.Targets, 'MAUI') || contains(needs.prepare.outputs.Targets, 'Windows') }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-windows.yml
+    with:
+      architecture: x64
+      build: ${{ needs.prepare.outputs.Build }}
+      version: ${{ needs.prepare.outputs.Version }}
     secrets: inherit
