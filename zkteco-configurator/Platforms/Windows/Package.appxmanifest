@@ -8,6 +8,8 @@
 
   <Identity Name="maui-package-name-placeholder" Publisher="CN=NF Software Inc" Version="1.1.1.0" />
 
+  <mp:PhoneIdentity PhoneProductId="B1ED83C0-8857-4683-BBBC-97ED3ED99855" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+
   <Properties>
     <DisplayName>$placeholder$</DisplayName>
     <PublisherDisplayName>NF Software Inc.</PublisherDisplayName>
