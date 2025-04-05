@@ -36,11 +36,13 @@ jobs:
         dotnet-version: 8.0.x
     - name: Install Dependencies
       run: dotnet restore
+      working-directory: ./zkteco-attendance-api
     - run: mkdir ${{ env.TempDirectory }}
     - name: Build & Pack
       run: |
         dotnet build --configuration Release
         dotnet pack --configuration Release --output ${{ env.TempDirectory }} /p:AssemblyVersion=${{ env.PublishVersion }} /p:Version=${{ inputs.version }} /p:FileVersion=${{ env.PublishVersion }}
+      working-directory: ./zkteco-attendance-api
     - uses: actions/upload-artifact@v4.6.2
       with:
         name: NuGet-Unsigned
