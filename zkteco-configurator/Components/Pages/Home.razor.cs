@@ -13,7 +13,6 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private readonly PlaceholderModel DeviceDetailsPlaceholder = new();
 	private readonly PlaceholderModel UserDetailsPlaceholder = new();
-	private readonly PlaceholderModel AttendanceDetailsPlaceholder = new();
 
 	private string? ConnectionStatusMessage;
 	private string? DeviceDetailsMessage;
@@ -240,6 +239,33 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		if (ZkTecoClock.DeleteUser(user))
 			Users.Remove(user);
+	}
+
+	private void GetAttendanceRecords()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		Attendances.Clear();
+
+		var records = ZkTecoClock.GetAttendance();
+
+		if (records != null)
+			Attendances.AddRange(records);
+	}
+
+	private void ClearAttendanceRecords()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		ZkTecoClock.ClearAttendance();
 	}
 
 	private void Reset()

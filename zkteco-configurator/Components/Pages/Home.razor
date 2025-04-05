@@ -260,7 +260,7 @@
                 <Table class="is-fullwidth is-hoverable is-striped is-size-6">
                     <TableHead>
                         <tr>
-                            <th>Id</th>
+                            <th>User Id</th>
                             <th>Name</th>
                             <th>Password</th>
                             <th>Privilege</th>
@@ -294,13 +294,40 @@
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Attendance Management">
-    <EditForm Model="AttendanceDetailsPlaceholder">
-        <div class="columns is-variable is-1">
-            <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
-            </div>
+    <div class="columns is-variable is-1">
+        <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+            <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetAttendanceRecords'>
+                <span class="material-icons icon">event_note</span>
+                <span>Get Attendance</span>
+            </button>
 
-            <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
-            </div>
+            <button type="button" class="button is-danger is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearAttendanceRecords'>
+                <span class="material-icons icon">delete_forever</span>
+                <span>Delete Attendance</span>
+            </button>
         </div>
-    </EditForm>
+
+        <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+            <Table class="is-fullwidth is-hoverable is-striped is-size-6">
+                <TableHead>
+                    <tr>
+                        <th>User Id</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Punch</th>
+                    </tr>
+                </TableHead>
+                <TableBody>
+                    <Virtualize Items="Attendances" Context="record" SpacerElement="tr">
+                        <tr>
+                            <TableData>@record.UserId</TableData>
+                            <TableData>@record.Timestamp.ToString("G")</TableData>
+                            <TableData>@record.Status.ToString()</TableData>
+                            <TableData>@record.Punch.ToString()</TableData>
+                        </tr>
+                    </Virtualize>
+                </TableBody>
+            </Table>
+        </div>
+    </div>
 </Panel>
