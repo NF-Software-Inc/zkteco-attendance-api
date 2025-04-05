@@ -1,4 +1,70 @@
 ﻿@page "/"
 @inherits ComponentBase
+@implements IDisposable
 
 <TitleBlock Title="ZKTeco Configurator" />
+
+<Panel class="pt-2 px-2 mb-0 is-size-7" Title="Clock Settings">
+    <EditForm Model="InputModel" OnValidSubmit="OnConnect">
+        <DataAnnotationsValidator />
+
+        <div class="columns is-variable is-1">
+            <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+                <div class="columns is-multiline is-variable is-1">
+                    <div class="column is-12-desktop is-12-widescreen is-6-fullhd">
+                        <div class="field">
+                            <Label For="() => InputModel.IpAddress" TooltipMode="TooltipTop" />
+                            <div class="control has-icons-left">
+                                <InputText class="input" @bind-Value="InputModel.IpAddress" />
+                                <span class="material-icons icon is-left">title</span>
+                                <div class="help is-danger">
+                                    <ValidationMessage For="() => InputModel.IpAddress" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <Label For="() => InputModel.Port" TooltipMode="TooltipTop" />
+                            <div class="control has-icons-left">
+                                <InputNumber class="input" @bind-Value="InputModel.Port" />
+                                <span class="material-icons icon is-left">numbers</span>
+                                <div class="help is-danger">
+                                    <ValidationMessage For="() => InputModel.Port" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column is-12-desktop is-12-widescreen is-6-fullhd">
+                        <div class="field">
+                            <Label For="() => InputModel.Password" TooltipMode="TooltipTop" />
+                            <div class="control has-icons-left">
+                                <InputPassword class="input" @bind-Value="InputModel.Password" />
+                                <div class="help is-danger">
+                                    <ValidationMessage For="() => InputModel.Password" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <Label TValue="object" DisplayText="Options" data-tooltip="Select the settings for the clock connection." TooltipMode="TooltipTop" />
+                            <InputSwitch class='input' div-class="p-3" @bind-Value="InputModel.UseTcp" TooltipMode="TooltipTop" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+                <div class="field">
+                    <Label TValue="object" DisplayText="Connection Status" />
+                    <div class="control has-icons-left">
+                        <InputTextArea class="input textarea is-info" @bind-Value="ConnectionStatusMessage" rows="12" readonly />
+                        <span class="material-icons icon is-left">description</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <SubmitButton class="is-fullwidth mb-4" disabled="@DisableSubmit" DisplayText="Connect" Icon="time_auto" />
+    </EditForm>
+</Panel>
