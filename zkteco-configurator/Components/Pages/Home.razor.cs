@@ -10,9 +10,9 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private readonly PageModel InputModel = new();
 	private ZkTeco? ZkTecoClock;
 
-	private PlaceholderModel DeviceDetailsPlaceholder = new();
-	private PlaceholderModel UserDetailsPlaceholder = new();
-	private PlaceholderModel AttendanceDetailsPlaceholder = new();
+	private readonly PlaceholderModel DeviceDetailsPlaceholder = new();
+	private readonly PlaceholderModel UserDetailsPlaceholder = new();
+	private readonly PlaceholderModel AttendanceDetailsPlaceholder = new();
 
 	private string? ConnectionStatusMessage;
 	private string? DeviceDetailsMessage;
@@ -29,6 +29,21 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private bool DisableControls => ZkTecoClock == null || ZkTecoClock.IsConnected == false;
 
 	private readonly TooltipOptions TooltipTop = TooltipOptions.Top | TooltipOptions.HasArrow | TooltipOptions.Multiline;
+
+	private readonly InputDateTimeOptions InputDateTimeMode =
+		InputDateTimeOptions.ClickPopout |
+		InputDateTimeOptions.PopoutTop |
+		InputDateTimeOptions.PopoutLeft |
+		InputDateTimeOptions.ShowNowButton |
+		InputDateTimeOptions.ShowResetButton |
+		InputDateTimeOptions.UpdateOnPopoutChange |
+		InputDateTimeOptions.UseAutomaticStatusColors |
+		InputDateTimeOptions.ShowDate |
+		InputDateTimeOptions.ShowHours |
+		InputDateTimeOptions.ShowMinutes |
+		InputDateTimeOptions.ShowSeconds |
+		InputDateTimeOptions.CloseOnDateClicked |
+		InputDateTimeOptions.ValidateTextInput;
 
 	private void OnConnect()
 	{
@@ -80,6 +95,104 @@ public sealed partial class Home : ComponentBase, IDisposable
 		DeviceStorageCounts = ZkTecoClock.GetStorageDetails();
 	}
 
+	private void EnableDevice()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		ZkTecoClock.EnableDevice();
+	}
+
+	private void DisableDevice()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		ZkTecoClock.DisableDevice();
+	}
+
+	private void RestartDevice()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		if (ZkTecoClock.RestartDevice())
+			ZkTecoClock = null;
+	}
+
+	private void ShutdownDevice()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		if (ZkTecoClock.ShutdownDevice())
+			ZkTecoClock = null;
+	}
+
+	private void ClearAndRefresh()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		ZkTecoClock.ClearBuffer();
+		ZkTecoClock.ClearError();
+		ZkTecoClock.RefreshData();
+	}
+
+	private void SetClockTime()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		if (InputModel.ClockTime != null)
+			ZkTecoClock.SetTime(InputModel.ClockTime.Value);
+		else
+			ZkTecoClock.SetTime();
+	}
+
+	private void SetDisplayText()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		if (string.IsNullOrWhiteSpace(InputModel.DisplayText))
+			ZkTecoClock.SetDisplayText("Welcome");
+		else
+			ZkTecoClock.SetDisplayText(InputModel.DisplayText);
+	}
+
+	private void ClearDisplayText()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		ZkTecoClock.ClearDisplayText();
+	}
+
 	private void Reset()
 	{
 		if (ZkTecoClock != null && ZkTecoClock.IsConnected)
@@ -121,6 +234,18 @@ public sealed partial class Home : ComponentBase, IDisposable
 		/// </summary>
 		[Display(Name = "Password", Description = "The password to connect to the ZKTeco device.")]
 		public string? Password { get; set; } = "0";
+
+		/// <summary>
+		/// The time to set on the ZKTeco device.
+		/// </summary>
+		[Display(Name = "Clock Time", Description = "The time to set on the ZKTeco device.")]
+		public DateTime? ClockTime { get; set; } = DateTime.Now;
+
+		/// <summary>
+		/// The text to display on the ZKTeco device.
+		/// </summary>
+		[Display(Name = "Display Text", Description = "The text to display on the ZKTeco device.")]
+		public string? DisplayText { get; set; }
 	}
 
 	private class PlaceholderModel { }

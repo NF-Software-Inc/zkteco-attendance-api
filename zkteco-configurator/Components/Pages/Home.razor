@@ -70,16 +70,81 @@
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
-    <div class="columns is-variable is-1">
-        <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
-            <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetDeviceDetails'>
-                <span class="material-icons icon">play_arrow</span>
-                <span>Get Device Details</span>
-            </button>
-        </div>
+    <EditForm Model="DeviceDetailsPlaceholder">
+        <div class="columns is-variable is-1">
+            <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetDeviceDetails'>
+                    <span class="material-icons icon">play_arrow</span>
+                    <span>Get Device Details</span>
+                </button>
 
-        <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
-            <EditForm Model="DeviceDetailsPlaceholder">
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='EnableDevice'>
+                    <span class="material-icons icon">enable</span>
+                    <span>Enable Device</span>
+                </button>
+
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='DisableDevice'>
+                    <span class="material-icons icon">disabled_by_default</span>
+                    <span>Disable Device</span>
+                </button>
+
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='RestartDevice'>
+                    <span class="material-icons icon">restart_alt</span>
+                    <span>Restart Device</span>
+                </button>
+
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='ShutdownDevice'>
+                    <span class="material-icons icon">settings_power</span>
+                    <span>Shutdown Device</span>
+                </button>
+
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearAndRefresh'>
+                    <span class="material-icons icon">reset_wrench</span>
+                    <span>Clear Errors and Refresh</span>
+                </button>
+
+                <hr class="my-4" />
+
+                <div class="field">
+                    <Label For="() => InputModel.ClockTime" TooltipMode="TooltipTop" />
+                    <div class="control has-icons-left has-icons-right">
+                        <InputDateTime class='input' @bind-Value=InputModel.ClockTime Options="InputDateTimeMode" disabled="@DisableControls" />
+                        <div class="help is-danger">
+                            <ValidationMessage For="() => InputModel.ClockTime" />
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='SetClockTime'>
+                    <span class="material-icons icon">schedule</span>
+                    <span>Set Device Time</span>
+                </button>
+
+                <hr class="my-4" />
+
+                <div class="field">
+                    <Label For="() => InputModel.DisplayText" TooltipMode="TooltipTop" />
+                    <div class="control has-icons-left">
+                        <InputText class="input" @bind-Value="InputModel.DisplayText" disabled="@DisableControls" />
+                        <span class="material-icons icon is-left">title</span>
+                        <div class="help is-danger">
+                            <ValidationMessage For="() => InputModel.DisplayText" />
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='SetDisplayText'>
+                    <span class="material-icons icon">title</span>
+                    <span>Set Device Display Text</span>
+                </button>
+
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearDisplayText'>
+                    <span class="material-icons icon">delete_forever</span>
+                    <span>Clear Device Display Text</span>
+                </button>
+            </div>
+
+            <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
                 @if (DeviceStorageCounts != null)
                 {
                     <Level class="has-text-centered">
@@ -108,9 +173,9 @@
                         <span class="material-icons icon is-left">description</span>
                     </div>
                 </div>
-            </EditForm>
+            </div>
         </div>
-    </div>
+    </EditForm>
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="User Management">
