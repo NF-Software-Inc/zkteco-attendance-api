@@ -30,7 +30,7 @@ namespace zkteco_attendance_api
 		}
 
 		/// <inheritdoc/>
-		public bool IsConnected => Client?.Client?.Connected ?? false;
+		public bool IsConnected { get; private set; }
 
 		/// <inheritdoc/>
 		public int ConnectionId { get; set; }
@@ -50,6 +50,8 @@ namespace zkteco_attendance_api
 			try
 			{
 				Client.Connect(Endpoint);
+				IsConnected = true;
+
 				return IsConnected;
 			}
 			catch
@@ -75,6 +77,7 @@ namespace zkteco_attendance_api
 			}
 			finally
 			{
+				IsConnected = false;
 				ConnectionId = 0;
 			}
 		}
@@ -86,7 +89,7 @@ namespace zkteco_attendance_api
 		public bool SendData(byte[] data)
 		{
 			if (IsConnected == false)
-				return false;
+				throw new InvalidOperationException("Connection is not established.");
 
 			try
 			{
@@ -108,7 +111,7 @@ namespace zkteco_attendance_api
 		public byte[] ReceiveData(int length)
 		{
 			if (IsConnected == false)
-				return Array.Empty<byte>();
+				throw new InvalidOperationException("Connection is not established.");
 
 			try
 			{
@@ -127,7 +130,7 @@ namespace zkteco_attendance_api
 		public byte[] ReceiveBufferedPacket(int length)
 		{
 			if (IsConnected == false)
-				return Array.Empty<byte>();
+				throw new InvalidOperationException("Connection is not established.");
 
 			try
 			{

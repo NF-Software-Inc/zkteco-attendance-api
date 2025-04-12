@@ -1,4 +1,6 @@
-﻿namespace zkteco_attendance_api
+﻿using System;
+
+namespace zkteco_attendance_api
 {
 	/// <summary>
 	/// Defines methods and properties required to communicate with a ZKTeco device.
@@ -44,30 +46,35 @@
 		/// Sends the provided data to the ZKTeco device.
 		/// </summary>
 		/// <param name="data">The data to send.</param>
+		/// <exception cref="InvalidOperationException">Thrown when the connection has not been established.</exception>
 		bool SendData(byte[] data);
 
 		/// <summary>
 		/// Receives the specified amount of data from the ZKTeco device.
 		/// </summary>
 		/// <param name="length">The amount of data to receive.</param>
+		/// <exception cref="InvalidOperationException">Thrown when the connection has not been established.</exception>
 		byte[] ReceiveData(int length);
 
 		/// <summary>
 		/// Sends the provided packet to the ZKTeco device.
 		/// </summary>
 		/// <param name="packet">The packet to send.</param>
+		/// <exception cref="InvalidOperationException">Thrown when the connection has not been established.</exception>
 		bool SendPacket(IZkPacket packet);
 
 		/// <summary>
 		/// Receives a packet with the specified length from the ZKTeco device.
 		/// </summary>
 		/// <param name="length">The amount of data to receive.</param>
+		/// <exception cref="InvalidOperationException">Thrown when the connection has not been established.</exception>
 		byte[] ReceivePacket(int length);
 
 		/// <summary>
 		/// Receives a packet with the specified length in a stream and returns it as an array.
 		/// </summary>
 		/// <param name="length">The amount of data to receive.</param>
+		/// <exception cref="InvalidOperationException">Thrown when the connection has not been established.</exception>
 		byte[] ReceiveBufferedPacket(int length);
 	}
 

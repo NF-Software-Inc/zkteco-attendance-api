@@ -506,9 +506,9 @@ namespace zkteco_attendance_api
 				var index = BitConverter.ToUInt16(item, 0);
 				var privilege = Enum.IsDefined(typeof(Privilege), (int)item[2]) ? (Privilege)(int)item[2] : Privilege.Default;
 				var password = Encoding.UTF8.GetString(item[3..11]);
-				var name = Encoding.UTF8.GetString(item[11..36]).Split('\0').First();
-				var card = BitConverter.ToInt32(item, 36);
-				var group = Encoding.UTF8.GetString(item[41..48]).Split('\0').First();
+				var name = Encoding.UTF8.GetString(item[11..35]).Split('\0').First();
+				var card = BitConverter.ToInt32(item, 35);
+				var group = Encoding.UTF8.GetString(item[40..47]).Split('\0').First();
 				var id = Encoding.UTF8.GetString(item[48..]).Split('\0').First();
 
 				users.Add(new ZkTecoUser() { Index = index, Name = name, Password = password, Privilege = privilege, Group = group, UserId = id, Card = card });
@@ -576,11 +576,11 @@ namespace zkteco_attendance_api
 			for (var i = 0; i < password.Length && i < bytes.Length; i++)
 				password[i] = bytes[i];
 
-			var name = new byte[24];
+			var nameBytes = new byte[24];
 			bytes = Encoding.UTF8.GetBytes(user.Name);
 
-			for (var i = 0; i < name.Length && i < bytes.Length; i++)
-				name[i] = bytes[i];
+			for (var i = 0; i < nameBytes.Length && i < bytes.Length; i++)
+				nameBytes[i] = bytes[i];
 
 			var group = new byte[7];
 			bytes = Encoding.UTF8.GetBytes(user.Group ?? string.Empty);
@@ -597,7 +597,7 @@ namespace zkteco_attendance_api
 			var data = BitConverter.GetBytes((ushort)user.Index)
 				.Append((byte)(int)user.Privilege)
 				.Concat(password)
-				.Concat(name)
+				.Concat(nameBytes)
 				.Concat(BitConverter.GetBytes(user.Card))
 				.Append((byte)0x00)
 				.Concat(group)
@@ -615,6 +615,15 @@ namespace zkteco_attendance_api
 
 			return packet.Command == Commands.Success && RefreshData();
 		}
+
+		/// <summary>
+		/// Updates an existing user on the ZKTeco device with the provided values.
+		/// </summary>
+		/// <param name="user"> The details of the user to update.</param>
+		/// <remarks>
+		/// Alias of CreateUser, as the ZKTeco device does not have a specific command to update users.
+		/// </remarks>
+		public bool UpdateUser(ZkTecoUser user) => CreateUser(user);
 
 		/// <summary>
 		/// Deletes all attendance records on the ZKTeco device.

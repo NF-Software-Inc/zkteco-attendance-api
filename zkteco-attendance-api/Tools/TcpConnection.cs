@@ -91,7 +91,7 @@ namespace zkteco_attendance_api
 		public bool SendData(byte[] data)
 		{
 			if (IsConnected == false)
-				return false;
+				throw new InvalidOperationException("Connection is not established.");
 
 			try
 			{
@@ -109,6 +109,9 @@ namespace zkteco_attendance_api
 		/// <inheritdoc/>
 		public byte[] ReceivePacket(int length)
 		{
+			if (IsConnected == false)
+				throw new InvalidOperationException("Connection is not established.");
+
 			try
 			{
 				var received = ReceiveData(length + 8);
@@ -128,7 +131,7 @@ namespace zkteco_attendance_api
 		public byte[] ReceiveData(int length)
 		{
 			if (IsConnected == false)
-				return Array.Empty<byte>();
+				throw new InvalidOperationException("Connection is not established.");
 
 			try
 			{
@@ -149,7 +152,7 @@ namespace zkteco_attendance_api
 		public byte[] ReceiveBufferedPacket(int length)
 		{
 			if (IsConnected == false)
-				return Array.Empty<byte>();
+				throw new InvalidOperationException("Connection is not established.");
 
 			try
 			{
