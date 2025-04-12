@@ -576,11 +576,11 @@ namespace zkteco_attendance_api
 			for (var i = 0; i < password.Length && i < bytes.Length; i++)
 				password[i] = bytes[i];
 
-			var name = new byte[24];
+			var nameBytes = new byte[24];
 			bytes = Encoding.UTF8.GetBytes(user.Name);
 
-			for (var i = 0; i < name.Length && i < bytes.Length; i++)
-				name[i] = bytes[i];
+			for (var i = 0; i < nameBytes.Length && i < bytes.Length; i++)
+				nameBytes[i] = bytes[i];
 
 			var group = new byte[7];
 			bytes = Encoding.UTF8.GetBytes(user.Group ?? string.Empty);
@@ -597,7 +597,7 @@ namespace zkteco_attendance_api
 			var data = BitConverter.GetBytes((ushort)user.Index)
 				.Append((byte)(int)user.Privilege)
 				.Concat(password)
-				.Concat(name)
+				.Concat(nameBytes)
 				.Concat(BitConverter.GetBytes(user.Card))
 				.Append((byte)0x00)
 				.Concat(group)
