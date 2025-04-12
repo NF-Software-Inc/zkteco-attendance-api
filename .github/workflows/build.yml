@@ -12,10 +12,6 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: true
 
-defaults:
-  run:
-    shell: pwsh
-
 jobs:
   build:
     runs-on: ubuntu-24.04

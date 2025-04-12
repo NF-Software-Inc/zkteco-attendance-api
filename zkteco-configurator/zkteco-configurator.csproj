@@ -13,9 +13,9 @@
 		<Company>NF Software Inc.</Company>
 		<Product>ZKTeco Configurator</Product>
 		<Copyright>Copyright 2025 $(Company)</Copyright>
-		<AssemblyVersion>1.1.1.0</AssemblyVersion>
-		<FileVersion>1.1.1.0</FileVersion>
-		<Version>1.1.1</Version>
+		<AssemblyVersion>1.1.2.0</AssemblyVersion>
+		<FileVersion>1.1.2.0</FileVersion>
+		<Version>1.1.2</Version>
 		<MauiVersion>9.0.50</MauiVersion>
 
         <!-- Display name -->
@@ -26,7 +26,7 @@
 		<ApplicationIdGuid>075C15C6-985B-4F8F-BEE9-FA5FC56AE759</ApplicationIdGuid>
 
         <!-- Versions -->
-        <ApplicationDisplayVersion>1.1.1</ApplicationDisplayVersion>
+        <ApplicationDisplayVersion>1.1.2</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
 
         <WindowsPackageType>None</WindowsPackageType>
@@ -60,8 +60,8 @@
     </ItemGroup>
 
     <ItemGroup>
-		<PackageReference Include="Easy.Blazor.Bulma" Version="1.1.*" />
-		<PackageReference Include="Easy.Log.Writer.Blazor" Version="2.1.*" />
+		<PackageReference Include="Easy.Blazor.Bulma" Version="1.2.*" />
+		<PackageReference Include="Easy.Log.Writer.Blazor" Version="2.2.*" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
     </ItemGroup>

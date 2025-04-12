@@ -506,9 +506,9 @@ namespace zkteco_attendance_api
 				var index = BitConverter.ToUInt16(item, 0);
 				var privilege = Enum.IsDefined(typeof(Privilege), (int)item[2]) ? (Privilege)(int)item[2] : Privilege.Default;
 				var password = Encoding.UTF8.GetString(item[3..11]);
-				var name = Encoding.UTF8.GetString(item[11..36]).Split('\0').First();
-				var card = BitConverter.ToInt32(item, 36);
-				var group = Encoding.UTF8.GetString(item[41..48]).Split('\0').First();
+				var name = Encoding.UTF8.GetString(item[11..35]).Split('\0').First();
+				var card = BitConverter.ToInt32(item, 35);
+				var group = Encoding.UTF8.GetString(item[40..47]).Split('\0').First();
 				var id = Encoding.UTF8.GetString(item[48..]).Split('\0').First();
 
 				users.Add(new ZkTecoUser() { Index = index, Name = name, Password = password, Privilege = privilege, Group = group, UserId = id, Card = card });
@@ -615,6 +615,15 @@ namespace zkteco_attendance_api
 
 			return packet.Command == Commands.Success && RefreshData();
 		}
+
+		/// <summary>
+		/// Updates an existing user on the ZKTeco device with the provided values.
+		/// </summary>
+		/// <param name="user"> The details of the user to update.</param>
+		/// <remarks>
+		/// Alias of CreateUser, as the ZKTeco device does not have a specific command to update users.
+		/// </remarks>
+		public bool UpdateUser(ZkTecoUser user) => CreateUser(user);
 
 		/// <summary>
 		/// Deletes all attendance records on the ZKTeco device.
