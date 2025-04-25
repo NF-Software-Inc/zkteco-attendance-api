@@ -163,7 +163,10 @@ namespace zkteco_attendance_api
 			Connection.ConnectionId = packet.ConnectionId;
 
 			if (packet.Command != Commands.Unauthorized)
+			{
+				IsConnected = true;
 				return true;
+			}
 
 			if (password == 0 && Settings != null)
 				password = Settings.Password;
