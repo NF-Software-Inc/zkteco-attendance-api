@@ -31,7 +31,7 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Install MAUI
-      run: dotnet workload install ios maui-android maui-maccatalyst
+      run: dotnet workload install maui
       working-directory: ./zkteco-configurator
     - run: mkdir ${{ env.TempDirectory }}
     - uses: apple-actions/import-codesign-certs@v3
