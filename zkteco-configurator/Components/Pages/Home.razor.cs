@@ -9,7 +9,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 {
 	private readonly PageModel InputModel = new();
 	private ZkTeco? ZkTecoClock;
-	private readonly ZkTecoUser NewUser = new();
+	private ZkTecoUser NewUser = new();
 
 	private readonly PlaceholderModel DeviceDetailsPlaceholder = new();
 	private readonly PlaceholderModel UserDetailsPlaceholder = new();
@@ -222,11 +222,23 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		var existing = ZkTecoClock.GetUsers();
 		var index = existing != null && existing.Count > 0 ? existing.Max(x => x.Index) + 1 : 1;
+		var add = NewUser.Index == 0;
 
-		NewUser.Index = index;
+		if (add)
+			NewUser.Index = index;
 
 		if (ZkTecoClock.CreateUser(NewUser))
-			Users.Add(NewUser);
+		{
+			if (add)
+				Users.Add(NewUser);
+
+			NewUser = new();
+		}
+	}
+
+	private void EditUser(ZkTecoUser user)
+	{
+		NewUser = user;
 	}
 
 	private void DeleteUser(ZkTecoUser user)

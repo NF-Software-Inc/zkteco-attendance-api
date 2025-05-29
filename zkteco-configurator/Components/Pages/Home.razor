@@ -252,7 +252,16 @@
 
                 <button type="button" class="button is-info is-fullwidth my-1" disabled="@(DisableControls || DisableCreateUser)" @onclick='CreateUser'>
                     <span class="material-icons icon">person_add</span>
-                    <span>Create User</span>
+                    <span>
+                        @if (NewUser.Index == 0)
+                        {
+                            @:Create User
+                        }
+                        else
+                        {
+                            @:Update User
+                        }
+                    </span>
                 </button>
             </div>
 
@@ -267,6 +276,7 @@
                             <th>Group</th>
                             <th>Card</th>
                             <th>&nbsp;</th>
+                            <th>&nbsp;</th>
                         </tr>
                     </TableHead>
                     <TableBody>
@@ -278,6 +288,12 @@
                                 <TableData>@user.Privilege.ToString()</TableData>
                                 <TableData>@user.Group</TableData>
                                 <TableData>@user.Card</TableData>
+                                <td>
+                                    <button type="button" class="button is-small is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='() => EditUser(user)'>
+                                        <span class="material-icons icon">edit</span>
+                                        <span>Edit</span>
+                                    </button>
+                                </td>
                                 <td>
                                     <button type="button" class="button is-small is-danger is-fullwidth my-1" disabled="@DisableControls" @onclick='() => DeleteUser(user)'>
                                         <span class="material-icons icon">delete_forever</span>
