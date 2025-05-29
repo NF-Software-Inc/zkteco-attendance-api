@@ -34,7 +34,7 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Install MAUI
-      run: dotnet workload install maui-android
+      run: dotnet workload install maui
       working-directory: .\zkteco-configurator
     - run: New-Item -Type Directory -Path ${{ env.TempDirectory }}
     - name: Get KeyStore
