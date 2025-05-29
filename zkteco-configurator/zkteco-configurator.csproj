@@ -13,10 +13,10 @@
 		<Company>NF Software Inc.</Company>
 		<Product>ZKTeco Configurator</Product>
 		<Copyright>Copyright 2025 $(Company)</Copyright>
-		<AssemblyVersion>1.1.3.0</AssemblyVersion>
-		<FileVersion>1.1.3.0</FileVersion>
-		<Version>1.1.3</Version>
-		<MauiVersion>9.0.60</MauiVersion>
+		<AssemblyVersion>1.1.4.0</AssemblyVersion>
+		<FileVersion>1.1.4.0</FileVersion>
+		<Version>1.1.4</Version>
+		<MauiVersion>9.0.70</MauiVersion>
 
         <!-- Display name -->
         <ApplicationTitle>ZKTeco Configurator</ApplicationTitle>
@@ -26,7 +26,7 @@
 		<ApplicationIdGuid>075C15C6-985B-4F8F-BEE9-FA5FC56AE759</ApplicationIdGuid>
 
         <!-- Versions -->
-        <ApplicationDisplayVersion>1.1.3</ApplicationDisplayVersion>
+        <ApplicationDisplayVersion>1.1.4</ApplicationDisplayVersion>
         <ApplicationVersion>113</ApplicationVersion>
 
         <WindowsPackageType>None</WindowsPackageType>
