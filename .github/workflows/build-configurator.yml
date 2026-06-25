@@ -27,7 +27,7 @@ jobs:
     - name: Install MAUI workload
       run: dotnet workload install maui
     - name: Install dependencies
-      run: dotnet restore -p:TargetFramework=${{ env.CONFIGURATOR_TARGET_FRAMEWORK }}
+      run: dotnet restore --framework ${{ env.CONFIGURATOR_TARGET_FRAMEWORK }}
       working-directory: ./zkteco-configurator
     - name: Build
       run: dotnet build --configuration Release -f ${{ env.CONFIGURATOR_TARGET_FRAMEWORK }} --no-restore
