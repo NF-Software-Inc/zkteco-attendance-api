@@ -29,5 +29,5 @@ jobs:
         dotnet restore
       working-directory: ./zkteco-configurator
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build --configuration Release
       working-directory: ./zkteco-configurator
