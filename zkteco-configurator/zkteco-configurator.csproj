@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
+		<TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 		<OutputType>Exe</OutputType>
 		<RootNamespace>$(MSBuildProjectName.Replace("-", "_"))</RootNamespace>
 		<UseMaui>true</UseMaui>
@@ -16,7 +16,7 @@
 		<AssemblyVersion>1.1.4.0</AssemblyVersion>
 		<FileVersion>1.1.4.0</FileVersion>
 		<Version>1.1.4</Version>
-		<MauiVersion>9.0.70</MauiVersion>
+		<MauiVersion>10.0.80</MauiVersion>
 
         <!-- Display name -->
         <ApplicationTitle>ZKTeco Configurator</ApplicationTitle>
@@ -33,13 +33,13 @@
 
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
-        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">33.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
         <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<DefaultLanguage>en-us</DefaultLanguage>
     </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-android|AnyCPU'">
 		<AndroidPackageFormat>aab</AndroidPackageFormat>
 		<AndroidUseAapt2>True</AndroidUseAapt2>
 		<AndroidCreatePackagePerAbi>False</AndroidCreatePackagePerAbi>
@@ -60,7 +60,7 @@
     </ItemGroup>
 
     <ItemGroup>
-		<PackageReference Include="Easy.Blazor.Bulma" Version="1.2.*" />
+		<PackageReference Include="Easy.Blazor.Bulma" Version="10.0.*" />
 		<PackageReference Include="Easy.Log.Writer.Blazor" Version="2.2.*" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />

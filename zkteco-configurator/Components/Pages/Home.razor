@@ -1,4 +1,6 @@
-﻿@page "/"
+﻿@using zkteco_attendance_api
+
+@page "/"
 @inherits ComponentBase
 @implements IDisposable
 
@@ -213,7 +215,7 @@
                 <div class="field">
                     <Label TValue="object" DisplayText="Privilege" />
                     <div class="control has-icons-left has-icons-right">
-                        <InputSelectEnum class='is-fullwidth' @bind-Value=NewUser.Privilege disabled="@DisableControls" />
+                        <InputSelectObject class='is-fullwidth' @bind-Value=NewUser.Privilege Items="Enum.GetValues<Privilege>().ToList()" DisplayValue="x => x.ToString()" disabled="@DisableControls" />
                     </div>
                 </div>
 

@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: build-configurator
+permissions:
+  contents: read
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v4.2.2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4.3.1
+      with:
+        dotnet-version: 10.0.x
+    - name: Install MAUI workload
+      run: |
+        dotnet workload install maui
+        dotnet restore
+      working-directory: ./zkteco-configurator
+    - name: Build
+      run: dotnet build --configuration Release
+      working-directory: ./zkteco-configurator
