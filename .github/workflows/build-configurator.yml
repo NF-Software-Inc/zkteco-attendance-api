@@ -13,8 +13,7 @@ on:
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: true
-  CONFIGURATOR_TARGET_FRAMEWORK: net9.0-windows10.0.19041.0
-
+  
 jobs:
   build:
     runs-on: windows-2022
@@ -25,10 +24,10 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Install MAUI workload
-      run: dotnet workload install maui
-    - name: Install dependencies
-      run: dotnet restore --framework ${{ env.CONFIGURATOR_TARGET_FRAMEWORK }}
+      run: |
+        dotnet workload install maui
+        dotnet restore
       working-directory: ./zkteco-configurator
     - name: Build
-      run: dotnet build --configuration Release -f ${{ env.CONFIGURATOR_TARGET_FRAMEWORK }} --no-restore
+      run: dotnet build --configuration Release --no-restore
       working-directory: ./zkteco-configurator
