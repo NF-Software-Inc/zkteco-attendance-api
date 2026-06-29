@@ -29,7 +29,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4.3.1
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
     - name: Install MAUI
       run: dotnet workload install maui
       working-directory: ./zkteco-configurator
@@ -51,10 +51,10 @@ jobs:
         mv '/Users/runner/Library/MobileDevice/Provisioning Profiles/${{ secrets.APPLE_MACOS_PROVISIONING_ID }}.mobileprovision' '/Users/runner/Library/MobileDevice/Provisioning Profiles/${{ secrets.APPLE_MACOS_PROVISIONING_ID }}.provisionprofile'
         sudo xcode-select -s /Applications/Xcode_16.2.app
         sudo xcode-select -switch /Applications/Xcode_16.2.app/Contents/Developer
-        dotnet publish -c Release -f net9.0-maccatalyst -p:MtouchLink=SdkOnly -p:CreatePackage=true -p:UseHardenedRuntime=true -p:EnableCodeSigning=true -p:EnablePackageSigning=true -p:CodesignKey="${{ secrets.APPLE_DISTRIBUTION_NAME }}" -p:CodesignProvision="ZKTeco Configurator Mac Store" -p:CodesignEntitlements="Platforms/MacCatalyst/Entitlements.plist" -p:PackageSigningKey="${{ secrets.APPLE_DEVELOPER_NAME }}" -p:AssemblyVersion=${{ env.PublishVersion }} -p:Version=${{ inputs.version }} -p:FileVersion=${{ env.PublishVersion }} -p:ApplicationVersion=${{ inputs.build }} -p:ApplicationDisplayVersion=${{ inputs.version }}
+        dotnet publish -c Release -f net10.0-maccatalyst -p:MtouchLink=SdkOnly -p:CreatePackage=true -p:UseHardenedRuntime=true -p:EnableCodeSigning=true -p:EnablePackageSigning=true -p:CodesignKey="${{ secrets.APPLE_DISTRIBUTION_NAME }}" -p:CodesignProvision="ZKTeco Configurator Mac Store" -p:CodesignEntitlements="Platforms/MacCatalyst/Entitlements.plist" -p:PackageSigningKey="${{ secrets.APPLE_DEVELOPER_NAME }}" -p:AssemblyVersion=${{ env.PublishVersion }} -p:Version=${{ inputs.version }} -p:FileVersion=${{ env.PublishVersion }} -p:ApplicationVersion=${{ inputs.build }} -p:ApplicationDisplayVersion=${{ inputs.version }}
       working-directory: ./zkteco-configurator
     - name: Add to Release
-      run: gh release upload ${{ inputs.version }} ${{ github.workspace }}/zkteco-configurator/bin/Release/net9.0-maccatalyst/publish/zkteco-configurator-${{ inputs.version }}.pkg
+      run: gh release upload ${{ inputs.version }} ${{ github.workspace }}/zkteco-configurator/bin/Release/net10.0-maccatalyst/publish/zkteco-configurator-${{ inputs.version }}.pkg
       env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - uses: actions/upload-artifact@v4.6.2
@@ -62,4 +62,4 @@ jobs:
         name: zkteco-configurator-maccatalyst
         if-no-files-found: error
         retention-days: 7
-        path: ${{ github.workspace }}/zkteco-configurator/bin/Release/net9.0-maccatalyst/publish/*.pkg
+        path: ${{ github.workspace }}/zkteco-configurator/bin/Release/net10.0-maccatalyst/publish/*.pkg

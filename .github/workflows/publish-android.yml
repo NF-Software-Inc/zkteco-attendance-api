@@ -32,7 +32,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4.3.1
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
     - name: Install MAUI
       run: dotnet workload install maui
       working-directory: .\zkteco-configurator
@@ -41,10 +41,10 @@ jobs:
       run: |
         [System.IO.File]::WriteAllBytes('${{ env.TempDirectory }}\opensource.keystore', [System.Convert]::FromBase64String('${{ secrets.ANDROID_KEYSTORE_OPENSOURCE }}'))
     - name: Publish
-      run: dotnet publish -c Release -f net9.0-android -p:AndroidKeyStore=true -p:AndroidSigningKeyStore='${{ env.TempDirectory }}\opensource.keystore' -p:AndroidSigningKeyAlias='${{ secrets.ANDROID_ALIAS_OPENSOURCE }}' -p:AndroidSigningKeyPass='${{ secrets.ANDROID_PASSWORD_OPENSOURCE }}' -p:AndroidSigningStorePass='${{ secrets.ANDROID_PASSWORD_OPENSOURCE }}' -p:AssemblyVersion=${{ env.PublishVersion }} -p:Version=${{ inputs.version }} -p:FileVersion=${{ env.PublishVersion }} -p:ApplicationVersion=${{ inputs.build }} -p:ApplicationDisplayVersion=${{ inputs.version }}
+      run: dotnet publish -c Release -f net10.0-android -p:AndroidKeyStore=true -p:AndroidSigningKeyStore='${{ env.TempDirectory }}\opensource.keystore' -p:AndroidSigningKeyAlias='${{ secrets.ANDROID_ALIAS_OPENSOURCE }}' -p:AndroidSigningKeyPass='${{ secrets.ANDROID_PASSWORD_OPENSOURCE }}' -p:AndroidSigningStorePass='${{ secrets.ANDROID_PASSWORD_OPENSOURCE }}' -p:AssemblyVersion=${{ env.PublishVersion }} -p:Version=${{ inputs.version }} -p:FileVersion=${{ env.PublishVersion }} -p:ApplicationVersion=${{ inputs.build }} -p:ApplicationDisplayVersion=${{ inputs.version }}
       working-directory: .\zkteco-configurator
     - name: Add to Release
-      run: gh release upload ${{ inputs.version }} ${{ github.workspace }}\zkteco-configurator\bin\Release\net9.0-android\com.nfsoftwareinc.zktecoconfigurator-Signed.apk
+      run: gh release upload ${{ inputs.version }} ${{ github.workspace }}\zkteco-configurator\bin\Release\net10.0-android\com.nfsoftwareinc.zktecoconfigurator-Signed.apk
       env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - uses: actions/upload-artifact@v4.6.2
@@ -53,5 +53,5 @@ jobs:
         if-no-files-found: error
         retention-days: 7
         path: |
-          ${{ github.workspace }}\zkteco-configurator\bin\Release\net9.0-android\*Signed.apk
-          ${{ github.workspace }}\zkteco-configurator\bin\Release\net9.0-android\*Signed.aab
+          ${{ github.workspace }}\zkteco-configurator\bin\Release\net10.0-android\*Signed.apk
+          ${{ github.workspace }}\zkteco-configurator\bin\Release\net10.0-android\*Signed.aab
