@@ -189,6 +189,34 @@
                     <span>Get Users</span>
                 </button>
 
+                <div class="field mt-2">
+                    <Label TValue="object" DisplayText="Filter by Name" />
+                    <div class="control has-icons-left">
+                        <InputText class="input" @bind-Value="UserFilterName" disabled="@DisableControls" placeholder="Type a name..." />
+                        <span class="material-icons icon is-left">search</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <Label TValue="object" DisplayText="Filter by Privilege" />
+                    <div class="control has-icons-left has-icons-right">
+                        <InputSelectObject class='is-fullwidth' @bind-Value=UserFilterPrivilege Items="Array.ConvertAll((Privilege[])Enum.GetValues<Privilege>(), x => (Privilege?)x)" DisplayValue='x => x?.ToString() ?? string.Empty' NullText="None" disabled="@DisableControls" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <Label TValue="object" DisplayText="Filter by RFID Card" />
+                    <div class="control has-icons-left">
+                        <InputNumber class="input" @bind-Value="UserFilterCard" disabled="@DisableControls" />
+                        <span class="material-icons icon is-left">numbers</span>
+                    </div>
+                </div>
+
+                <button type="button" class="button is-light is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearUserFilters'>
+                    <span class="material-icons icon">filter_alt_off</span>
+                    <span>Clear Filters</span>
+                </button>
+
                 <hr class="my-4" />
 
                 <div class="field">
@@ -282,7 +310,7 @@
                         </tr>
                     </TableHead>
                     <TableBody>
-                        @foreach (var user in Users)
+                        @foreach (var user in FilteredUsers)
                         {
                             <tr>
                                 <TableData>@user.UserId</TableData>

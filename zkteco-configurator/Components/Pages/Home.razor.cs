@@ -17,11 +17,39 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private string? ConnectionStatusMessage;
 	private string? DeviceDetailsMessage;
 
-	private RecordCounts? DeviceStorageCounts;
+    private RecordCounts? DeviceStorageCounts;
 	private readonly List<ZkTecoUser> Users = [];
 	private readonly List<ZkTecoAttendance> Attendances = [];
 
-	private bool DisableSubmit => string.IsNullOrWhiteSpace(InputModel.IpAddress) ||
+    #region Filter Users
+	private string? UserFilterName;
+	private Privilege? UserFilterPrivilege;
+	private int? UserFilterCard;
+
+    /// <summary>
+    /// Gets the list of users filtered by the current filter settings.
+    /// </summary>
+    private IEnumerable<ZkTecoUser> FilteredUsers
+	{
+		get
+		{
+			IEnumerable<ZkTecoUser> filteredUsers = Users;
+
+			if (string.IsNullOrWhiteSpace(UserFilterName) == false)
+				filteredUsers = filteredUsers.Where(user => user.Name.Contains(UserFilterName.Trim(), StringComparison.OrdinalIgnoreCase));
+
+			if (UserFilterPrivilege.HasValue)
+				filteredUsers = filteredUsers.Where(user => user.Privilege == UserFilterPrivilege.Value);
+
+			if (UserFilterCard.HasValue)
+				filteredUsers = filteredUsers.Where(user => user.Card == UserFilterCard.Value);
+
+			return filteredUsers;
+		}
+	}
+    #endregion
+
+    private bool DisableSubmit => string.IsNullOrWhiteSpace(InputModel.IpAddress) ||
 		InputModel.Port < 1 ||
 		InputModel.Port > 65_535 ||
 		string.IsNullOrWhiteSpace(InputModel.Password);
@@ -294,6 +322,17 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		Users.Clear();
 		Attendances.Clear();
+		ClearUserFilters();
+	}
+
+    /// <summary>
+    /// Resets all user-table filters to show the full list after reconnecting or clearing state.
+    /// </summary>
+    private void ClearUserFilters()
+	{
+		UserFilterName = null;
+		UserFilterPrivilege = null;
+		UserFilterCard = null;
 	}
 
 	private class PageModel
