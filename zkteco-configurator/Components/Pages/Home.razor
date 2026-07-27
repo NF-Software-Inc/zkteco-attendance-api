@@ -282,7 +282,8 @@
                         </tr>
                     </TableHead>
                     <TableBody>
-                        <Virtualize Items="Users" Context="user" SpacerElement="tr">
+                        @foreach (var user in Users)
+                        {
                             <tr>
                                 <TableData>@user.UserId</TableData>
                                 <TableData>@user.Name</TableData>
@@ -303,7 +304,7 @@
                                     </button>
                                 </td>
                             </tr>
-                        </Virtualize>
+                        }
                     </TableBody>
                 </Table>
             </div>
@@ -336,14 +337,15 @@
                     </tr>
                 </TableHead>
                 <TableBody>
-                    <Virtualize Items="Attendances" Context="record" SpacerElement="tr">
+                    @foreach (var record in Attendances)
+                    {
                         <tr>
                             <TableData>@record.UserId</TableData>
                             <TableData>@record.Timestamp.ToString("G")</TableData>
                             <TableData>@record.Status.ToString()</TableData>
                             <TableData>@record.Punch.ToString()</TableData>
                         </tr>
-                    </Virtualize>
+                    }
                 </TableBody>
             </Table>
         </div>
