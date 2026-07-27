@@ -181,12 +181,16 @@
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="User Management">
-    <EditForm Model="UserDetailsPlaceholder">
-        <div class="columns is-variable is-1">
+    <div class="columns is-variable is-1">
             <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
                 <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetUsers'>
                     <span class="material-icons icon">groups</span>
                     <span>Get Users</span>
+                </button>
+
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenModalAddUser'>
+                    <span class="material-icons icon">person_add</span>
+                    <span>Add User</span>
                 </button>
 
                 <div class="field mt-2">
@@ -216,8 +220,55 @@
                     <span class="material-icons icon">filter_alt_off</span>
                     <span>Clear Filters</span>
                 </button>
+            </div>
 
-                <hr class="my-4" />
+            <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+                <Table class="is-fullwidth is-hoverable is-striped is-size-6">
+                    <TableHead>
+                        <tr>
+                            <th>User Id</th>
+                            <th>Name</th>
+                            <th>Password</th>
+                            <th>Privilege</th>
+                            <th>Group</th>
+                            <th>Card</th>
+                            <th>&nbsp;</th>
+                            <th>&nbsp;</th>
+                        </tr>
+                    </TableHead>
+                    <TableBody>
+                        @foreach (var user in FilteredUsers)
+                        {
+                            <tr>
+                                <TableData>@user.UserId</TableData>
+                                <TableData>@user.Name</TableData>
+                                <TableData>@user.Password</TableData>
+                                <TableData>@user.Privilege.ToString()</TableData>
+                                <TableData>@user.Group</TableData>
+                                <TableData>@user.Card</TableData>
+                                <td>
+                                    <button type="button" class="button is-small is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='() => EditUser(user)'>
+                                        <span class="material-icons icon">edit</span>
+                                        <span>Edit</span>
+                                    </button>
+                                </td>
+                                <td>
+                                    <button type="button" class="button is-small is-danger is-fullwidth my-1" disabled="@DisableControls" @onclick='() => DeleteUser(user)'>
+                                        <span class="material-icons icon">delete_forever</span>
+                                        <span>Delete</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </TableBody>
+                </Table>
+            </div>
+        </div>
+
+    <Modal Title="@(NewUser.Index == 0 ? "Create User" : "Update User")" @bind-IsDisplayed=ModalAddUserDisplayed>
+        <ModalBody>
+            <EditForm Model="NewUser">
+                <DataAnnotationsValidator />
 
                 <div class="field">
                     <Label TValue="object" DisplayText="Name" />
@@ -281,7 +332,7 @@
                 </div>
 
                 <button type="button" class="button is-info is-fullwidth my-1" disabled="@(DisableControls || DisableCreateUser)" @onclick='CreateUser'>
-                    <span class="material-icons icon">person_add</span>
+                    <span class="material-icons icon">@(NewUser.Index == 0 ? "person_add" : "update")</span>
                     <span>
                         @if (NewUser.Index == 0)
                         {
@@ -293,51 +344,12 @@
                         }
                     </span>
                 </button>
-            </div>
-
-            <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
-                <Table class="is-fullwidth is-hoverable is-striped is-size-6">
-                    <TableHead>
-                        <tr>
-                            <th>User Id</th>
-                            <th>Name</th>
-                            <th>Password</th>
-                            <th>Privilege</th>
-                            <th>Group</th>
-                            <th>Card</th>
-                            <th>&nbsp;</th>
-                            <th>&nbsp;</th>
-                        </tr>
-                    </TableHead>
-                    <TableBody>
-                        @foreach (var user in FilteredUsers)
-                        {
-                            <tr>
-                                <TableData>@user.UserId</TableData>
-                                <TableData>@user.Name</TableData>
-                                <TableData>@user.Password</TableData>
-                                <TableData>@user.Privilege.ToString()</TableData>
-                                <TableData>@user.Group</TableData>
-                                <TableData>@user.Card</TableData>
-                                <td>
-                                    <button type="button" class="button is-small is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='() => EditUser(user)'>
-                                        <span class="material-icons icon">edit</span>
-                                        <span>Edit</span>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type="button" class="button is-small is-danger is-fullwidth my-1" disabled="@DisableControls" @onclick='() => DeleteUser(user)'>
-                                        <span class="material-icons icon">delete_forever</span>
-                                        <span>Delete</span>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    </TableBody>
-                </Table>
-            </div>
-        </div>
-    </EditForm>
+            </EditForm>
+        </ModalBody>
+        <ModalFooter>
+            <button type="button" class="button" @onclick='CloseModalAddUser'>Cancel</button>
+        </ModalFooter>
+    </Modal>
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Attendance Management">

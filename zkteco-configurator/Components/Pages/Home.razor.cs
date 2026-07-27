@@ -12,7 +12,6 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private ZkTecoUser NewUser = new();
 
 	private readonly PlaceholderModel DeviceDetailsPlaceholder = new();
-	private readonly PlaceholderModel UserDetailsPlaceholder = new();
 
 	private string? ConnectionStatusMessage;
 	private string? DeviceDetailsMessage;
@@ -21,8 +20,10 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private readonly List<ZkTecoUser> Users = [];
 	private readonly List<ZkTecoAttendance> Attendances = [];
 
+    private bool ModalAddUserDisplayed = false;
+
     #region Filter Users
-	private string? UserFilterName;
+    private string? UserFilterName;
 	private Privilege? UserFilterPrivilege;
 	private int? UserFilterCard;
 
@@ -240,7 +241,18 @@ public sealed partial class Home : ComponentBase, IDisposable
 			Users.AddRange(users);
 	}
 
-	private void CreateUser()
+    private void OpenModalAddUser()
+    {
+		NewUser = new();
+        ModalAddUserDisplayed = true;
+    }
+
+    private void CloseModalAddUser()
+    {
+        ModalAddUserDisplayed = false;
+    }
+
+    private void CreateUser()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -260,13 +272,28 @@ public sealed partial class Home : ComponentBase, IDisposable
 			if (add)
 				Users.Add(NewUser);
 
+            // If the user is being edited, update the existing user in the list
+            else
+            {
+				var existingIndex = Users.FindIndex(x => x.Index == NewUser.Index);
+
+				if (existingIndex >= 0)
+					Users[existingIndex] = NewUser;
+			}
+
+			ModalAddUserDisplayed = false;
 			NewUser = new();
 		}
 	}
 
-	private void EditUser(ZkTecoUser user)
+    /// <summary>
+    /// Opens the modal to edit an existing user by populating the NewUser model with the selected user's data.
+    /// </summary>
+    /// <param name="user">The user to edit.</param>
+    private void EditUser(ZkTecoUser user)
 	{
-		NewUser = user;
+		NewUser = new(user.UserId, user.Name, user.Index, user.Password, user.Privilege, user.Group, user.Card);
+		ModalAddUserDisplayed = true;
 	}
 
 	private void DeleteUser(ZkTecoUser user)
