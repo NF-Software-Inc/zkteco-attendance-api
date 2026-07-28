@@ -53,6 +53,31 @@ public sealed partial class Home : ComponentBase, IDisposable
 	}
     #endregion
 
+	/// <summary>
+	/// Gets attendance rows enriched with user details from the in-memory users list.
+	/// </summary>
+	private IEnumerable<AttendanceDetailRow> AttendanceDetails
+	{
+		get
+		{
+            // Create a dictionary of users by UserId for quick lookup, ignoring case
+            var usersByUserId = Users.Where(user => string.IsNullOrWhiteSpace(user.UserId) == false)
+				.GroupBy(user => user.UserId, StringComparer.OrdinalIgnoreCase)
+				.ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+			foreach (var attendance in Attendances)
+			{
+				var isUserMatched = usersByUserId.TryGetValue(attendance.UserId, out var matchedUser);
+
+				yield return new AttendanceDetailRow(
+					IsUserMatched: isUserMatched,
+					UserId: attendance.UserId, Timestamp: attendance.Timestamp, Status: attendance.Status, Punch: attendance.Punch,
+					UserName: isUserMatched ? matchedUser!.Name : "-", UserGroup: isUserMatched ? matchedUser!.Group : null,
+					UserCard: isUserMatched ? matchedUser!.Card : null, UserPrivilege: isUserMatched ? matchedUser!.Privilege : null);
+			}
+		}
+	}
+
     private bool DisableSubmit => string.IsNullOrWhiteSpace(InputModel.IpAddress) ||
 		InputModel.Port < 1 ||
 		InputModel.Port > 65_535 ||
@@ -230,13 +255,24 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void GetUsers()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
+        if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+        {
+            ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+            return;
+        }
 
-		Users.Clear();
+        ReloadUsers();
+	}
+
+    /// <summary>
+    /// Reloads the list of users from the ZKTeco clock and updates the in-memory Users list.
+    /// </summary>
+    private void ReloadUsers()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+			return;
+
+        Users.Clear();
 
 		var users = ZkTecoClock.GetUsers();
 
@@ -264,7 +300,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		}
 
 		var existing = ZkTecoClock.GetUsers();
-		var index = existing != null && existing.Count > 0 ? existing.Max(x => x.Index) + 1 : 1;
+        var index = existing != null && existing.Count > 0 ? existing.Max(x => x.Index) + 1 : 1;
 		var add = NewUser.Index == 0;
 
 		if (add)
@@ -319,7 +355,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 		}
 
-		Attendances.Clear();
+        // If users list is empty, reload it to ensure matching attendance records with user details
+        if (Users.Count <= 0)
+			ReloadUsers();
+
+        Attendances.Clear();
 
 		var records = ZkTecoClock.GetAttendance();
 
@@ -381,6 +421,14 @@ public sealed partial class Home : ComponentBase, IDisposable
 		UserFilterPrivilege = null;
 		UserFilterCard = null;
 	}
+
+
+	/// <summary>
+	/// Represents one attendance row enriched with user details for table display.
+	/// </summary>
+	private sealed record AttendanceDetailRow(bool IsUserMatched,
+		string UserId, DateTime Timestamp, int Status, int Punch,
+		string UserName, string? UserGroup, int? UserCard, Privilege? UserPrivilege);
 
 	private class PageModel
 	{

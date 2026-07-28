@@ -378,16 +378,24 @@
                 <TableHead>
                     <tr>
                         <th>User Id</th>
+                        <th>Name</th>
+                        <th>Privilege</th>
+                        <th>Group</th>
+                        <th>Card</th>
                         <th>Time</th>
                         <th>Status</th>
                         <th>Punch</th>
                     </tr>
                 </TableHead>
                 <TableBody>
-                    @foreach (var record in Attendances)
+                    @foreach (var record in AttendanceDetails)
                     {
                         <tr>
                             <TableData>@record.UserId</TableData>
+                            <TableData>@record.UserName</TableData>
+                            <TableData>@(record.UserPrivilege?.ToString() ?? "-")</TableData>
+                            <TableData>@(string.IsNullOrWhiteSpace(record.UserGroup) ? "-" : record.UserGroup)</TableData>
+                            <TableData>@(record.UserCard?.ToString() ?? "-")</TableData>
                             <TableData>@record.Timestamp.ToString("G")</TableData>
                             <TableData>@record.Status.ToString()</TableData>
                             <TableData>@record.Punch.ToString()</TableData>
