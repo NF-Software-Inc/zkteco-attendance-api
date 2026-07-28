@@ -367,7 +367,7 @@
                 <span>Get Attendance</span>
             </button>
 
-            <button type="button" class="button is-danger is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearAttendanceRecords'>
+            <button type="button" class="button is-danger is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenDeleteAttendanceModal'>
                 <span class="material-icons icon">delete_forever</span>
                 <span>Delete Attendance</span>
             </button>
@@ -397,4 +397,14 @@
             </Table>
         </div>
     </div>
+
+    <Modal Title="Confirm Attendance Deletion" @bind-IsDisplayed=ModalDeleteAttendanceDisplayed foot-class="is-justify-content-center">
+        <ModalBody>
+            <p class="is-size-6">This will permanently delete all attendance records on the device.<br />Continue?</p>
+        </ModalBody>
+        <ModalFooter>
+            <button type="button" class="button" @onclick='CloseDeleteAttendanceModal'>Cancel</button>
+            <button type="button" class="button is-danger" @onclick='ConfirmClearAttendanceRecords'>Delete</button>
+        </ModalFooter>
+    </Modal>
 </Panel>

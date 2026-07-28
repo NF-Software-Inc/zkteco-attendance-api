@@ -22,7 +22,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private readonly List<ZkTecoUser> Users = [];
 	private readonly List<ZkTecoAttendance> Attendances = [];
 
-    private bool ModalAddUserDisplayed = false;
+	private bool ModalAddUserDisplayed;
+	private bool ModalDeleteAttendanceDisplayed;
 
     #region Filter Users
     private string? UserFilterName;
@@ -335,6 +336,23 @@ public sealed partial class Home : ComponentBase, IDisposable
 		}
 
 		ZkTecoClock.ClearAttendance();
+		Attendances.Clear();
+	}
+
+	private void OpenDeleteAttendanceModal()
+	{
+		ModalDeleteAttendanceDisplayed = true;
+	}
+
+	private void CloseDeleteAttendanceModal()
+	{
+		ModalDeleteAttendanceDisplayed = false;
+	}
+
+	private void ConfirmClearAttendanceRecords()
+	{
+		ClearAttendanceRecords();
+		ModalDeleteAttendanceDisplayed = false;
 	}
 
 	private void Reset()
