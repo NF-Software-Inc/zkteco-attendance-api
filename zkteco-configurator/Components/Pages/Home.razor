@@ -272,7 +272,7 @@
             </div>
         </div>
 
-    <Modal Title="@(NewUser.Index == 0 ? "Create User" : "Update User")" @bind-IsDisplayed=ModalAddUserDisplayed>
+    <Modal Title="@(NewUser.Index == 0 ? "Create User" : "Update User")" @bind-IsDisplayed=ModalAddUserDisplayed foot-class="is-justify-content-center">
         <ModalBody>
             <EditForm Model="NewUser">
                 <DataAnnotationsValidator />
@@ -337,24 +337,24 @@
                         </div>
                     </div>
                 </div>
-
-                <button type="button" class="button is-info is-fullwidth my-1" disabled="@(DisableControls || DisableCreateUser)" @onclick='CreateUser'>
-                    <span class="material-icons icon">@(NewUser.Index == 0 ? "person_add" : "update")</span>
-                    <span>
-                        @if (NewUser.Index == 0)
-                        {
-                            @:Create User
-                        }
-                        else
-                        {
-                            @:Update User
-                        }
-                    </span>
-                </button>
             </EditForm>
         </ModalBody>
         <ModalFooter>
             <button type="button" class="button" @onclick='CloseModalAddUser'>Cancel</button>
+
+            <button type="button" class="button is-info" disabled="@(DisableControls || DisableCreateUser)" @onclick='CreateUser'>
+                <span class="material-icons icon">@(NewUser.Index == 0 ? "person_add" : "update")</span>
+                <span>
+                    @if (NewUser.Index == 0)
+                    {
+                        @:Create User
+                    }
+                    else
+                    {
+                        @:Update User
+                    }
+                </span>
+            </button>
         </ModalFooter>
     </Modal>
 </Panel>
