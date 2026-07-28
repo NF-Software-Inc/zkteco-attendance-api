@@ -1,5 +1,6 @@
 ﻿using easy_blazor_bulma;
 using Microsoft.AspNetCore.Components;
+using System.Diagnostics.CodeAnalysis;
 using System.ComponentModel.DataAnnotations;
 using zkteco_attendance_api;
 
@@ -126,13 +127,28 @@ public sealed partial class Home : ComponentBase, IDisposable
 		}
 	}
 
-	private void GetDeviceDetails()
+	/// <summary>
+	/// Ensures a clock connection is available before executing device commands.
+	/// </summary>
+	/// <remarks>
+	/// Centralizes the "not connected" status message so command methods stay concise.
+	/// </remarks>
+	[MemberNotNullWhen(true, nameof(ZkTecoClock))]
+	private bool EnsureConnectedClock()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
+			return false;
 		}
+
+		return true;
+	}
+
+	private void GetDeviceDetails()
+	{
+		if (EnsureConnectedClock() == false)
+			return;
 
 		DeviceDetailsMessage = string.Empty;
 
@@ -157,33 +173,24 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void EnableDevice()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		ZkTecoClock.EnableDevice();
 	}
 
 	private void DisableDevice()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		ZkTecoClock.DisableDevice();
 	}
 
 	private void RestartDevice()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		if (ZkTecoClock.RestartDevice())
 			ZkTecoClock = null;
@@ -191,11 +198,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void ShutdownDevice()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		if (ZkTecoClock.ShutdownDevice())
 			ZkTecoClock = null;
@@ -203,11 +207,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void ClearAndRefresh()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		ZkTecoClock.ClearBuffer();
 		ZkTecoClock.ClearError();
@@ -216,11 +217,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void SetClockTime()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		if (InputModel.ClockTime != null)
 			ZkTecoClock.SetTime(InputModel.ClockTime.Value);
@@ -230,11 +228,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void SetDisplayText()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		if (string.IsNullOrWhiteSpace(InputModel.DisplayText))
 			ZkTecoClock.SetDisplayText("Welcome");
@@ -244,22 +239,16 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void ClearDisplayText()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		ZkTecoClock.ClearDisplayText();
 	}
 
 	private void GetUsers()
 	{
-        if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-        {
-            ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-            return;
-        }
+		if (EnsureConnectedClock() == false)
+			return;
 
         ReloadUsers();
 	}
@@ -269,7 +258,7 @@ public sealed partial class Home : ComponentBase, IDisposable
     /// </summary>
     private void ReloadUsers()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		if (EnsureConnectedClock() == false)
 			return;
 
         Users.Clear();
@@ -293,11 +282,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
     private void CreateUser()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		var existing = ZkTecoClock.GetUsers();
         var index = existing != null && existing.Count > 0 ? existing.Max(x => x.Index) + 1 : 1;
@@ -337,11 +323,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void DeleteUser(ZkTecoUser user)
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		if (ZkTecoClock.DeleteUser(user))
 			Users.Remove(user);
@@ -349,11 +332,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void GetAttendanceRecords()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
         // If users list is empty, reload it to ensure matching attendance records with user details
         if (Users.Count <= 0)
@@ -369,11 +349,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void ClearAttendanceRecords()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		ZkTecoClock.ClearAttendance();
 		Attendances.Clear();
