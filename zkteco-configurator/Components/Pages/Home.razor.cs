@@ -7,6 +7,8 @@ namespace zkteco_configurator.Components.Pages;
 
 public sealed partial class Home : ComponentBase, IDisposable
 {
+	private static string AppVersion => typeof(App).Assembly.GetName().Version?.ToString() ?? "unknown";
+
 	private readonly PageModel InputModel = new();
 	private ZkTeco? ZkTecoClock;
 	private ZkTecoUser NewUser = new();
