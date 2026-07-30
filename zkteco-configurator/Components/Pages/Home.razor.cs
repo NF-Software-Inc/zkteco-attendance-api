@@ -17,6 +17,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private readonly PlaceholderModel DeviceDetailsPlaceholder = new();
 
 	private string? ConnectionStatusMessage;
+	private ActionMessage? UserManagementActionMessage;
+	private ActionMessage? UserModalActionMessage;
 	private string? DeviceDetailsMessage;
 
     private RecordCounts? DeviceStorageCounts;
@@ -250,40 +252,51 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-        ReloadUsers();
+		if (ReloadUsers())
+			SetActionMessage(ref UserManagementActionMessage, "Get Users", true, $"loaded {Users.Count} user(s).");
+		else
+			SetActionMessage(ref UserManagementActionMessage, "Get Users", false, "unable to read users from the clock.");
 	}
 
     /// <summary>
     /// Reloads the list of users from the ZKTeco clock and updates the in-memory Users list.
     /// </summary>
-    private void ReloadUsers()
+	private bool ReloadUsers()
 	{
 		if (EnsureConnectedClock() == false)
-			return;
+			return false;
 
         Users.Clear();
 
 		var users = ZkTecoClock.GetUsers();
 
-		if (users != null)
-			Users.AddRange(users);
+		if (users == null)
+			return false;
+
+		Users.AddRange(users);
+		return true;
 	}
 
     private void OpenModalAddUser()
     {
 		NewUser = new();
+		UserModalActionMessage = null;
         ModalAddUserDisplayed = true;
     }
 
     private void CloseModalAddUser()
     {
+		UserModalActionMessage = null;
         ModalAddUserDisplayed = false;
     }
 
     private void CreateUser()
 	{
 		if (EnsureConnectedClock() == false)
+		{
+			SetActionMessage(ref UserModalActionMessage, "Save User", false, "not connected to ZKTeco clock.");
 			return;
+		}
 
 		var existing = ZkTecoClock.GetUsers();
         var index = existing != null && existing.Count > 0 ? existing.Max(x => x.Index) + 1 : 1;
@@ -291,6 +304,9 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		if (add)
 			NewUser.Index = index;
+
+		var userName = NewUser.Name;
+		var action = add ? "Create User" : "Update User";
 
 		if (ZkTecoClock.CreateUser(NewUser))
 		{
@@ -307,7 +323,16 @@ public sealed partial class Home : ComponentBase, IDisposable
 			}
 
 			ModalAddUserDisplayed = false;
+			UserModalActionMessage = null;
 			NewUser = new();
+			SetActionMessage(ref UserManagementActionMessage, action, true, $"saved user '{userName}'.");
+		}
+		else
+		{
+			if (add)
+				NewUser.Index = 0;
+
+			SetActionMessage(ref UserModalActionMessage, action, false, $"unable to save user '{userName}'.");
 		}
 	}
 
@@ -318,6 +343,7 @@ public sealed partial class Home : ComponentBase, IDisposable
     private void EditUser(ZkTecoUser user)
 	{
 		NewUser = new(user.UserId, user.Name, user.Index, user.Password, user.Privilege, user.Group, user.Card);
+		UserModalActionMessage = null;
 		ModalAddUserDisplayed = true;
 	}
 
@@ -327,7 +353,12 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 
 		if (ZkTecoClock.DeleteUser(user))
+		{
 			Users.Remove(user);
+			SetActionMessage(ref UserManagementActionMessage, "Delete User", true, $"deleted user '{user.UserId}'.");
+		}
+		else
+			SetActionMessage(ref UserManagementActionMessage, "Delete User", false, $"unable to delete user '{user.UserId}'.");
 	}
 
 	private void GetAttendanceRecords()
@@ -337,7 +368,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 
         // If users list is empty, reload it to ensure matching attendance records with user details
         if (Users.Count <= 0)
-			ReloadUsers();
+			_ = ReloadUsers();
 
         Attendances.Clear();
 
@@ -381,6 +412,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		}
 
 		ConnectionStatusMessage = null;
+		UserManagementActionMessage = null;
 		DeviceDetailsMessage = null;
 		DeviceStorageCounts = null;
 
@@ -399,13 +431,27 @@ public sealed partial class Home : ComponentBase, IDisposable
 		UserFilterCard = null;
 	}
 
-
 	/// <summary>
-	/// Represents one attendance row enriched with user details for table display.
+	/// Sets a standardized status message in the provided operation message target.
 	/// </summary>
-	private sealed record AttendanceDetailRow(bool IsUserMatched,
+	private static void SetActionMessage(ref ActionMessage? target, string action, bool success, string detail)
+	{
+		target = new(success ? "is-success" : "is-danger", $"[{action}] {(success ? "Success" : "Failed")}: {detail}");
+    }
+
+    /// <summary>
+    /// Represents one attendance row enriched with user details for table display.
+    /// </summary>
+    private sealed record AttendanceDetailRow(bool IsUserMatched,
 		string UserId, DateTime Timestamp, int Status, int Punch,
 		string UserName, string? UserGroup, int? UserCard, Privilege? UserPrivilege);
+
+	/// <summary>
+	/// Represents a user-management operation message with UI style metadata.
+	/// </summary>
+	/// <param name="Class">The CSS class to apply for styling the message.</param>
+	/// <param name="Message">The message text to display.</param>
+	private sealed record ActionMessage(string Class, string Message);
 
 	private class PageModel
 	{
