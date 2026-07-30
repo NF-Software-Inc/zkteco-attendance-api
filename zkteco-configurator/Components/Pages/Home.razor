@@ -71,6 +71,13 @@
     </EditForm>
 </Panel>
 
+<Panel class="pt-2 px-2 mb-0 is-size-7" Title="Import / Export">
+    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='ExportDeviceBackupAsync'>
+        <span class="material-icons icon">download</span>
+        <span>Export Device Backup</span>
+    </button>
+</Panel>
+
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
     <EditForm Model="DeviceDetailsPlaceholder">
         <div class="columns is-variable is-1">

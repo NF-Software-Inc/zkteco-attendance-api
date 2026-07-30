@@ -1,6 +1,7 @@
 ﻿using easy_blazor_bulma;
 using Microsoft.AspNetCore.Components;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using zkteco_attendance_api;
 
 namespace zkteco_configurator.Components.Pages;
@@ -47,6 +48,13 @@ public sealed partial class Home : ComponentBase, IDisposable
 		InputDateTimeOptions.ShowSeconds |
 		InputDateTimeOptions.CloseOnDateClicked |
 		InputDateTimeOptions.ValidateTextInput;
+
+	private static readonly JsonSerializerOptions JsonOptions = new()
+	{
+		WriteIndented = true,
+	};
+
+	private const string ExportSchemaVersion = "1.0";
 
 	private void OnConnect()
 	{
@@ -280,6 +288,102 @@ public sealed partial class Home : ComponentBase, IDisposable
 		ZkTecoClock.ClearAttendance();
 	}
 
+	private async Task ExportDeviceBackupAsync()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		try
+		{
+			var package = BuildDeviceExportPackage();
+			var fileName = $"zkteco-device-backup-{DateTime.Now:yyyyMMdd-HHmmss}.json";
+			var json = JsonSerializer.Serialize(package, JsonOptions);
+
+			var exported = await SaveExportJsonAsync(fileName, json);
+
+			if (exported)
+				ConnectionStatusMessage = $"Device backup exported to '{fileName}'.";
+		}
+		catch (Exception ex)
+		{
+			ConnectionStatusMessage = $"Failed exporting device backup: {ex.Message}";
+		}
+	}
+
+	private async Task<bool> SaveExportJsonAsync(string fileName, string json)
+	{
+		#if WINDOWS
+		var appWindow = Application.Current?.Windows is { Count: > 0 } windows
+			? windows[0]?.Handler?.PlatformView as Microsoft.UI.Xaml.Window
+			: null;
+
+		if (appWindow == null)
+		{
+			ConnectionStatusMessage = "Unable to get active app window for export.";
+			return false;
+		}
+
+		var picker = new Windows.Storage.Pickers.FileSavePicker
+		{
+			SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary,
+			SuggestedFileName = Path.GetFileNameWithoutExtension(fileName),
+		};
+
+		picker.FileTypeChoices.Add("JSON file", [".json"]);
+
+		var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(appWindow);
+		WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
+
+		var file = await picker.PickSaveFileAsync();
+
+		if (file == null)
+		{
+			ConnectionStatusMessage = "Export canceled.";
+			return false;
+		}
+
+		await Windows.Storage.FileIO.WriteTextAsync(file, json);
+		return true;
+		#else
+		// TODO:
+		ConnectionStatusMessage = "Export with a save picker is currently supported on Windows only.";
+		return false;
+		#endif
+	}
+
+	private DeviceExportPackage BuildDeviceExportPackage()
+	{
+		var users = ZkTecoClock?.GetUsers() ?? [];
+		var attendanceRecords = ZkTecoClock?.GetAttendance() ?? [];
+
+		return new DeviceExportPackage
+		{
+			SchemaVersion = ExportSchemaVersion,
+			ExportedAtUtc = DateTime.UtcNow,
+			DeviceInfo = new DeviceExportInfo
+			{
+				SerialNumber = ZkTecoClock?.GetDeviceSerial(),
+				FirmwareVersion = ZkTecoClock?.GetFirmwareVersion(),
+				Platform = ZkTecoClock?.GetDevicePlatform(),
+			},
+			// Intentionally "safe settings" and avoid network identity fields.
+			Settings = new DeviceSafeSettings
+			{
+				DeviceName = ZkTecoClock?.GetDeviceName(),
+				DeviceTime = ZkTecoClock?.GetTime(),
+				ExtendedFormat = ZkTecoClock?.GetDeviceExtendedFormat(),
+				UserExtendedFormat = ZkTecoClock?.GetDeviceUserExtendedFormat(),
+				FaceVersion = ZkTecoClock?.GetDeviceFaceVersion(),
+				FingerprintVersion = ZkTecoClock?.GetDeviceFingerprintVersion(),
+			},
+			Users = users,
+			AttendanceRecords = attendanceRecords,
+		};
+	}
+
 	private void Reset()
 	{
 		if (ZkTecoClock != null && ZkTecoClock.IsConnected)
@@ -336,6 +440,33 @@ public sealed partial class Home : ComponentBase, IDisposable
 	}
 
 	private class PlaceholderModel { }
+
+	private sealed class DeviceExportPackage
+	{
+		public string SchemaVersion { get; set; } = ExportSchemaVersion;
+		public DateTime ExportedAtUtc { get; set; }
+		public DeviceExportInfo DeviceInfo { get; set; } = new();
+		public DeviceSafeSettings Settings { get; set; } = new();
+		public List<ZkTecoUser> Users { get; set; } = [];
+		public List<ZkTecoAttendance> AttendanceRecords { get; set; } = [];
+	}
+
+	private sealed class DeviceExportInfo
+	{
+		public string? SerialNumber { get; set; }
+		public string? FirmwareVersion { get; set; }
+		public string? Platform { get; set; }
+	}
+
+	private sealed class DeviceSafeSettings
+	{
+		public string? DeviceName { get; set; }
+		public DateTime? DeviceTime { get; set; }
+		public string? ExtendedFormat { get; set; }
+		public string? UserExtendedFormat { get; set; }
+		public string? FaceVersion { get; set; }
+		public string? FingerprintVersion { get; set; }
+	}
 
 	/// <inheritdoc />
 	public void Dispose()
