@@ -17,11 +17,12 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private readonly PlaceholderModel DeviceDetailsPlaceholder = new();
 
 	private string? ConnectionStatusMessage;
-	private ActionMessage? UserManagementActionMessage;
+	private string? DeviceDetailsMessage;
+
+    private ActionMessage? UserManagementActionMessage;
 	private ActionMessage? UserModalActionMessage;
 	private ActionMessage? AttendanceActionMessage;
 	private ActionMessage? DeviceActionMessage;
-	private string? DeviceDetailsMessage;
 
     private RecordCounts? DeviceStorageCounts;
 	private readonly List<ZkTecoUser> Users = [];
@@ -262,10 +263,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		if (ReloadUsers())
-			SetActionMessage(ref UserManagementActionMessage, "Get Users", true, $"loaded {Users.Count} user(s).");
-		else
-			SetActionMessage(ref UserManagementActionMessage, "Get Users", false, "failed reading users from the ZKTeco device.");
+		var success = ReloadUsers();
+		SetActionMessage(ref UserManagementActionMessage, "Get Users", success, success ? $"loaded {Users.Count} user(s)." : "failed reading users from the ZKTeco device.");
 	}
 
     /// <summary>
@@ -362,13 +361,12 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		if (ZkTecoClock.DeleteUser(user))
-		{
+		var success = ZkTecoClock.DeleteUser(user);
+
+		if (success)
 			Users.Remove(user);
-			SetActionMessage(ref UserManagementActionMessage, "Delete User", true, $"deleted user '{user.UserId}'.");
-		}
-		else
-			SetActionMessage(ref UserManagementActionMessage, "Delete User", false, $"failed deleting user '{user.UserId}' from the ZKTeco device.");
+
+		SetActionMessage(ref UserManagementActionMessage, "Delete User", success, success ? $"deleted user '{user.UserId}'." : $"failed deleting user '{user.UserId}' from the ZKTeco device.");
 	}
 
 	private void GetAttendanceRecords()
@@ -383,14 +381,12 @@ public sealed partial class Home : ComponentBase, IDisposable
         Attendances.Clear();
 
 		var records = ZkTecoClock.GetAttendance();
+		var success = records != null;
 
-		if (records != null)
-		{
-			Attendances.AddRange(records);
-			SetActionMessage(ref AttendanceActionMessage, "Get Attendance", true, $"loaded {Attendances.Count} attendance record(s).");
-		}
-		else
-			SetActionMessage(ref AttendanceActionMessage, "Get Attendance", false, "failed reading attendance records from the ZKTeco device.");
+		if (success)
+			Attendances.AddRange(records!);
+
+		SetActionMessage(ref AttendanceActionMessage, "Get Attendance", success, success ? $"loaded {Attendances.Count} attendance record(s)." : "failed reading attendance records from the ZKTeco device.");
 	}
 
 	private void ClearAttendanceRecords()
@@ -398,13 +394,12 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		if (ZkTecoClock.ClearAttendance())
-		{
+		var success = ZkTecoClock.ClearAttendance();
+
+		if (success)
 			Attendances.Clear();
-			SetActionMessage(ref AttendanceActionMessage, "Delete Attendance", true, "deleted all attendance records.");
-		}
-		else
-			SetActionMessage(ref AttendanceActionMessage, "Delete Attendance", false, "failed deleting attendance records from the ZKTeco device.");
+
+		SetActionMessage(ref AttendanceActionMessage, "Delete Attendance", success, success ? "deleted all attendance records." : "failed deleting attendance records from the ZKTeco device.");
 	}
 
 	private void OpenDeleteAttendanceModal()
@@ -468,12 +463,12 @@ public sealed partial class Home : ComponentBase, IDisposable
 		string UserId, DateTime Timestamp, int Status, int Punch,
 		string UserName, string? UserGroup, int? UserCard, Privilege? UserPrivilege);
 
-	/// <summary>
-	/// Represents a user-management operation message with UI style metadata.
-	/// </summary>
-	/// <param name="Class">The CSS class to apply for styling the message.</param>
-	/// <param name="Message">The message text to display.</param>
-	private sealed record ActionMessage(string Class, string Message);
+    /// <summary>
+    /// Represents a user-management operation message with UI style metadata.
+    /// </summary>
+    /// <param name="Class">The CSS class to apply for styling the message.</param>
+    /// <param name="Message">The message text to display.</param>
+    private sealed record ActionMessage(string Class, string Message);
 
 	private class PageModel
 	{
