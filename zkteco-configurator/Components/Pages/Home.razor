@@ -373,6 +373,12 @@
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Attendance Management">
+    @if (AttendanceActionMessage != null)
+    {
+        <Message class=@AttendanceActionMessage.Class>
+            @AttendanceActionMessage.Message
+        </Message>
+    }
     <div class="columns is-variable is-1">
         <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
             <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetAttendanceRecords'>

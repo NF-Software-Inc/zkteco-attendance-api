@@ -19,6 +19,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private string? ConnectionStatusMessage;
 	private ActionMessage? UserManagementActionMessage;
 	private ActionMessage? UserModalActionMessage;
+	private ActionMessage? AttendanceActionMessage;
 	private string? DeviceDetailsMessage;
 
     private RecordCounts? DeviceStorageCounts;
@@ -375,7 +376,12 @@ public sealed partial class Home : ComponentBase, IDisposable
 		var records = ZkTecoClock.GetAttendance();
 
 		if (records != null)
+		{
 			Attendances.AddRange(records);
+			SetActionMessage(ref AttendanceActionMessage, "Get Attendance", true, $"loaded {Attendances.Count} attendance record(s).");
+		}
+		else
+			SetActionMessage(ref AttendanceActionMessage, "Get Attendance", false, "unable to read attendance records from the clock.");
 	}
 
 	private void ClearAttendanceRecords()
@@ -383,8 +389,13 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		ZkTecoClock.ClearAttendance();
-		Attendances.Clear();
+		if (ZkTecoClock.ClearAttendance())
+		{
+			Attendances.Clear();
+			SetActionMessage(ref AttendanceActionMessage, "Delete Attendance", true, "deleted all attendance records.");
+		}
+		else
+			SetActionMessage(ref AttendanceActionMessage, "Delete Attendance", false, "unable to delete attendance records from the clock.");
 	}
 
 	private void OpenDeleteAttendanceModal()
@@ -413,6 +424,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		ConnectionStatusMessage = null;
 		UserManagementActionMessage = null;
+		AttendanceActionMessage = null;
 		DeviceDetailsMessage = null;
 		DeviceStorageCounts = null;
 
