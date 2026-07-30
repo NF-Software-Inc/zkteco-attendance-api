@@ -79,6 +79,12 @@
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
+    @if (DeviceActionMessage != null)
+    {
+        <Message class=@DeviceActionMessage.Class>
+            @DeviceActionMessage.Message
+        </Message>
+    }
     <EditForm Model="DeviceDetailsPlaceholder">
         <div class="columns is-variable is-1">
             <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">

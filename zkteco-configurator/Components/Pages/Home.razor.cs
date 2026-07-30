@@ -20,6 +20,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private ActionMessage? UserManagementActionMessage;
 	private ActionMessage? UserModalActionMessage;
 	private ActionMessage? AttendanceActionMessage;
+	private ActionMessage? DeviceActionMessage;
 	private string? DeviceDetailsMessage;
 
     private RecordCounts? DeviceStorageCounts;
@@ -172,6 +173,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		DeviceDetailsMessage += "Platform: " + ZkTecoClock.GetDevicePlatform() + Environment.NewLine;
 
 		DeviceStorageCounts = ZkTecoClock.GetStorageDetails();
+		SetActionMessage(ref DeviceActionMessage, "Get Device Details", true, "loaded device details.");
 	}
 
 	private void EnableDevice()
@@ -179,7 +181,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		ZkTecoClock.EnableDevice();
+		var success = ZkTecoClock.EnableDevice();
+		SetActionMessage(ref DeviceActionMessage, "Enable Device", success, success ? "device enabled." : "failed enabling ZKTeco device.");
 	}
 
 	private void DisableDevice()
@@ -187,7 +190,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		ZkTecoClock.DisableDevice();
+		var success = ZkTecoClock.DisableDevice();
+		SetActionMessage(ref DeviceActionMessage, "Disable Device", success, success ? "device disabled." : "failed disabling ZKTeco device.");
 	}
 
 	private void RestartDevice()
@@ -195,7 +199,10 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		if (ZkTecoClock.RestartDevice())
+		var success = ZkTecoClock.RestartDevice();
+		SetActionMessage(ref DeviceActionMessage, "Restart Device", success, success ? "restart success." : "failed restarting ZKTeco device.");
+
+		if (success)
 			ZkTecoClock = null;
 	}
 
@@ -204,7 +211,10 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		if (ZkTecoClock.ShutdownDevice())
+		var success = ZkTecoClock.ShutdownDevice();
+		SetActionMessage(ref DeviceActionMessage, "Shutdown Device", success, success ? "shutdown success." : "failed turning off ZKTeco device.");
+
+		if (success)
 			ZkTecoClock = null;
 	}
 
@@ -213,9 +223,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		ZkTecoClock.ClearBuffer();
-		ZkTecoClock.ClearError();
-		ZkTecoClock.RefreshData();
+		var success = ZkTecoClock.ClearBuffer() && ZkTecoClock.ClearError() && ZkTecoClock.RefreshData();
+		SetActionMessage(ref DeviceActionMessage, "Clear Errors and Refresh", success, success ? "cleared errors and refreshed data." : "failed clearing errors and refreshing data on ZKTeco device.");
 	}
 
 	private void SetClockTime()
@@ -223,10 +232,10 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		if (InputModel.ClockTime != null)
-			ZkTecoClock.SetTime(InputModel.ClockTime.Value);
-		else
-			ZkTecoClock.SetTime();
+		var success = InputModel.ClockTime != null
+			? ZkTecoClock.SetTime(InputModel.ClockTime.Value)
+			: ZkTecoClock.SetTime();
+		SetActionMessage(ref DeviceActionMessage, "Set Device Time", success, success ? "device time updated." : "failed setting device time on ZKTeco device.");
 	}
 
 	private void SetDisplayText()
@@ -234,10 +243,9 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		if (string.IsNullOrWhiteSpace(InputModel.DisplayText))
-			ZkTecoClock.SetDisplayText("Welcome");
-		else
-			ZkTecoClock.SetDisplayText(InputModel.DisplayText);
+		var displayText = string.IsNullOrWhiteSpace(InputModel.DisplayText) ? "Welcome" : InputModel.DisplayText;
+		var success = ZkTecoClock.SetDisplayText(displayText);
+		SetActionMessage(ref DeviceActionMessage, "Set Device Display Text", success, success ? "device display text updated." : "failed setting display text on ZKTeco device.");
 	}
 
 	private void ClearDisplayText()
@@ -245,7 +253,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		ZkTecoClock.ClearDisplayText();
+		var success = ZkTecoClock.ClearDisplayText();
+		SetActionMessage(ref DeviceActionMessage, "Clear Device Display Text", success, success ? "device display text cleared." : "failed clearing display text on ZKTeco device.");
 	}
 
 	private void GetUsers()
@@ -256,7 +265,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (ReloadUsers())
 			SetActionMessage(ref UserManagementActionMessage, "Get Users", true, $"loaded {Users.Count} user(s).");
 		else
-			SetActionMessage(ref UserManagementActionMessage, "Get Users", false, "unable to read users from the clock.");
+			SetActionMessage(ref UserManagementActionMessage, "Get Users", false, "failed reading users from the ZKTeco device.");
 	}
 
     /// <summary>
@@ -333,7 +342,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 			if (add)
 				NewUser.Index = 0;
 
-			SetActionMessage(ref UserModalActionMessage, action, false, $"unable to save user '{userName}'.");
+			SetActionMessage(ref UserModalActionMessage, action, false, $"failed saving user '{userName}' to the ZKTeco device.");
 		}
 	}
 
@@ -359,7 +368,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 			SetActionMessage(ref UserManagementActionMessage, "Delete User", true, $"deleted user '{user.UserId}'.");
 		}
 		else
-			SetActionMessage(ref UserManagementActionMessage, "Delete User", false, $"unable to delete user '{user.UserId}'.");
+			SetActionMessage(ref UserManagementActionMessage, "Delete User", false, $"failed deleting user '{user.UserId}' from the ZKTeco device.");
 	}
 
 	private void GetAttendanceRecords()
@@ -381,7 +390,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 			SetActionMessage(ref AttendanceActionMessage, "Get Attendance", true, $"loaded {Attendances.Count} attendance record(s).");
 		}
 		else
-			SetActionMessage(ref AttendanceActionMessage, "Get Attendance", false, "unable to read attendance records from the clock.");
+			SetActionMessage(ref AttendanceActionMessage, "Get Attendance", false, "failed reading attendance records from the ZKTeco device.");
 	}
 
 	private void ClearAttendanceRecords()
@@ -395,7 +404,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 			SetActionMessage(ref AttendanceActionMessage, "Delete Attendance", true, "deleted all attendance records.");
 		}
 		else
-			SetActionMessage(ref AttendanceActionMessage, "Delete Attendance", false, "unable to delete attendance records from the clock.");
+			SetActionMessage(ref AttendanceActionMessage, "Delete Attendance", false, "failed deleting attendance records from the ZKTeco device.");
 	}
 
 	private void OpenDeleteAttendanceModal()
@@ -425,6 +434,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		ConnectionStatusMessage = null;
 		UserManagementActionMessage = null;
 		AttendanceActionMessage = null;
+		DeviceActionMessage = null;
 		DeviceDetailsMessage = null;
 		DeviceStorageCounts = null;
 
@@ -448,7 +458,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 	/// </summary>
 	private static void SetActionMessage(ref ActionMessage? target, string action, bool success, string detail)
 	{
-		target = new(success ? "is-success" : "is-danger", $"[{action}] {(success ? "Success" : "Failed")}: {detail}");
+		target = new(success ? "is-success" : "is-danger", $"[{action}] {(success ? "Success" : "Fail")}: {detail}");
     }
 
     /// <summary>
