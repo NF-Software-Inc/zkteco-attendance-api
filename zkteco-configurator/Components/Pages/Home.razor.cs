@@ -155,6 +155,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
+        // Capture any command-layer errors emitted while querying details
+        string? deviceDetailsCommandError = null;
+		CommandError onDeviceDetailsError = message => deviceDetailsCommandError = message;
+		ZkTecoClock.NotifyCommandError += onDeviceDetailsError;
+
 		DeviceDetailsMessage = string.Empty;
 
 		DeviceDetailsMessage += "Time: " + ZkTecoClock.GetTime()?.ToString("G") + Environment.NewLine;
@@ -174,7 +179,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 		DeviceDetailsMessage += "Platform: " + ZkTecoClock.GetDevicePlatform() + Environment.NewLine;
 
 		DeviceStorageCounts = ZkTecoClock.GetStorageDetails();
-		SetActionMessage(ref DeviceActionMessage, "Get Device Details", true, "loaded device details.");
+		ZkTecoClock.NotifyCommandError -= onDeviceDetailsError;
+
+		var success = string.IsNullOrWhiteSpace(deviceDetailsCommandError);
+		SetActionMessage(ref DeviceActionMessage, "Get Device Details", success,
+			success ? "loaded device details." : $"loaded partial device details. {deviceDetailsCommandError}");
 	}
 
 	private void EnableDevice()
@@ -224,7 +233,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		var success = ZkTecoClock.ClearBuffer() && ZkTecoClock.ClearError() && ZkTecoClock.RefreshData();
+		var success = ZkTecoClock.ClearBuffer() & ZkTecoClock.ClearError() & ZkTecoClock.RefreshData();
 		SetActionMessage(ref DeviceActionMessage, "Clear Errors and Refresh", success, success ? "cleared errors and refreshed data." : "failed clearing errors and refreshing data on ZKTeco device.");
 	}
 
