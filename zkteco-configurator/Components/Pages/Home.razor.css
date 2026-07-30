@@ -4,3 +4,36 @@
     top: 50%;
     transform: translateY(-50%);
 }
+
+
+/*
+    Applies only to status messages rendered inside Home.razor.
+    `::deep` is required because <Message> renders child DOM from another component,
+    and scoped CSS would not otherwise reach that generated element.
+*/
+.status-message-scope ::deep .auto-hide {
+    /* Keep the message visible briefly, then fade/collapse it and keep final hidden state. */
+    animation: auto-hide-fade 3s ease-out forwards;
+}
+
+/*
+    Animation timeline:
+    - 0% to 80%: fully visible (user can read success feedback)
+    - 100%: visually hidden and collapsed so it no longer takes interaction space
+*/
+@keyframes auto-hide-fade {
+    0%,
+    80% {
+        opacity: 1;
+        max-height: 10rem;
+        margin-bottom: 1rem;
+    }
+
+    100% {
+        opacity: 0;
+        max-height: 0;
+        margin-bottom: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+}

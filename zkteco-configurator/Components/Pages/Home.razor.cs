@@ -448,12 +448,26 @@ public sealed partial class Home : ComponentBase, IDisposable
 		UserFilterCard = null;
 	}
 
-	/// <summary>
-	/// Sets a standardized status message in the provided operation message target.
-	/// </summary>
-	private static void SetActionMessage(ref ActionMessage? target, string action, bool success, string detail)
+    /// <summary>
+    /// Sets a standardized status message in the provided operation message target.
+    /// </summary>
+    /// <param name="target">The target action message to set.</param>
+    /// <param name="action">The name of the action being performed.</param>
+    /// <param name="success">Indicates whether the action was successful.</param>
+    /// <param name="detail">Additional details about the action's outcome.</param>
+    /// <remarks>
+    /// Successful actions append the <c>auto-hide</c> CSS class so the message fades out via
+    /// <c>Home.razor.css</c>. Failed actions use <c>is-danger</c> and remain visible.
+    ///
+    /// A unique <c>RenderKey</c> is assigned for each message so repeated actions with similar
+    /// content still trigger a fresh render and replay the CSS animation.
+    /// </remarks>
+    private static void SetActionMessage(ref ActionMessage? target, string action, bool success, string detail)
 	{
-		target = new(success ? "is-success" : "is-danger", $"[{action}] {(success ? "Success" : "Fail")}: {detail}");
+		target = new(
+			Class: success ? "is-success auto-hide" : "is-danger",
+			Message: $"[{action}] {(success ? "Success" : "Fail")}: {detail}",
+			RenderKey: DateTime.UtcNow.Ticks);
     }
 
     /// <summary>
@@ -466,9 +480,10 @@ public sealed partial class Home : ComponentBase, IDisposable
     /// <summary>
     /// Represents a user-management operation message with UI style metadata.
     /// </summary>
-    /// <param name="Class">The CSS class to apply for styling the message.</param>
+	/// <param name="Class">The CSS class to apply for styling the message, including optional auto-hide behavior.</param>
     /// <param name="Message">The message text to display.</param>
-    private sealed record ActionMessage(string Class, string Message);
+	/// <param name="RenderKey">A unique key to force re-rendering of the message in the UI, so repeated messages can replay animations.</param>
+	private sealed record ActionMessage(string Class, string Message, long RenderKey);
 
 	private class PageModel
 	{
