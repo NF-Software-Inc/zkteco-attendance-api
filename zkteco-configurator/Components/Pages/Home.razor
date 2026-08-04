@@ -4,14 +4,11 @@
 @inherits ComponentBase
 @implements IDisposable
 
-<div class="is-relative mb-2">
-    <div class="has-text-centered">
-        <TitleBlock Title="ZKTeco Configurator" />
-    </div>
-    <span class="has-text-white is-size-6 app-version-label">
+<TitleBlock Title="ZKTeco Configurator" >
+    <div class="p-0 m-0 mt-1 is-pulled-right">
         @($"V{AppVersion}")
-    </span>
-</div>
+    </div>
+</TitleBlock>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Clock Settings">
     <EditForm Model="InputModel" OnValidSubmit="OnConnect">
@@ -78,15 +75,16 @@
     </EditForm>
 </Panel>
 
-<div class="status-message-scope">
-    <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
-        @if (DeviceActionMessage != null)
-        {
+<Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
+    @if (DeviceActionMessage != null)
+    {
+        <div class="status-message-scope">
             <Message @key="DeviceActionMessage.RenderKey" class=@DeviceActionMessage.Class>
                 @DeviceActionMessage.Message
             </Message>
-        }
-        <EditForm Model="DeviceDetailsPlaceholder">
+        </div>
+    }
+    <EditForm Model="DeviceDetailsPlaceholder">
             <div class="columns is-variable is-1">
                 <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
                     <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetDeviceDetails'>
@@ -197,9 +195,11 @@
     <Panel class="pt-2 px-2 mb-0 is-size-7" Title="User Management">
         @if (UserManagementActionMessage != null)
         {
-            <Message @key="UserManagementActionMessage.RenderKey" class=@UserManagementActionMessage.Class>
-                @UserManagementActionMessage.Message
-            </Message>
+            <div class="status-message-scope">
+                <Message @key="UserManagementActionMessage.RenderKey" class=@UserManagementActionMessage.Class>
+                    @UserManagementActionMessage.Message
+                </Message>
+            </div>
         }
         <div class="columns is-variable is-1">
                 <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
@@ -292,9 +292,11 @@
 
                     @if (UserModalActionMessage != null)
                     {
-                        <Message @key="UserModalActionMessage.RenderKey" class=@UserModalActionMessage.Class>
-                            @UserModalActionMessage.Message
-                        </Message>
+                        <div class="status-message-scope">
+                            <Message @key="UserModalActionMessage.RenderKey" class=@UserModalActionMessage.Class>
+                                @UserModalActionMessage.Message
+                            </Message>
+                        </div>
                     }
 
                     <div class="field">
@@ -382,9 +384,11 @@
     <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Attendance Management">
         @if (AttendanceActionMessage != null)
         {
-            <Message @key="AttendanceActionMessage.RenderKey" class=@AttendanceActionMessage.Class>
-                @AttendanceActionMessage.Message
-            </Message>
+            <div class="status-message-scope">
+                <Message @key="AttendanceActionMessage.RenderKey" class=@AttendanceActionMessage.Class>
+                    @AttendanceActionMessage.Message
+                </Message>
+            </div>
         }
         <div class="columns is-variable is-1">
             <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
@@ -442,4 +446,3 @@
             </ModalFooter>
         </Modal>
     </Panel>
-</div>
