@@ -101,7 +101,28 @@
 
                 @if (BackupModalMode == BackupOperationMode.Export)
                 {
-                    <p class="is-size-6">Export users, attendance, and safe device settings into a JSON backup file.</p>
+                    <label class="label">Choose what to include in the backup export:</label>
+
+                    <div class="field mb-2">
+                        <InputSwitch @bind-Value="BackupIncludeSettings" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+                    </div>
+
+                    <div class="field mb-2 ml-5">
+                        <InputSwitch @bind-Value="BackupIncludeNetworkSettings" disabled="@(BackupIncludeSettings == false)" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+                    </div>
+
+                    <div class="field mb-2">
+                        <InputSwitch @bind-Value="BackupIncludeUsers" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+                    </div>
+
+                    <div class="field mb-2">
+                        <InputSwitch @bind-Value="BackupIncludeAttendance" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+                    </div>
+
+                    @if (DisableBackupExport)
+                    {
+                        <p class="help is-danger">Select at least one section to export.</p>
+                    }
                 }
                 else
                 {
@@ -113,7 +134,7 @@
 
                 @if (BackupModalMode == BackupOperationMode.Export)
                 {
-                    <button type="button" class="button is-info" disabled="@DisableControls" @onclick='ExportDeviceBackupAsync'>
+                    <button type="button" class="button is-info" disabled="@(DisableControls || DisableBackupExport)" @onclick='ExportDeviceBackupAsync'>
                         <span class="material-icons icon">download</span>
                         <span>Export</span>
                     </button>

@@ -35,6 +35,22 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private bool ModalBackupDisplayed;
 	private BackupOperationMode BackupModalMode = BackupOperationMode.Export;
 
+    [Display(Name = "Include Settings", Description = "Include the device settings in the backup.")]
+    private bool BackupIncludeSettings = true;
+
+    [Display(Name = "Include Users", Description = "Include the user data in the backup.")]
+    private bool BackupIncludeUsers = true;
+
+    [Display(Name = "Include Attendance", Description = "Include the attendance data in the backup.")]
+    private bool BackupIncludeAttendance = true;
+
+	[Display(Name = "Include network settings (IP/subnet/gateway/MAC)", Description = "Include the network settings in the backup.")]
+	private bool BackupIncludeNetworkSettings;
+
+    private readonly TooltipOptions BackupTooltipDisplayMode = TooltipOptions.Right | TooltipOptions.HasArrow | TooltipOptions.Multiline;
+    private bool DisableBackupExport => BackupIncludeSettings == false &&
+		BackupIncludeUsers == false && BackupIncludeAttendance == false;
+
     #region Filter Users
     private string? UserFilterName;
 	private Privilege? UserFilterPrivilege;
@@ -461,6 +477,10 @@ public sealed partial class Home : ComponentBase, IDisposable
 	{
 		BackupModalMode = BackupOperationMode.Export;
 		BackupModalActionMessage = null;
+		BackupIncludeSettings = true;
+		BackupIncludeUsers = true;
+		BackupIncludeAttendance = true;
+		BackupIncludeNetworkSettings = false;
 		ModalBackupDisplayed = true;
 	}
 
@@ -485,6 +505,12 @@ public sealed partial class Home : ComponentBase, IDisposable
 	{
 		if (EnsureConnectedClock() == false)
 			return;
+
+		if (DisableBackupExport)
+		{
+			SetActionMessage(ref BackupModalActionMessage, "Export Device Backup", false, "select at least one section to export.");
+			return;
+		}
 
 		try
 		{
@@ -559,8 +585,23 @@ public sealed partial class Home : ComponentBase, IDisposable
     /// <returns>The constructed DeviceExportPackage.</returns>
     private DeviceExportPackage BuildDeviceExportPackage()
 	{
-		var users = ZkTecoClock?.GetUsers() ?? [];
-		var attendanceRecords = ZkTecoClock?.GetAttendance() ?? [];
+		var users = BackupIncludeUsers ? ZkTecoClock?.GetUsers() ?? [] : null;
+		var attendanceRecords = BackupIncludeAttendance ? ZkTecoClock?.GetAttendance() ?? [] : null;
+		var settings = BackupIncludeSettings
+			? new DeviceSafeSettings
+			{
+				DeviceName = ZkTecoClock?.GetDeviceName(),
+				DeviceTime = ZkTecoClock?.GetTime(),
+				ExtendedFormat = ZkTecoClock?.GetDeviceExtendedFormat(),
+				UserExtendedFormat = ZkTecoClock?.GetDeviceUserExtendedFormat(),
+				FaceVersion = ZkTecoClock?.GetDeviceFaceVersion(),
+				FingerprintVersion = ZkTecoClock?.GetDeviceFingerprintVersion(),
+				DeviceIp = BackupIncludeNetworkSettings ? ZkTecoClock?.GetDeviceIp() : null,
+				SubnetMask = BackupIncludeNetworkSettings ? ZkTecoClock?.GetDeviceSubnetMask() : null,
+				GatewayIp = BackupIncludeNetworkSettings ? ZkTecoClock?.GetDeviceGatewayIp() : null,
+				MacAddress = BackupIncludeNetworkSettings ? ZkTecoClock?.GetDeviceMac() : null,
+			}
+			: null;
 
 		return new DeviceExportPackage
 		{
@@ -572,16 +613,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 				FirmwareVersion = ZkTecoClock?.GetFirmwareVersion(),
 				Platform = ZkTecoClock?.GetDevicePlatform(),
 			},
-			// Intentionally "safe settings" and avoid network identity fields.
-			Settings = new DeviceSafeSettings
-			{
-				DeviceName = ZkTecoClock?.GetDeviceName(),
-				DeviceTime = ZkTecoClock?.GetTime(),
-				ExtendedFormat = ZkTecoClock?.GetDeviceExtendedFormat(),
-				UserExtendedFormat = ZkTecoClock?.GetDeviceUserExtendedFormat(),
-				FaceVersion = ZkTecoClock?.GetDeviceFaceVersion(),
-				FingerprintVersion = ZkTecoClock?.GetDeviceFingerprintVersion(),
-			},
+			Settings = settings,
 			Users = users,
 			AttendanceRecords = attendanceRecords,
 		};
@@ -726,15 +758,15 @@ public sealed partial class Home : ComponentBase, IDisposable
         /// <summary>
         /// Safe settings of the ZKTeco device being exported.
         /// </summary>
-        public DeviceSafeSettings Settings { get; set; } = new();
+		public DeviceSafeSettings? Settings { get; set; }
 		/// <summary>
 		/// List of users on the ZKTeco device being exported.
 		/// </summary>
-		public List<ZkTecoUser> Users { get; set; } = [];
+		public List<ZkTecoUser>? Users { get; set; }
 		/// <summary>
 		/// List of attendance records on the ZKTeco device being exported.
 		/// </summary>
-		public List<ZkTecoAttendance> AttendanceRecords { get; set; } = [];
+		public List<ZkTecoAttendance>? AttendanceRecords { get; set; }
 	}
 
     /// <summary>
@@ -776,6 +808,22 @@ public sealed partial class Home : ComponentBase, IDisposable
         /// The version of the fingerprint recognition feature of the ZKTeco device.
         /// </summary>
         public string? FingerprintVersion { get; set; }
+		/// <summary>
+		/// The current IP address of the ZKTeco device when network settings are explicitly included.
+		/// </summary>
+		public string? DeviceIp { get; set; }
+		/// <summary>
+		/// The current subnet mask of the ZKTeco device when network settings are explicitly included.
+		/// </summary>
+		public string? SubnetMask { get; set; }
+		/// <summary>
+		/// The current gateway IP of the ZKTeco device when network settings are explicitly included.
+		/// </summary>
+		public string? GatewayIp { get; set; }
+		/// <summary>
+		/// The current MAC address of the ZKTeco device when network settings are explicitly included.
+		/// </summary>
+		public string? MacAddress { get; set; }
 	}
 
 	/// <inheritdoc />
