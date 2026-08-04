@@ -24,6 +24,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private ActionMessage? UserModalActionMessage;
 	private ActionMessage? AttendanceActionMessage;
 	private ActionMessage? DeviceActionMessage;
+    private ActionMessage? BackupModalActionMessage;
 
     private RecordCounts? DeviceStorageCounts;
 	private readonly List<ZkTecoUser> Users = [];
@@ -31,6 +32,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private bool ModalAddUserDisplayed;
 	private bool ModalDeleteAttendanceDisplayed;
+	private bool ModalBackupDisplayed;
+	private BackupOperationMode BackupModalMode = BackupOperationMode.Export;
 
     #region Filter Users
     private string? UserFilterName;
@@ -168,7 +171,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 		return true;
 	}
 
-	private void GetDeviceDetails()
+    #region Device Details & Management
+    private void GetDeviceDetails()
 	{
 		if (EnsureConnectedClock() == false)
 			return;
@@ -284,8 +288,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 		var success = ZkTecoClock.ClearDisplayText();
 		SetActionMessage(ref DeviceActionMessage, "Clear Device Display Text", success, success ? "device display text cleared." : "failed clearing display text on ZKTeco device.");
 	}
+    #endregion
 
-	private void GetUsers()
+    #region User Management
+
+    private void GetUsers()
 	{
 		if (EnsureConnectedClock() == false)
 			return;
@@ -395,8 +402,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		SetActionMessage(ref UserManagementActionMessage, "Delete User", success, success ? $"deleted user '{user.UserId}'." : $"failed deleting user '{user.UserId}' from the ZKTeco device.");
 	}
+    #endregion
 
-	private void GetAttendanceRecords()
+    #region Attendance Management
+
+    private void GetAttendanceRecords()
 	{
 		if (EnsureConnectedClock() == false)
 			return;
@@ -444,6 +454,28 @@ public sealed partial class Home : ComponentBase, IDisposable
 		ClearAttendanceRecords();
 		ModalDeleteAttendanceDisplayed = false;
 	}
+    #endregion
+
+    #region Device Backup
+	private void OpenBackupModalForExport()
+	{
+		BackupModalMode = BackupOperationMode.Export;
+		BackupModalActionMessage = null;
+		ModalBackupDisplayed = true;
+	}
+
+	private void OpenBackupModalForImport()
+	{
+		BackupModalMode = BackupOperationMode.Import;
+		BackupModalActionMessage = null;
+		ModalBackupDisplayed = true;
+	}
+
+	private void CloseBackupModal()
+	{
+		BackupModalActionMessage = null;
+		ModalBackupDisplayed = false;
+	}
 
     /// <summary>
     /// Exports the current state of the connected ZKTeco device, including users and attendance records, to a JSON file.
@@ -451,11 +483,8 @@ public sealed partial class Home : ComponentBase, IDisposable
     /// <returns></returns>
     private async Task ExportDeviceBackupAsync()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+		if (EnsureConnectedClock() == false)
 			return;
-		}
 
 		try
 		{
@@ -466,11 +495,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 			var exported = await SaveExportJsonAsync(fileName, json);
 
 			if (exported)
-                ConnectionStatusMessage = $"Device backup exported to '{fileName}'.";
+                SetActionMessage(ref BackupModalActionMessage, "Export Device Backup", true, $"Device backup exported to '{fileName}'.");
         }
         catch (Exception ex)
 		{
-            ConnectionStatusMessage = $"Failed exporting device backup: {ex.Message}";
+            SetActionMessage(ref BackupModalActionMessage, "Export Device Backup", false, $"Failed exporting device backup: {ex.Message}");
         }
     }
 
@@ -492,7 +521,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		if (appWindow == null)
 		{
-			ConnectionStatusMessage = "Unable to get active app window for export.";
+			SetActionMessage(ref BackupModalActionMessage, "Export Device Backup", false, "Unable to get active app window for export.");
 			return false;
 		}
 
@@ -511,7 +540,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		if (file == null)
 		{
-			ConnectionStatusMessage = "Export canceled.";
+			SetActionMessage(ref BackupModalActionMessage, "Export Device Backup", false, "Export canceled.");
 			return false;
 		}
 
@@ -519,7 +548,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		return true;
 #else
         // TODO:
-        ConnectionStatusMessage = "Export with a save picker is currently supported on Windows only.";
+        SetActionMessage(ref BackupModalActionMessage, "Export Device Backup", false, "Export with a save picker is currently supported on Windows only.");
         return false;
 		#endif
 	}
@@ -557,6 +586,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 			AttendanceRecords = attendanceRecords,
 		};
 	}
+    #endregion
 
 	private void Reset()
 	{
@@ -570,6 +600,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		UserManagementActionMessage = null;
 		AttendanceActionMessage = null;
 		DeviceActionMessage = null;
+		BackupModalActionMessage = null;
 		DeviceDetailsMessage = null;
 		DeviceStorageCounts = null;
 
@@ -624,6 +655,15 @@ public sealed partial class Home : ComponentBase, IDisposable
     /// <param name="Message">The message text to display.</param>
 	/// <param name="RenderKey">A unique key to force re-rendering of the message in the UI, so repeated messages can replay animations.</param>
 	private sealed record ActionMessage(string Class, string Message, long RenderKey);
+
+	/// <summary>
+	/// Defines the operation mode for the backup modal.
+	/// </summary>
+	private enum BackupOperationMode
+	{
+		Export,
+		Import,
+	}
 
 	private class PageModel
 	{

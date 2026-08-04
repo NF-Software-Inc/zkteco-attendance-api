@@ -80,10 +80,53 @@
 
 <div class="status-message-scope">
     <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Import / Export">
-        <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='ExportDeviceBackupAsync'>
+        <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForExport'>
             <span class="material-icons icon">download</span>
-            <span>Export Device Backup</span>
+            <span>Export</span>
         </button>
+
+        <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForImport'>
+            <span class="material-icons icon">upload</span>
+            <span>Import</span>
+        </button>
+
+        <Modal Title=@($"Device Backup {BackupModalMode.ToString()}") @bind-IsDisplayed=ModalBackupDisplayed foot-class="is-justify-content-center">
+            <ModalBody>
+                @if (BackupModalActionMessage != null)
+                {
+                    <Message @key="BackupModalActionMessage.RenderKey" class=@BackupModalActionMessage.Class>
+                        @BackupModalActionMessage.Message
+                    </Message>
+                }
+
+                @if (BackupModalMode == BackupOperationMode.Export)
+                {
+                    <p class="is-size-6">Export users, attendance, and safe device settings into a JSON backup file.</p>
+                }
+                else
+                {
+                    <p class="is-size-6">Import support placeholder...</p>
+                }
+            </ModalBody>
+            <ModalFooter>
+                <button type="button" class="button" @onclick='CloseBackupModal'>Cancel</button>
+
+                @if (BackupModalMode == BackupOperationMode.Export)
+                {
+                    <button type="button" class="button is-info" disabled="@DisableControls" @onclick='ExportDeviceBackupAsync'>
+                        <span class="material-icons icon">download</span>
+                        <span>Export</span>
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="button is-info" disabled="@DisableControls">
+                        <span class="material-icons icon">upload</span>
+                        <span>Import</span>
+                    </button>
+                }
+            </ModalFooter>
+        </Modal>
     </Panel>
 
     <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
