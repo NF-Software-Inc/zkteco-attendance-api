@@ -18,7 +18,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private string? ConnectionStatusMessage;
 	private string? DeviceDetailsMessage;
 
-	private RecordCounts? DeviceStorageCounts;
+    private RecordCounts? DeviceStorageCounts;
 	private readonly List<ZkTecoUser> Users = [];
 	private readonly List<ZkTecoAttendance> Attendances = [];
 
@@ -49,12 +49,22 @@ public sealed partial class Home : ComponentBase, IDisposable
 		InputDateTimeOptions.CloseOnDateClicked |
 		InputDateTimeOptions.ValidateTextInput;
 
-	private static readonly JsonSerializerOptions JsonOptions = new()
+    /// <summary>
+    /// Defines the JSON serialization options for exporting device backup data, including indentation for readability.
+    /// </summary>
+    private static readonly JsonSerializerOptions JsonOptions = new()
 	{
 		WriteIndented = true,
 	};
 
-	private const string ExportSchemaVersion = "1.0";
+    /// <summary>
+    /// Defines the schema version for the exported device backup package.
+    /// </summary>
+	/// <remarks>
+	/// This versioning allows for future changes to the export format while maintaining compatibility with older versions.
+	/// The schema version follows the format "major.minor" and should be incremented according to semantic versioning principles.
+	/// </remarks>
+    private const string ExportSchemaVersion = "1.0";
 
 	private void OnConnect()
 	{
@@ -288,7 +298,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 		ZkTecoClock.ClearAttendance();
 	}
 
-	private async Task ExportDeviceBackupAsync()
+    /// <summary>
+    /// Exports the current state of the connected ZKTeco device, including users and attendance records, to a JSON file.
+    /// </summary>
+    /// <returns></returns>
+    private async Task ExportDeviceBackupAsync()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -305,17 +319,26 @@ public sealed partial class Home : ComponentBase, IDisposable
 			var exported = await SaveExportJsonAsync(fileName, json);
 
 			if (exported)
-				ConnectionStatusMessage = $"Device backup exported to '{fileName}'.";
-		}
-		catch (Exception ex)
+                ConnectionStatusMessage = $"Device backup exported to '{fileName}'.";
+        }
+        catch (Exception ex)
 		{
-			ConnectionStatusMessage = $"Failed exporting device backup: {ex.Message}";
-		}
-	}
+            ConnectionStatusMessage = $"Failed exporting device backup: {ex.Message}";
+        }
+    }
 
-	private async Task<bool> SaveExportJsonAsync(string fileName, string json)
+    /// <summary>
+    /// Saves the provided JSON string to a file using a file save picker dialog.
+    /// </summary>
+    /// <param name="fileName">The name of the file to save.</param>
+    /// <param name="json">The JSON string to save.</param>
+    /// <returns>True if the file was successfully saved; otherwise, false.</returns>
+	/// <remarks>
+	/// This method uses a file save picker dialog, which is currently supported on Windows only.
+	/// </remarks>
+    private async Task<bool> SaveExportJsonAsync(string fileName, string json)
 	{
-		#if WINDOWS
+#if WINDOWS
 		var appWindow = Application.Current?.Windows is { Count: > 0 } windows
 			? windows[0]?.Handler?.PlatformView as Microsoft.UI.Xaml.Window
 			: null;
@@ -347,14 +370,18 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		await Windows.Storage.FileIO.WriteTextAsync(file, json);
 		return true;
-		#else
-		// TODO:
-		ConnectionStatusMessage = "Export with a save picker is currently supported on Windows only.";
-		return false;
+#else
+        // TODO:
+        ConnectionStatusMessage = "Export with a save picker is currently supported on Windows only.";
+        return false;
 		#endif
 	}
 
-	private DeviceExportPackage BuildDeviceExportPackage()
+    /// <summary>
+    /// Builds a DeviceExportPackage containing the current state of the connected ZKTeco device, including users and attendance records.
+    /// </summary>
+    /// <returns>The constructed DeviceExportPackage.</returns>
+    private DeviceExportPackage BuildDeviceExportPackage()
 	{
 		var users = ZkTecoClock?.GetUsers() ?? [];
 		var attendanceRecords = ZkTecoClock?.GetAttendance() ?? [];
@@ -400,7 +427,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		Attendances.Clear();
 	}
 
-	private class PageModel
+    private class PageModel
 	{
 		/// <summary>
 		/// IP Address of the ZKTeco device to connect to.
@@ -441,31 +468,76 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private class PlaceholderModel { }
 
-	private sealed class DeviceExportPackage
+    /// <summary>
+    /// Represents the structure of the exported device backup package.
+    /// </summary>
+    private sealed class DeviceExportPackage
 	{
-		public string SchemaVersion { get; set; } = ExportSchemaVersion;
-		public DateTime ExportedAtUtc { get; set; }
-		public DeviceExportInfo DeviceInfo { get; set; } = new();
-		public DeviceSafeSettings Settings { get; set; } = new();
+        /// <summary>
+        /// The version of the export schema used for this package.
+        /// </summary>
+        public string SchemaVersion { get; set; } = ExportSchemaVersion;
+        /// <summary>
+        /// The UTC timestamp indicating when the export was performed.
+        /// </summary>
+        public DateTime ExportedAtUtc { get; set; }
+        /// <summary>
+        /// Information about the ZKTeco device being exported, including serial number, firmware version, and platform.
+        /// </summary>
+        public DeviceExportInfo DeviceInfo { get; set; } = new();
+        /// <summary>
+        /// Safe settings of the ZKTeco device being exported.
+        /// </summary>
+        public DeviceSafeSettings Settings { get; set; } = new();
+		/// <summary>
+		/// List of users on the ZKTeco device being exported.
+		/// </summary>
 		public List<ZkTecoUser> Users { get; set; } = [];
+		/// <summary>
+		/// List of attendance records on the ZKTeco device being exported.
+		/// </summary>
 		public List<ZkTecoAttendance> AttendanceRecords { get; set; } = [];
 	}
 
-	private sealed class DeviceExportInfo
+    /// <summary>
+    /// Represents information about the ZKTeco device being exported, including serial number, firmware version, and platform.
+    /// </summary>
+    private sealed class DeviceExportInfo
 	{
 		public string? SerialNumber { get; set; }
 		public string? FirmwareVersion { get; set; }
 		public string? Platform { get; set; }
 	}
 
-	private sealed class DeviceSafeSettings
+    /// <summary>
+    /// Represents safe settings of the ZKTeco device being exported, excluding sensitive network identity fields.
+    /// </summary>
+    private sealed class DeviceSafeSettings
 	{
-		public string? DeviceName { get; set; }
-		public DateTime? DeviceTime { get; set; }
-		public string? ExtendedFormat { get; set; }
-		public string? UserExtendedFormat { get; set; }
-		public string? FaceVersion { get; set; }
-		public string? FingerprintVersion { get; set; }
+        /// <summary>
+        /// The name of the ZKTeco device.
+        /// </summary>
+        public string? DeviceName { get; set; }
+        /// <summary>
+        /// The current time of the ZKTeco device.
+        /// </summary>
+        public DateTime? DeviceTime { get; set; }
+        /// <summary>
+        /// The extended format of the ZKTeco device, which may include additional configuration details.
+        /// </summary>
+        public string? ExtendedFormat { get; set; }
+        /// <summary>
+        /// The extended format of the ZKTeco device for user-specific settings.
+        /// </summary>
+        public string? UserExtendedFormat { get; set; }
+        /// <summary>
+        /// The version of the face recognition feature of the ZKTeco device.
+        /// </summary>
+        public string? FaceVersion { get; set; }
+        /// <summary>
+        /// The version of the fingerprint recognition feature of the ZKTeco device.
+        /// </summary>
+        public string? FingerprintVersion { get; set; }
 	}
 
 	/// <inheritdoc />
