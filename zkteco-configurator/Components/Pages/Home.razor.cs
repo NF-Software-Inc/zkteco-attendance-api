@@ -25,9 +25,9 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private ActionMessage? AttendanceActionMessage;
 	private ActionMessage? DeviceActionMessage;
 
-    private RecordCounts? DeviceStorageCounts;
+	private RecordCounts? DeviceStorageCounts;
 	private readonly List<ZkTecoUser> Users = [];
-	private readonly List<ZkTecoAttendance> Attendances = [];
+	private readonly List<AttendanceDetailRow> Attendances = [];
 
 	private bool ModalAddUserDisplayed;
 	private bool ModalDeleteAttendanceDisplayed;
@@ -60,31 +60,6 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 			return Users.Where((userFilterPredicate ?? PredicateBuilder.True<ZkTecoUser>()).Compile());
         }
-	}
-
-	/// <summary>
-	/// Gets attendance rows enriched with user details from the in-memory users list.
-	/// </summary>
-	private IEnumerable<AttendanceDetailRow> AttendanceDetails
-	{
-		get
-		{
-            // Create a dictionary of users by UserId for quick lookup, ignoring case
-            var usersByUserId = Users.Where(user => string.IsNullOrWhiteSpace(user.UserId) == false)
-				.GroupBy(user => user.UserId, StringComparer.OrdinalIgnoreCase)
-				.ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
-
-			foreach (var attendance in Attendances)
-			{
-				var isUserMatched = usersByUserId.TryGetValue(attendance.UserId, out var matchedUser);
-
-				yield return new AttendanceDetailRow(
-					IsUserMatched: isUserMatched,
-					UserId: attendance.UserId, Timestamp: attendance.Timestamp, Status: attendance.Status, Punch: attendance.Punch,
-					UserName: isUserMatched ? matchedUser!.Name : "-", UserGroup: isUserMatched ? matchedUser!.Group : null,
-					UserCard: isUserMatched ? matchedUser!.Card : null, UserPrivilege: isUserMatched ? matchedUser!.Privilege : null);
-			}
-		}
 	}
 
     private bool DisableSubmit => string.IsNullOrWhiteSpace(InputModel.IpAddress) ||
@@ -420,7 +395,22 @@ public sealed partial class Home : ComponentBase, IDisposable
 		var success = records != null;
 
 		if (success)
-			Attendances.AddRange(records!);
+		{
+            // Create a dictionary of users by UserId for quick lookup, ignoring case
+            var usersByUserId = Users.Where(user => string.IsNullOrWhiteSpace(user.UserId) == false)
+				.GroupBy(user => user.UserId, StringComparer.OrdinalIgnoreCase)
+				.ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+			Attendances.AddRange(records!.Select(attendance =>
+			{
+				var isUserMatched = usersByUserId.TryGetValue(attendance.UserId, out var matchedUser);
+
+				return new AttendanceDetailRow(
+					attendance: attendance,
+					userName: isUserMatched ? matchedUser!.Name : "-",
+					userCard: isUserMatched ? matchedUser!.Card : null);
+			}));
+		}
 
 		SetActionMessage(ref AttendanceActionMessage, "Get Attendance", success, success ? $"loaded {Attendances.Count} attendance record(s)." : "failed reading attendance records from the ZKTeco device.");
 	}
@@ -499,12 +489,21 @@ public sealed partial class Home : ComponentBase, IDisposable
 			Message: $"[{action}] {(success ? "Success" : "Fail")}: {detail}");
     }
 
-    /// <summary>
-    /// Represents one attendance row enriched with user details for table display.
-    /// </summary>
-    private sealed record AttendanceDetailRow(bool IsUserMatched,
-		string UserId, DateTime Timestamp, int Status, int Punch,
-		string UserName, string? UserGroup, int? UserCard, Privilege? UserPrivilege);
+	/// <summary>
+	/// Represents one attendance row enriched with user details for table display.
+	/// </summary>
+	private sealed class AttendanceDetailRow : ZkTecoAttendance
+	{
+		public AttendanceDetailRow(ZkTecoAttendance attendance, string userName, int? userCard)
+			: base(attendance.UserId, attendance.Timestamp, attendance.Index, attendance.Status, attendance.Punch)
+		{
+			UserName = userName;
+			UserCard = userCard;
+		}
+
+		public string UserName { get; }
+		public int? UserCard { get; }
+	}
 
     /// <summary>
     /// Represents a user-management operation message with UI style metadata.
