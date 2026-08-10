@@ -13,8 +13,7 @@
     - 100%: visually hidden and collapsed so it no longer takes interaction space
 */
 @keyframes auto-hide-fade {
-    0%,
-    80% {
+    0%, 80% {
         opacity: 1;
         max-height: 10rem;
         margin-bottom: 1rem;
@@ -28,3 +27,37 @@
         pointer-events: none;
     }
 }
+
+
+/*
+    Masked table cell styles
+    ------------------------
+    The masked table cell is used to hide sensitive information in a table. The user can hover over the cell to reveal the information.
+*/
+::deep td.is-masked {
+    position: relative;
+    color: transparent;
+}
+
+    ::deep td.is-masked::after {
+        content: "****";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding-left: 0.75rem;
+        color: var(--bulma-scheme-invert, #363636);
+        cursor: pointer;
+        pointer-events: none;
+    }
+
+    ::deep td.is-masked:hover,
+    ::deep td.is-masked:focus {
+        color: inherit;
+    }
+
+        ::deep td.is-masked:hover::after,
+        ::deep td.is-masked:focus::after {
+            display: none;
+        }

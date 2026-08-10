@@ -1,4 +1,5 @@
-﻿@using zkteco_attendance_api
+﻿@using easy_core
+@using zkteco_attendance_api
 
 @page "/"
 @inherits ComponentBase
@@ -224,7 +225,7 @@
                     <div class="field">
                         <Label TValue="object" DisplayText="Filter by Privilege" />
                         <div class="control has-icons-left has-icons-right">
-                            <InputSelectObject class='is-fullwidth' @bind-Value=UserFilterPrivilege Items="Array.ConvertAll((Privilege[])Enum.GetValues<Privilege>(), x => (Privilege?)x)" DisplayValue='x => x?.ToString() ?? string.Empty' NullText="None" disabled="@DisableControls" />
+                            <InputSelectObject class='is-fullwidth' @bind-Value=UserFilterPrivilege Items="Array.ConvertAll((Privilege[])Enum.GetValues<Privilege>(), x => (Privilege?)x)" DisplayValue='x => x.GetValueDisplayName()' NullText="All" disabled="@DisableControls" />
                         </div>
                     </div>
 
@@ -259,11 +260,11 @@
                         <TableBody>
                             @foreach (var user in FilteredUsers)
                             {
-                                <tr>
+                                <tr @key="user.UserId">
                                     <TableData>@user.UserId</TableData>
                                     <TableData>@user.Name</TableData>
-                                    <TableData>@user.Password</TableData>
-                                    <TableData>@user.Privilege.ToString()</TableData>
+                                    <TableData class="is-masked" tabindex="0">@user.Password</TableData>
+                                    <TableData>@user.Privilege.GetValueDisplayName()</TableData>
                                     <TableData>@user.Group</TableData>
                                     <TableData>@user.Card</TableData>
                                     <td>
@@ -323,7 +324,7 @@
                     <div class="field">
                         <Label TValue="object" DisplayText="Privilege" />
                         <div class="control has-icons-left has-icons-right">
-                            <InputSelectObject class='is-fullwidth' @bind-Value=NewUser.Privilege Items="Enum.GetValues<Privilege>().ToList()" DisplayValue="x => x.ToString()" disabled="@DisableControls" />
+                            <InputSelectObject class='is-fullwidth' @bind-Value=NewUser.Privilege Items="Enum.GetValues<Privilege>().ToList()" DisplayValue="x => x.GetValueDisplayName()" disabled="@DisableControls" />
                         </div>
                     </div>
 
@@ -364,7 +365,7 @@
             <ModalFooter>
                 <button type="button" class="button" @onclick='CloseModalAddUser'>Cancel</button>
 
-                <button type="button" class="button is-info" disabled="@(DisableControls || DisableCreateUser)" @onclick='CreateUser'>
+                <button type="button" class="button is-info" disabled="@DisableCreateUser" @onclick='CreateUser'>
                     <span class="material-icons icon">@(NewUser.Index == 0 ? "person_add" : "update")</span>
                     <span>
                         @if (NewUser.Index == 0)
@@ -409,8 +410,6 @@
                         <tr>
                             <th>User Id</th>
                             <th>Name</th>
-                            <th>Privilege</th>
-                            <th>Group</th>
                             <th>Card</th>
                             <th>Time</th>
                             <th>Status</th>
@@ -423,8 +422,6 @@
                             <tr>
                                 <TableData>@record.UserId</TableData>
                                 <TableData>@record.UserName</TableData>
-                                <TableData>@(record.UserPrivilege?.ToString() ?? "-")</TableData>
-                                <TableData>@(string.IsNullOrWhiteSpace(record.UserGroup) ? "-" : record.UserGroup)</TableData>
                                 <TableData>@(record.UserCard?.ToString() ?? "-")</TableData>
                                 <TableData>@record.Timestamp.ToString("G")</TableData>
                                 <TableData>@record.Status.ToString()</TableData>

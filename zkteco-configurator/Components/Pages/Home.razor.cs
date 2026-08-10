@@ -1,7 +1,8 @@
 ﻿using easy_blazor_bulma;
+using easy_core;
 using Microsoft.AspNetCore.Components;
-using System.Diagnostics.CodeAnalysis;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using zkteco_attendance_api;
 
 namespace zkteco_configurator.Components.Pages;
@@ -31,7 +32,6 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private bool ModalAddUserDisplayed;
 	private bool ModalDeleteAttendanceDisplayed;
 
-    #region Filter Users
     private string? UserFilterName;
 	private Privilege? UserFilterPrivilege;
 	private int? UserFilterCard;
@@ -43,21 +43,24 @@ public sealed partial class Home : ComponentBase, IDisposable
 	{
 		get
 		{
-			IEnumerable<ZkTecoUser> filteredUsers = Users;
+            var name = UserFilterName?.Trim();
+            var cardPrefix = UserFilterCard?.ToString();
 
-			if (string.IsNullOrWhiteSpace(UserFilterName) == false)
-				filteredUsers = filteredUsers.Where(user => user.Name.Contains(UserFilterName.Trim(), StringComparison.OrdinalIgnoreCase));
+			var userFilterPredicate = PredicateBuilder.Create<ZkTecoUser>();
+
+			if (string.IsNullOrWhiteSpace(name) == false)
+				userFilterPredicate = userFilterPredicate.And(user => user.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
 
 			if (UserFilterPrivilege.HasValue)
-				filteredUsers = filteredUsers.Where(user => user.Privilege == UserFilterPrivilege.Value);
+				userFilterPredicate = userFilterPredicate.And(user => user.Privilege == UserFilterPrivilege.Value);
 
-			if (UserFilterCard.HasValue)
-				filteredUsers = filteredUsers.Where(user => user.Card == UserFilterCard.Value);
+			if (string.IsNullOrWhiteSpace(cardPrefix) == false)
+				userFilterPredicate = userFilterPredicate.And(user => user.Card.ToString().StartsWith(cardPrefix, StringComparison.Ordinal));
 
-			return filteredUsers;
-		}
+
+			return Users.Where((userFilterPredicate ?? PredicateBuilder.True<ZkTecoUser>()).Compile());
+        }
 	}
-    #endregion
 
 	/// <summary>
 	/// Gets attendance rows enriched with user details from the in-memory users list.
@@ -91,7 +94,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private bool DisableControls => ZkTecoClock == null || ZkTecoClock.IsConnected == false;
 
-	private bool DisableCreateUser => string.IsNullOrWhiteSpace(NewUser.Name) ||
+	private bool DisableCreateUser => DisableControls || string.IsNullOrWhiteSpace(NewUser.Name) ||
 		string.IsNullOrWhiteSpace(NewUser.UserId);
 
 	private readonly TooltipOptions TooltipTop = TooltipOptions.Top | TooltipOptions.HasArrow | TooltipOptions.Multiline;
@@ -156,34 +159,41 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 
         // Capture any command-layer errors emitted while querying details
-        string? deviceDetailsCommandError = null;
-		CommandError onDeviceDetailsError = message => deviceDetailsCommandError = message;
+        var deviceDetailsCommandErrors = new List<string>();
+		CommandError onDeviceDetailsError = deviceDetailsCommandErrors.Add;
 		ZkTecoClock.NotifyCommandError += onDeviceDetailsError;
 
-		DeviceDetailsMessage = string.Empty;
+		try
+		{
+			DeviceDetailsMessage = string.Empty;
 
-		DeviceDetailsMessage += "Time: " + ZkTecoClock.GetTime()?.ToString("G") + Environment.NewLine;
-		DeviceDetailsMessage += "Name: " + ZkTecoClock.GetDeviceName() + Environment.NewLine;
-		DeviceDetailsMessage += "IP: " + ZkTecoClock.GetDeviceIp() + Environment.NewLine;
-		DeviceDetailsMessage += "Subnet: " + ZkTecoClock.GetDeviceSubnetMask() + Environment.NewLine;
-		DeviceDetailsMessage += "Gateway IP: " + ZkTecoClock.GetDeviceGatewayIp() + Environment.NewLine;
-		DeviceDetailsMessage += "MAC: " + ZkTecoClock.GetDeviceMac() + Environment.NewLine;
-		DeviceDetailsMessage += "Serial: " + ZkTecoClock.GetDeviceSerial() + Environment.NewLine;
+			DeviceDetailsMessage += "Time: " + ZkTecoClock.GetTime()?.ToString("G") + Environment.NewLine;
+			DeviceDetailsMessage += "Name: " + ZkTecoClock.GetDeviceName() + Environment.NewLine;
+			DeviceDetailsMessage += "IP: " + ZkTecoClock.GetDeviceIp() + Environment.NewLine;
+			DeviceDetailsMessage += "Subnet: " + ZkTecoClock.GetDeviceSubnetMask() + Environment.NewLine;
+			DeviceDetailsMessage += "Gateway IP: " + ZkTecoClock.GetDeviceGatewayIp() + Environment.NewLine;
+			DeviceDetailsMessage += "MAC: " + ZkTecoClock.GetDeviceMac() + Environment.NewLine;
+			DeviceDetailsMessage += "Serial: " + ZkTecoClock.GetDeviceSerial() + Environment.NewLine;
 
-		DeviceDetailsMessage += "Format: " + ZkTecoClock.GetDeviceExtendedFormat() + Environment.NewLine;
-		DeviceDetailsMessage += "User Format: " + ZkTecoClock.GetDeviceUserExtendedFormat() + Environment.NewLine;
-		DeviceDetailsMessage += "Face Version: " + ZkTecoClock.GetDeviceFaceVersion() + Environment.NewLine;
-		DeviceDetailsMessage += "Fingerprint Version: " + ZkTecoClock.GetDeviceFingerprintVersion() + Environment.NewLine;
-		DeviceDetailsMessage += "Firmware Version: " + ZkTecoClock.GetFirmwareVersion() + Environment.NewLine;
-		DeviceDetailsMessage += "Old Firmware Version: " + ZkTecoClock.GetDeviceOldFirmwareVersion() + Environment.NewLine;
-		DeviceDetailsMessage += "Platform: " + ZkTecoClock.GetDevicePlatform() + Environment.NewLine;
+			DeviceDetailsMessage += "Format: " + ZkTecoClock.GetDeviceExtendedFormat() + Environment.NewLine;
+			DeviceDetailsMessage += "User Format: " + ZkTecoClock.GetDeviceUserExtendedFormat() + Environment.NewLine;
+			DeviceDetailsMessage += "Face Version: " + ZkTecoClock.GetDeviceFaceVersion() + Environment.NewLine;
+			DeviceDetailsMessage += "Fingerprint Version: " + ZkTecoClock.GetDeviceFingerprintVersion() + Environment.NewLine;
+			DeviceDetailsMessage += "Firmware Version: " + ZkTecoClock.GetFirmwareVersion() + Environment.NewLine;
+			DeviceDetailsMessage += "Old Firmware Version: " + ZkTecoClock.GetDeviceOldFirmwareVersion() + Environment.NewLine;
+			DeviceDetailsMessage += "Platform: " + ZkTecoClock.GetDevicePlatform() + Environment.NewLine;
 
-		DeviceStorageCounts = ZkTecoClock.GetStorageDetails();
-		ZkTecoClock.NotifyCommandError -= onDeviceDetailsError;
+			DeviceStorageCounts = ZkTecoClock.GetStorageDetails();
+		}
+		finally
+		{
+			ZkTecoClock.NotifyCommandError -= onDeviceDetailsError;
+		}
 
-		var success = string.IsNullOrWhiteSpace(deviceDetailsCommandError);
+		var commandErrorDetails = string.Join(Environment.NewLine, deviceDetailsCommandErrors.Distinct(StringComparer.Ordinal));
+		var success = deviceDetailsCommandErrors.Count == 0;
 		SetActionMessage(ref DeviceActionMessage, "Get Device Details", success,
-			success ? "loaded device details." : $"loaded partial device details. {deviceDetailsCommandError}");
+			success ? "loaded device details." : $"loaded partial device details with communication errors:{Environment.NewLine}{commandErrorDetails}");
 	}
 
 	private void EnableDevice()
@@ -233,8 +243,25 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (EnsureConnectedClock() == false)
 			return;
 
-		var success = ZkTecoClock.ClearBuffer() & ZkTecoClock.ClearError() & ZkTecoClock.RefreshData();
-		SetActionMessage(ref DeviceActionMessage, "Clear Errors and Refresh", success, success ? "cleared errors and refreshed data." : "failed clearing errors and refreshing data on ZKTeco device.");
+		if (ZkTecoClock.ClearBuffer() == false)
+		{
+			SetActionMessage(ref DeviceActionMessage, "Clear Errors and Refresh", false, "failed clearing the device buffer.");
+			return;
+		}
+
+		if (ZkTecoClock.ClearError() == false)
+		{
+			SetActionMessage(ref DeviceActionMessage, "Clear Errors and Refresh", false, "failed clearing device errors.");
+			return;
+		}
+
+		if (ZkTecoClock.RefreshData() == false)
+		{
+			SetActionMessage(ref DeviceActionMessage, "Clear Errors and Refresh", false, "failed refreshing device data.");
+			return;
+		}
+
+		SetActionMessage(ref DeviceActionMessage, "Clear Errors and Refresh", true, "cleared errors and refreshed data.");
 	}
 
 	private void SetClockTime()
@@ -465,8 +492,6 @@ public sealed partial class Home : ComponentBase, IDisposable
     /// <param name="success">Indicates whether the action was successful.</param>
     /// <param name="detail">Additional details about the action's outcome.</param>
     /// <remarks>
-    /// Successful actions append the <c>auto-hide</c> CSS class so the message fades out via
-    /// <c>Home.razor.css</c>. Failed actions use <c>is-danger</c> and remain visible.
     ///
     /// A unique <c>RenderKey</c> is assigned for each message so repeated actions with similar
     /// content still trigger a fresh render and replay the CSS animation.
@@ -475,7 +500,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 	{
 		target = new(
 			Success: success,
-			Class: success ? "is-success auto-hide" : "is-danger",
+			Class: success ? "is-success" : "is-danger",
 			Message: $"[{action}] {(success ? "Success" : "Fail")}: {detail}",
 			RenderKey: DateTime.UtcNow.Ticks);
     }
