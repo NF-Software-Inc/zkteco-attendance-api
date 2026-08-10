@@ -78,8 +78,8 @@
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
     @if (DeviceActionMessage != null)
     {
-        <div class="status-message-scope">
-            <Message @key="DeviceActionMessage.RenderKey" class=@DeviceActionMessage.Class>
+        <div class=@(DeviceActionMessage.Success ? "auto-hide" : null)>
+            <Message @key="DeviceActionMessage.RenderKey" Title=@(DeviceActionMessage.Success ? null : "Error") class=@DeviceActionMessage.Class OnDeleteClicked="@(() => DeviceActionMessage = null)">
                 @DeviceActionMessage.Message
             </Message>
         </div>
@@ -195,8 +195,8 @@
     <Panel class="pt-2 px-2 mb-0 is-size-7" Title="User Management">
         @if (UserManagementActionMessage != null)
         {
-            <div class="status-message-scope">
-                <Message @key="UserManagementActionMessage.RenderKey" class=@UserManagementActionMessage.Class>
+            <div class=@(UserManagementActionMessage.Success ? "auto-hide" : null)>
+                <Message @key="UserManagementActionMessage.RenderKey" Title=@(UserManagementActionMessage.Success ? null : "Error") class=@UserManagementActionMessage.Class OnDeleteClicked="@(() => UserManagementActionMessage = null)">
                     @UserManagementActionMessage.Message
                 </Message>
             </div>
@@ -292,8 +292,8 @@
 
                     @if (UserModalActionMessage != null)
                     {
-                        <div class="status-message-scope">
-                            <Message @key="UserModalActionMessage.RenderKey" class=@UserModalActionMessage.Class>
+                        <div class=@(UserModalActionMessage.Success ? "auto-hide" : null)>
+                            <Message @key="UserModalActionMessage.RenderKey" Title=@(UserModalActionMessage.Success ? null : "Error") class=@UserModalActionMessage.Class OnDeleteClicked="@(() => UserModalActionMessage = null)">
                                 @UserModalActionMessage.Message
                             </Message>
                         </div>
@@ -384,8 +384,8 @@
     <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Attendance Management">
         @if (AttendanceActionMessage != null)
         {
-            <div class="status-message-scope">
-                <Message @key="AttendanceActionMessage.RenderKey" class=@AttendanceActionMessage.Class>
+            <div class=@(AttendanceActionMessage.Success ? "auto-hide" : null)>
+                <Message @key="AttendanceActionMessage.RenderKey" Title=@(AttendanceActionMessage.Success ? null : "Error") class=@AttendanceActionMessage.Class OnDeleteClicked="@(() => AttendanceActionMessage = null)">
                     @AttendanceActionMessage.Message
                 </Message>
             </div>
