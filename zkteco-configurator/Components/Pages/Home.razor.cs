@@ -12,9 +12,16 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private readonly PageModel InputModel = new();
 	private ZkTeco? ZkTecoClock;
-	private ZkTecoUser NewUser = new();
+    /// <summary>
+    /// Represents the user being created or edited in the modal dialog.
+    /// </summary>
+    private ZkTecoUser NewUser = new();
+    /// <summary>
+    /// Stores the original user data when editing an existing user, allowing for restoration if the edit is canceled.
+    /// </summary>
+    private ZkTecoUser? OriginalUser;
 
-	private readonly PlaceholderModel DeviceDetailsPlaceholder = new();
+    private readonly PlaceholderModel DeviceDetailsPlaceholder = new();
 
 	private string? ConnectionStatusMessage;
 	private string? DeviceDetailsMessage;
@@ -324,7 +331,22 @@ public sealed partial class Home : ComponentBase, IDisposable
 
     private void CloseModalAddUser()
     {
-		UserModalActionMessage = null;
+        // If the user was being edited, restore the original values to NewUser
+        if (NewUser.Index != 0 && OriginalUser != null)
+		{
+			NewUser.UserId = OriginalUser.UserId;
+			NewUser.Name = OriginalUser.Name;
+			NewUser.Index = OriginalUser.Index;
+			NewUser.Password = OriginalUser.Password;
+			NewUser.Privilege = OriginalUser.Privilege;
+			NewUser.Group = OriginalUser.Group;
+			NewUser.Card = OriginalUser.Card;
+
+            // Clear the original user reference after restoring values
+            OriginalUser = null;
+        }
+
+        UserModalActionMessage = null;
         ModalAddUserDisplayed = false;
     }
 
@@ -353,29 +375,19 @@ public sealed partial class Home : ComponentBase, IDisposable
 			if (add)
 				Users.Add(NewUser);
 
-            // If the user is being edited, update the existing user in the list
-            else
-            {
-				var existingIndex = Users.FindIndex(x => x.Index == NewUser.Index);
-
-				if (existingIndex >= 0)
-					Users[existingIndex] = NewUser;
-			}
-
 			ModalAddUserDisplayed = false;
 			UserModalActionMessage = null;
-			NewUser = new();
-			SetActionMessage(ref UserManagementActionMessage, action: action, success: true,
+
+            // Reset NewUser and OriginalUser after successful save
+            NewUser = new();
+			OriginalUser = null;
+
+            SetActionMessage(ref UserManagementActionMessage, action: action, success: true,
 				successDetail: $"saved user '{userName}'.");
 		}
 		else
-		{
-			if (add)
-				NewUser.Index = 0;
-
 			SetActionMessage(ref UserModalActionMessage, action: action, success: false,
 				failureDetail: $"failed saving user '{userName}' to the ZKTeco device.");
-		}
 	}
 
     /// <summary>
@@ -384,7 +396,8 @@ public sealed partial class Home : ComponentBase, IDisposable
     /// <param name="user">The user to edit.</param>
     private void EditUser(ZkTecoUser user)
 	{
-		NewUser = new(user.UserId, user.Name, user.Index, user.Password, user.Privilege, user.Group, user.Card);
+		NewUser = user;
+		OriginalUser = new(user.UserId, user.Name, user.Index, user.Password, user.Privilege, user.Group, user.Card);
 		UserModalActionMessage = null;
 		ModalAddUserDisplayed = true;
 	}
