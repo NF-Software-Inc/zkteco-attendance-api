@@ -2,11 +2,16 @@
 using Microsoft.AspNetCore.Components;
 using System.ComponentModel.DataAnnotations;
 using zkteco_attendance_api;
+using zkteco_configurator.Models;
+using zkteco_configurator.Services;
 
 namespace zkteco_configurator.Components.Pages;
 
 public sealed partial class Home : ComponentBase, IDisposable
 {
+	[Inject]
+	private SavedDeviceService SavedDeviceService { get; set; } = default!;
+
 	private readonly PageModel InputModel = new();
 	private ZkTeco? ZkTecoClock;
 	private ZkTecoUser NewUser = new();
@@ -21,12 +26,16 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private readonly List<ZkTecoUser> Users = [];
 	private readonly List<ZkTecoAttendance> Attendances = [];
 
+	private List<SavedDevice> SavedDevices = [];
+
 	private bool DisableSubmit => string.IsNullOrWhiteSpace(InputModel.IpAddress) ||
 		InputModel.Port < 1 ||
 		InputModel.Port > 65_535 ||
 		string.IsNullOrWhiteSpace(InputModel.Password);
 
-	private bool DisableControls => ZkTecoClock == null || ZkTecoClock.IsConnected == false;
+	private bool IsConnected => ZkTecoClock != null && ZkTecoClock.IsConnected;
+
+	private bool DisableControls => IsConnected == false;
 
 	private bool DisableCreateUser => string.IsNullOrWhiteSpace(NewUser.Name) ||
 		string.IsNullOrWhiteSpace(NewUser.UserId);
@@ -48,6 +57,12 @@ public sealed partial class Home : ComponentBase, IDisposable
 		InputDateTimeOptions.CloseOnDateClicked |
 		InputDateTimeOptions.ValidateTextInput;
 
+	/// <inheritdoc />
+	protected override void OnInitialized()
+	{
+		SavedDevices = SavedDeviceService.Load();
+	}
+
 	private void OnConnect()
 	{
 		Reset();
@@ -66,7 +81,45 @@ public sealed partial class Home : ComponentBase, IDisposable
 		else
 		{
 			ConnectionStatusMessage = "Connected!";
+			SaveConnectedDevice(password);
 		}
+	}
+
+	private void OnDisconnect()
+	{
+		Reset();
+	}
+
+	private void SaveConnectedDevice(int password)
+	{
+		if (string.IsNullOrWhiteSpace(InputModel.IpAddress))
+			return;
+
+		var device = new SavedDevice(InputModel.IpAddress, InputModel.Port, InputModel.UseTcp, password)
+		{
+			NickName = InputModel.NickName,
+			Description = InputModel.Description
+		};
+
+		SavedDevices = SavedDeviceService.AddOrUpdate(device);
+	}
+
+	private void LoadSavedDevice(SavedDevice device)
+	{
+		if (IsConnected)
+			return;
+
+		InputModel.IpAddress = device.Ip;
+		InputModel.Port = device.Port;
+		InputModel.UseTcp = device.UseTcp;
+		InputModel.Password = device.Password.ToString();
+		InputModel.NickName = device.NickName;
+		InputModel.Description = device.Description;
+	}
+
+	private void DeleteSavedDevice(SavedDevice device)
+	{
+		SavedDevices = SavedDeviceService.Remove(device);
 	}
 
 	private void GetDeviceDetails()
@@ -321,6 +374,18 @@ public sealed partial class Home : ComponentBase, IDisposable
 		/// </summary>
 		[Display(Name = "Password", Description = "The password to connect to the ZKTeco device.")]
 		public string? Password { get; set; } = "0";
+
+		/// <summary>
+		/// A friendly name to identify the saved device.
+		/// </summary>
+		[Display(Name = "Nickname", Description = "A friendly name to identify the saved device.")]
+		public string? NickName { get; set; }
+
+		/// <summary>
+		/// A description of the saved device.
+		/// </summary>
+		[Display(Name = "Description", Description = "A description of the saved device.")]
+		public string? Description { get; set; }
 
 		/// <summary>
 		/// The time to set on the ZKTeco device.
