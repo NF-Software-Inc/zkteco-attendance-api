@@ -81,7 +81,7 @@
     {
         <div class=@(DeviceActionMessage.Success ? "auto-hide" : null)>
             <Message Title=@(DeviceActionMessage.Success ? null : "Error") class=@DeviceActionMessage.Class OnDeleteClicked="@(() => DeviceActionMessage = null)">
-                @DeviceActionMessage.Message
+                @DeviceActionMessage?.Message
             </Message>
         </div>
     }
