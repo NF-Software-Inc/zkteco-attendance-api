@@ -33,9 +33,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		InputModel.Port > 65_535 ||
 		string.IsNullOrWhiteSpace(InputModel.Password);
 
-	private bool IsConnected => ZkTecoClock != null && ZkTecoClock.IsConnected;
-
-	private bool DisableControls => IsConnected == false;
+	private bool DisableControls => ZkTecoClock == null || ZkTecoClock.IsConnected == false;
 
 	private bool DisableCreateUser => string.IsNullOrWhiteSpace(NewUser.Name) ||
 		string.IsNullOrWhiteSpace(NewUser.UserId);
@@ -92,21 +90,19 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void SaveConnectedDevice(int password)
 	{
-		if (string.IsNullOrWhiteSpace(InputModel.IpAddress))
-			return;
-
-		var device = new SavedDevice(InputModel.IpAddress, InputModel.Port, InputModel.UseTcp, password)
+		var device = new SavedDevice(InputModel.IpAddress!, InputModel.Port, InputModel.UseTcp, password)
 		{
 			NickName = InputModel.NickName,
 			Description = InputModel.Description
 		};
 
-		SavedDevices = SavedDeviceService.AddOrUpdate(device);
+		if (SavedDeviceService.AddOrUpdate(device) && SavedDevices.Any(x => string.Equals(x.Ip, device.Ip, StringComparison.OrdinalIgnoreCase)) == false)
+			SavedDevices.Add(device);
 	}
 
 	private void LoadSavedDevice(SavedDevice device)
 	{
-		if (IsConnected)
+		if (ZkTecoClock != null && ZkTecoClock.IsConnected)
 			return;
 
 		InputModel.IpAddress = device.Ip;
@@ -119,7 +115,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void DeleteSavedDevice(SavedDevice device)
 	{
-		SavedDevices = SavedDeviceService.Remove(device);
+		if (SavedDeviceService.Remove(device))
+			SavedDevices.Remove(device);
 	}
 
 	private void GetDeviceDetails()

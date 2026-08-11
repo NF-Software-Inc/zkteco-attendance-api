@@ -90,37 +90,30 @@
 
                 <div class="field">
                     <Label TValue="object" DisplayText="Saved Devices" />
-                    @if (SavedDevices.Count == 0)
-                    {
-                        <p class="is-italic">No saved devices.</p>
-                    }
-                    else
-                    {
-                        <Table class="is-fullwidth is-hoverable is-striped is-size-7">
-                            <TableBody>
-                                @foreach (var device in SavedDevices)
-                                {
-                                    <tr>
-                                        <td class="@(IsConnected ? "" : "is-clickable")" @onclick="() => LoadSavedDevice(device)">
-                                            <strong>@(string.IsNullOrWhiteSpace(device.NickName) ? device.Ip : device.NickName)</strong>
+                    <Table class="is-fullwidth is-hoverable is-striped is-size-7">
+                        <TableBody>
+                            @foreach (var device in SavedDevices)
+                            {
+                                <tr>
+                                    <td class="@(ZkTecoClock != null && ZkTecoClock.IsConnected ? "" : "is-clickable")" @onclick="() => LoadSavedDevice(device)">
+                                        <strong>@(string.IsNullOrWhiteSpace(device.NickName) ? "Unnamed Device" : device.NickName)</strong>
+                                        <br />
+                                        <span>@device.Ip:@device.Port</span>
+                                        @if (string.IsNullOrWhiteSpace(device.Description) == false)
+                                        {
                                             <br />
-                                            <span>@device.Ip:@device.Port</span>
-                                            @if (string.IsNullOrWhiteSpace(device.Description) == false)
-                                            {
-                                                <br />
-                                                <span class="is-italic">@device.Description</span>
-                                            }
-                                        </td>
-                                        <td class="has-text-right">
-                                            <button type="button" class="button is-small is-danger my-1" @onclick="() => DeleteSavedDevice(device)">
-                                                <span class="material-icons icon">delete_forever</span>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                }
-                            </TableBody>
-                        </Table>
-                    }
+                                            <span class="is-italic">@device.Description</span>
+                                        }
+                                    </td>
+                                    <td class="has-text-right">
+                                        <button type="button" class="button is-small is-danger my-1" @onclick="() => DeleteSavedDevice(device)">
+                                            <span class="material-icons icon">delete_forever</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </TableBody>
+                    </Table>
                 </div>
             </div>
         </div>

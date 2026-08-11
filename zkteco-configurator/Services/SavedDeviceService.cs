@@ -49,27 +49,39 @@ public class SavedDeviceService
 	/// Persists the provided list of saved devices to the local file system.
 	/// </summary>
 	/// <param name="devices">The devices to store.</param>
-	public void Save(IEnumerable<SavedDevice> devices)
+	/// <returns><see langword="true"/> when the devices were stored successfully; otherwise <see langword="false"/>.</returns>
+	public bool Save(IEnumerable<SavedDevice> devices)
 	{
-		Directory.CreateDirectory(FolderPath);
+		try
+		{
+			Directory.CreateDirectory(FolderPath);
 
-		var json = JsonSerializer.Serialize(devices, SerializerOptions);
+			var json = JsonSerializer.Serialize(devices, SerializerOptions);
 
-		File.WriteAllText(FilePath, json);
+			File.WriteAllText(FilePath, json);
+
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
 	}
 
 	/// <summary>
-	/// Adds a new device or updates an existing one that matches by IP, port, and protocol.
+	/// Adds a new device or updates an existing one that matches by IP address.
 	/// </summary>
 	/// <param name="device">The device to add or update.</param>
-	/// <returns>The updated list of saved devices.</returns>
-	public List<SavedDevice> AddOrUpdate(SavedDevice device)
+	/// <returns><see langword="true"/> when the device was stored successfully; otherwise <see langword="false"/>.</returns>
+	public bool AddOrUpdate(SavedDevice device)
 	{
 		var devices = Load();
 		var existing = devices.FirstOrDefault(x => IsMatch(x, device));
 
 		if (existing != null)
 		{
+			existing.Port = device.Port;
+			existing.UseTcp = device.UseTcp;
 			existing.Password = device.Password;
 			existing.NickName = device.NickName;
 			existing.Description = device.Description;
@@ -79,28 +91,27 @@ public class SavedDeviceService
 			devices.Add(device);
 		}
 
-		Save(devices);
-
-		return devices;
+		return Save(devices);
 	}
 
 	/// <summary>
-	/// Removes a device that matches by IP, port, and protocol.
+	/// Removes a device that matches by IP address.
 	/// </summary>
 	/// <param name="device">The device to remove.</param>
-	/// <returns>The updated list of saved devices.</returns>
-	public List<SavedDevice> Remove(SavedDevice device)
+	/// <returns><see langword="true"/> when the device was removed successfully; otherwise <see langword="false"/>.</returns>
+	public bool Remove(SavedDevice device)
 	{
 		var devices = Load();
+		var existing = devices.FirstOrDefault(x => IsMatch(x, device));
 
-		devices.RemoveAll(x => IsMatch(x, device));
-		Save(devices);
+		if (existing == null)
+			return false;
 
-		return devices;
+		devices.Remove(existing);
+
+		return Save(devices);
 	}
 
 	private static bool IsMatch(SavedDevice left, SavedDevice right) =>
-		string.Equals(left.Ip, right.Ip, StringComparison.OrdinalIgnoreCase) &&
-		left.Port == right.Port &&
-		left.UseTcp == right.UseTcp;
+		string.Equals(left.Ip, right.Ip, StringComparison.OrdinalIgnoreCase);
 }
