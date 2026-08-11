@@ -90,11 +90,24 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private void SaveConnectedDevice(int password)
 	{
-		var device = new SavedDevice(InputModel.IpAddress!, InputModel.Port, InputModel.UseTcp, password)
+		var device = SavedDevices.FirstOrDefault(x => string.Equals(x.Ip, InputModel.IpAddress, StringComparison.OrdinalIgnoreCase));
+
+		if (device != null)
 		{
-			NickName = InputModel.NickName,
-			Description = InputModel.Description
-		};
+			device.Password = password;
+			device.Port = InputModel.Port;
+			device.UseTcp = InputModel.UseTcp;
+			device.NickName = InputModel.NickName;
+			device.Description = InputModel.Description;
+		}
+		else
+		{
+			device = new SavedDevice(InputModel.IpAddress!, InputModel.Port, InputModel.UseTcp, password)
+			{
+				NickName = InputModel.NickName,
+				Description = InputModel.Description
+			};
+		}
 
 		if (SavedDeviceService.AddOrUpdate(device) && SavedDevices.Any(x => string.Equals(x.Ip, device.Ip, StringComparison.OrdinalIgnoreCase)) == false)
 			SavedDevices.Add(device);

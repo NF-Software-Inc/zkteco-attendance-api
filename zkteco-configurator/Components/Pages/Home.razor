@@ -61,11 +61,6 @@
                         </div>
 
                         <div class="field">
-                            <Label TValue="object" DisplayText="Options" data-tooltip="Select the settings for the clock connection." TooltipMode="TooltipTop" />
-                            <InputSwitch class='input' div-class="p-3" @bind-Value="InputModel.UseTcp" TooltipMode="TooltipTop" />
-                        </div>
-
-                        <div class="field">
                             <Label For="() => InputModel.Description" TooltipMode="TooltipTop" />
                             <div class="control has-icons-left">
                                 <InputText class="input" @bind-Value="InputModel.Description" />
@@ -75,19 +70,16 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="field">
+                            <Label TValue="object" DisplayText="Options" data-tooltip="Select the settings for the clock connection." TooltipMode="TooltipTop" />
+                            <InputSwitch class='input' div-class="p-3" @bind-Value="InputModel.UseTcp" TooltipMode="TooltipTop" />
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
-                <div class="field">
-                    <Label TValue="object" DisplayText="Connection Status" />
-                    <div class="control has-icons-left">
-                        <InputTextArea class="input textarea is-info" @bind-Value="ConnectionStatusMessage" rows="12" readonly />
-                        <span class="material-icons icon is-left">description</span>
-                    </div>
-                </div>
-
                 <div class="field">
                     <Label TValue="object" DisplayText="Saved Devices" />
                     <Table class="is-fullwidth is-hoverable is-striped is-size-7">
@@ -95,8 +87,8 @@
                             @foreach (var device in SavedDevices)
                             {
                                 <tr>
-                                    <td class="@(ZkTecoClock != null && ZkTecoClock.IsConnected ? "" : "is-clickable")" @onclick="() => LoadSavedDevice(device)">
-                                        <strong>@(string.IsNullOrWhiteSpace(device.NickName) ? "Unnamed Device" : device.NickName)</strong>
+                                    <td class='@(ZkTecoClock != null && ZkTecoClock.IsConnected ? "" : "is-clickable")' @onclick="() => LoadSavedDevice(device)">
+                                        <strong>@(device.NickName ?? "Unnamed Device")</strong>
                                         <br />
                                         <span>@device.Ip:@device.Port</span>
                                         @if (string.IsNullOrWhiteSpace(device.Description) == false)
@@ -106,7 +98,7 @@
                                         }
                                     </td>
                                     <td class="has-text-right">
-                                        <button type="button" class="button is-small is-danger my-1" @onclick="() => DeleteSavedDevice(device)">
+                                        <button type="button" class="button is-small is-danger my-1" @onclick:stopPropagation="true" @onclick="() => DeleteSavedDevice(device)">
                                             <span class="material-icons icon">delete_forever</span>
                                         </button>
                                     </td>
@@ -114,6 +106,14 @@
                             }
                         </TableBody>
                     </Table>
+                </div>
+
+                <div class="field">
+                    <Label TValue="object" DisplayText="Connection Status" />
+                    <div class="control has-icons-left">
+                        <InputTextArea class="input textarea is-info" @bind-Value="ConnectionStatusMessage" rows="12" readonly />
+                        <span class="material-icons icon is-left">description</span>
+                    </div>
                 </div>
             </div>
         </div>
