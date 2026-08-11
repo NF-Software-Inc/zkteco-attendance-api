@@ -198,7 +198,7 @@
     {
         <div class=@(UserManagementActionMessage.Success ? "auto-hide" : null)>
             <Message Title=@(UserManagementActionMessage.Success ? null : "Error") class=@UserManagementActionMessage.Class OnDeleteClicked="@(() => UserManagementActionMessage = null)">
-                @UserManagementActionMessage.Message
+                @UserManagementActionMessage?.Message
             </Message>
         </div>
     }
@@ -292,7 +292,7 @@
     {
         <div class=@(AttendanceActionMessage.Success ? "auto-hide" : null)>
             <Message Title=@(AttendanceActionMessage.Success ? null : "Error") class=@AttendanceActionMessage.Class OnDeleteClicked="@(() => AttendanceActionMessage = null)">
-                @AttendanceActionMessage.Message
+                @AttendanceActionMessage?.Message
             </Message>
         </div>
     }
@@ -348,7 +348,7 @@
             {
                 <div class=@(UserModalActionMessage.Success ? "auto-hide" : null)>
                     <Message Title=@(UserModalActionMessage.Success ? null : "Error") class=@UserModalActionMessage.Class OnDeleteClicked="@(() => UserModalActionMessage = null)">
-                        @UserModalActionMessage.Message
+                        @UserModalActionMessage?.Message
                     </Message>
                 </div>
             }
