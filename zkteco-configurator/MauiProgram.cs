@@ -19,6 +19,7 @@ namespace zkteco_configurator
 			builder.Services.AddMauiBlazorWebView();
 
 			builder.Services.AddSingleton<SavedDeviceService>();
+			builder.Services.AddSingleton<DeviceBackupService>();
 
 			#if DEBUG
 			builder.Logging.ClearProviders();

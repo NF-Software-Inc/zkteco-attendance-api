@@ -138,6 +138,14 @@
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Import / Export">
+    @if (BackupActionMessage != null)
+    {
+        <div class=@(BackupActionMessage.Success ? "auto-hide" : null)>
+            <Message Title=@(BackupActionMessage.Success ? null : "Error") class=@BackupActionMessage.Class OnDeleteClicked="@(() => BackupActionMessage = null)">
+                @BackupActionMessage?.Message
+            </Message>
+        </div>
+    }
     <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForExport'>
         <span class="material-icons icon">download</span>
         <span>Export</span>
