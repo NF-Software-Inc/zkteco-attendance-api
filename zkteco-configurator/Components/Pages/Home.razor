@@ -1,5 +1,6 @@
 ﻿@using easy_core
 @using zkteco_attendance_api
+@using zkteco_configurator.Models
 
 @page "/"
 @inherits ComponentBase
@@ -40,6 +41,17 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="field">
+                            <Label For="() => InputModel.NickName" TooltipMode="TooltipTop" />
+                            <div class="control has-icons-left">
+                                <InputText class="input" @bind-Value="InputModel.NickName" />
+                                <span class="material-icons icon is-left">label</span>
+                                <div class="help is-danger">
+                                    <ValidationMessage For="() => InputModel.NickName" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="column is-12-desktop is-12-widescreen is-6-fullhd">
@@ -54,6 +66,17 @@
                         </div>
 
                         <div class="field">
+                            <Label For="() => InputModel.Description" TooltipMode="TooltipTop" />
+                            <div class="control has-icons-left">
+                                <InputText class="input" @bind-Value="InputModel.Description" />
+                                <span class="material-icons icon is-left">description</span>
+                                <div class="help is-danger">
+                                    <ValidationMessage For="() => InputModel.Description" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field">
                             <Label TValue="object" DisplayText="Options" data-tooltip="Select the settings for the clock connection." TooltipMode="TooltipTop" />
                             <InputSwitch class='input' div-class="p-3" @bind-Value="InputModel.UseTcp" TooltipMode="TooltipTop" />
                         </div>
@@ -62,6 +85,34 @@
             </div>
 
             <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+                <div class="field">
+                    <Label TValue="object" DisplayText="Saved Devices" />
+                    <Table class="is-fullwidth is-hoverable is-striped is-size-7">
+                        <TableBody>
+                            @foreach (var device in SavedDevices)
+                            {
+                                <tr>
+                                    <td class='@(ZkTecoClock != null && ZkTecoClock.IsConnected ? "" : "is-clickable")' @onclick="() => LoadSavedDevice(device)">
+                                        <strong>@(device.NickName ?? "Unnamed Device")</strong>
+                                        <br />
+                                        <span>@device.Ip:@device.Port</span>
+                                        @if (string.IsNullOrWhiteSpace(device.Description) == false)
+                                        {
+                                            <br />
+                                            <span class="is-italic">@device.Description</span>
+                                        }
+                                    </td>
+                                    <td class="has-text-right">
+                                        <button type="button" class="button is-small is-danger my-1" @onclick:stopPropagation="true" @onclick="() => DeleteSavedDevice(device)">
+                                            <span class="material-icons icon">delete_forever</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </TableBody>
+                    </Table>
+                </div>
+
                 <div class="field">
                     <Label TValue="object" DisplayText="Connection Status" />
                     <div class="control has-icons-left">
@@ -72,7 +123,17 @@
             </div>
         </div>
 
-        <SubmitButton class="is-fullwidth mb-4" disabled="@DisableSubmit" DisplayText="Connect" Icon="time_auto" />
+        <div class="field is-grouped">
+            <div class="control is-expanded">
+                <SubmitButton class="is-fullwidth mb-4" disabled="@DisableSubmit" DisplayText="Connect" Icon="time_auto" />
+            </div>
+            <div class="control is-expanded">
+                <button type="button" class="button is-danger is-fullwidth mb-4" disabled="@DisableControls" @onclick="OnDisconnect">
+                    <span class="material-icons icon">link_off</span>
+                    <span>Disconnect</span>
+                </button>
+            </div>
+        </div>
     </EditForm>
 </Panel>
 
