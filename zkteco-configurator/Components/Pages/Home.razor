@@ -1,17 +1,16 @@
-﻿@using zkteco_attendance_api
+﻿@using easy_core
+@using zkteco_attendance_api
+@using zkteco_configurator.Models
 
 @page "/"
 @inherits ComponentBase
 @implements IDisposable
 
-<div class="is-relative mb-2">
-    <div class="has-text-centered">
-        <TitleBlock Title="ZKTeco Configurator" />
-    </div>
-    <span class="has-text-white is-size-6 app-version-label">
+<TitleBlock Title="ZKTeco Configurator" >
+    <div class="p-0 m-0 mt-1 is-pulled-right">
         @($"V{AppVersion}")
-    </span>
-</div>
+    </div>
+</TitleBlock>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Clock Settings">
     <EditForm Model="InputModel" OnValidSubmit="OnConnect">
@@ -42,6 +41,17 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="field">
+                            <Label For="() => InputModel.NickName" TooltipMode="TooltipTop" />
+                            <div class="control has-icons-left">
+                                <InputText class="input" @bind-Value="InputModel.NickName" />
+                                <span class="material-icons icon is-left">label</span>
+                                <div class="help is-danger">
+                                    <ValidationMessage For="() => InputModel.NickName" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="column is-12-desktop is-12-widescreen is-6-fullhd">
@@ -56,6 +66,17 @@
                         </div>
 
                         <div class="field">
+                            <Label For="() => InputModel.Description" TooltipMode="TooltipTop" />
+                            <div class="control has-icons-left">
+                                <InputText class="input" @bind-Value="InputModel.Description" />
+                                <span class="material-icons icon is-left">description</span>
+                                <div class="help is-danger">
+                                    <ValidationMessage For="() => InputModel.Description" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field">
                             <Label TValue="object" DisplayText="Options" data-tooltip="Select the settings for the clock connection." TooltipMode="TooltipTop" />
                             <InputSwitch class='input' div-class="p-3" @bind-Value="InputModel.UseTcp" TooltipMode="TooltipTop" />
                         </div>
@@ -64,6 +85,34 @@
             </div>
 
             <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+                <div class="field">
+                    <Label TValue="object" DisplayText="Saved Devices" />
+                    <Table class="is-fullwidth is-hoverable is-striped is-size-7">
+                        <TableBody>
+                            @foreach (var device in SavedDevices)
+                            {
+                                <tr>
+                                    <td class='@(ZkTecoClock != null && ZkTecoClock.IsConnected ? "" : "is-clickable")' @onclick="() => LoadSavedDevice(device)">
+                                        <strong>@(device.NickName ?? "Unnamed Device")</strong>
+                                        <br />
+                                        <span>@device.Ip:@device.Port</span>
+                                        @if (string.IsNullOrWhiteSpace(device.Description) == false)
+                                        {
+                                            <br />
+                                            <span class="is-italic">@device.Description</span>
+                                        }
+                                    </td>
+                                    <td class="has-text-right">
+                                        <button type="button" class="button is-small is-danger my-1" @onclick:stopPropagation="true" @onclick="() => DeleteSavedDevice(device)">
+                                            <span class="material-icons icon">delete_forever</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </TableBody>
+                    </Table>
+                </div>
+
                 <div class="field">
                     <Label TValue="object" DisplayText="Connection Status" />
                     <div class="control has-icons-left">
@@ -74,90 +123,42 @@
             </div>
         </div>
 
-        <SubmitButton class="is-fullwidth mb-4" disabled="@DisableSubmit" DisplayText="Connect" Icon="time_auto" />
+        <div class="field is-grouped">
+            <div class="control is-expanded">
+                <SubmitButton class="is-fullwidth mb-4" disabled="@DisableSubmit" DisplayText="Connect" Icon="time_auto" />
+            </div>
+            <div class="control is-expanded">
+                <button type="button" class="button is-danger is-fullwidth mb-4" disabled="@DisableControls" @onclick="OnDisconnect">
+                    <span class="material-icons icon">link_off</span>
+                    <span>Disconnect</span>
+                </button>
+            </div>
+        </div>
     </EditForm>
 </Panel>
 
-<div class="status-message-scope">
-    <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Import / Export">
-        <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForExport'>
-            <span class="material-icons icon">download</span>
-            <span>Export</span>
-        </button>
+<Panel class="pt-2 px-2 mb-0 is-size-7" Title="Import / Export">
+    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForExport'>
+        <span class="material-icons icon">download</span>
+        <span>Export</span>
+    </button>
 
-        <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForImport'>
-            <span class="material-icons icon">upload</span>
-            <span>Import</span>
-        </button>
+    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForImport'>
+        <span class="material-icons icon">upload</span>
+        <span>Import</span>
+    </button>
+</Panel>
 
-        <Modal Title=@($"Device Backup {BackupModalMode.ToString()}") @bind-IsDisplayed=ModalBackupDisplayed foot-class="is-justify-content-center">
-            <ModalBody>
-                @if (BackupModalActionMessage != null)
-                {
-                    <Message @key="BackupModalActionMessage.RenderKey" class=@BackupModalActionMessage.Class>
-                        @BackupModalActionMessage.Message
-                    </Message>
-                }
-
-                @if (BackupModalMode == BackupOperationMode.Export)
-                {
-                    <label class="label">Choose what to include in the backup export:</label>
-
-                    <div class="field mb-2">
-                        <InputSwitch @bind-Value="BackupIncludeSettings" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-                    </div>
-
-                    <div class="field mb-2 ml-5">
-                        <InputSwitch @bind-Value="BackupIncludeNetworkSettings" disabled="@(BackupIncludeSettings == false)" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-                    </div>
-
-                    <div class="field mb-2">
-                        <InputSwitch @bind-Value="BackupIncludeUsers" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-                    </div>
-
-                    <div class="field mb-2">
-                        <InputSwitch @bind-Value="BackupIncludeAttendance" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-                    </div>
-
-                    @if (DisableBackupExport)
-                    {
-                        <p class="help is-danger">Select at least one section to export.</p>
-                    }
-                }
-                else
-                {
-                    <p class="is-size-6">Import support placeholder...</p>
-                }
-            </ModalBody>
-            <ModalFooter>
-                <button type="button" class="button" @onclick='CloseBackupModal'>Cancel</button>
-
-                @if (BackupModalMode == BackupOperationMode.Export)
-                {
-                    <button type="button" class="button is-info" disabled="@(DisableControls || DisableBackupExport)" @onclick='ExportDeviceBackupAsync'>
-                        <span class="material-icons icon">download</span>
-                        <span>Export</span>
-                    </button>
-                }
-                else
-                {
-                    <button type="button" class="button is-info" disabled="@DisableControls">
-                        <span class="material-icons icon">upload</span>
-                        <span>Import</span>
-                    </button>
-                }
-            </ModalFooter>
-        </Modal>
-    </Panel>
-
-    <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
-        @if (DeviceActionMessage != null)
-        {
-            <Message @key="DeviceActionMessage.RenderKey" class=@DeviceActionMessage.Class>
-                @DeviceActionMessage.Message
+<Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
+    @if (DeviceActionMessage != null)
+    {
+        <div class=@(DeviceActionMessage.Success ? "auto-hide" : null)>
+            <Message Title=@(DeviceActionMessage.Success ? null : "Error") class=@DeviceActionMessage.Class OnDeleteClicked="@(() => DeviceActionMessage = null)">
+                @DeviceActionMessage?.Message
             </Message>
-        }
-        <EditForm Model="DeviceDetailsPlaceholder">
+        </div>
+    }
+    <EditForm Model="DeviceDetailsPlaceholder">
             <div class="columns is-variable is-1">
                 <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
                     <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetDeviceDetails'>
@@ -263,254 +264,316 @@
                 </div>
             </div>
         </EditForm>
-    </Panel>
+</Panel>
 
-    <Panel class="pt-2 px-2 mb-0 is-size-7" Title="User Management">
-        @if (UserManagementActionMessage != null)
-        {
-            <Message @key="UserManagementActionMessage.RenderKey" class=@UserManagementActionMessage.Class>
-                @UserManagementActionMessage.Message
+<Panel class="pt-2 px-2 mb-0 is-size-7" Title="User Management">
+    @if (UserManagementActionMessage != null)
+    {
+        <div class=@(UserManagementActionMessage.Success ? "auto-hide" : null)>
+            <Message Title=@(UserManagementActionMessage.Success ? null : "Error") class=@UserManagementActionMessage.Class OnDeleteClicked="@(() => UserManagementActionMessage = null)">
+                @UserManagementActionMessage?.Message
             </Message>
-        }
-        <div class="columns is-variable is-1">
-                <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
-                    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetUsers'>
-                        <span class="material-icons icon">groups</span>
-                        <span>Get Users</span>
-                    </button>
+        </div>
+    }
+    <div class="columns is-variable is-1">
+        <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+            <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetUsers'>
+                <span class="material-icons icon">groups</span>
+                <span>Get Users</span>
+            </button>
 
-                    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenModalAddUser'>
-                        <span class="material-icons icon">person_add</span>
-                        <span>Add User</span>
-                    </button>
+            <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenModalAddUser'>
+                <span class="material-icons icon">person_add</span>
+                <span>Add User</span>
+            </button>
 
-                    <div class="field mt-2">
-                        <Label TValue="object" DisplayText="Filter by Name" />
-                        <div class="control has-icons-left">
-                            <InputText class="input" @bind-Value="UserFilterName" disabled="@DisableControls" placeholder="Type a name..." />
-                            <span class="material-icons icon is-left">search</span>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <Label TValue="object" DisplayText="Filter by Privilege" />
-                        <div class="control has-icons-left has-icons-right">
-                            <InputSelectObject class='is-fullwidth' @bind-Value=UserFilterPrivilege Items="Array.ConvertAll((Privilege[])Enum.GetValues<Privilege>(), x => (Privilege?)x)" DisplayValue='x => x?.ToString() ?? string.Empty' NullText="None" disabled="@DisableControls" />
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <Label TValue="object" DisplayText="Filter by RFID Card" />
-                        <div class="control has-icons-left">
-                            <InputNumber class="input" @bind-Value="UserFilterCard" disabled="@DisableControls" />
-                            <span class="material-icons icon is-left">numbers</span>
-                        </div>
-                    </div>
-
-                    <button type="button" class="button is-light is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearUserFilters'>
-                        <span class="material-icons icon">filter_alt_off</span>
-                        <span>Clear Filters</span>
-                    </button>
-                </div>
-
-                <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
-                    <Table class="is-fullwidth is-hoverable is-striped is-size-6">
-                        <TableHead>
-                            <tr>
-                                <th>User Id</th>
-                                <th>Name</th>
-                                <th>Password</th>
-                                <th>Privilege</th>
-                                <th>Group</th>
-                                <th>Card</th>
-                                <th>&nbsp;</th>
-                                <th>&nbsp;</th>
-                            </tr>
-                        </TableHead>
-                        <TableBody>
-                            @foreach (var user in FilteredUsers)
-                            {
-                                <tr>
-                                    <TableData>@user.UserId</TableData>
-                                    <TableData>@user.Name</TableData>
-                                    <TableData>@user.Password</TableData>
-                                    <TableData>@user.Privilege.ToString()</TableData>
-                                    <TableData>@user.Group</TableData>
-                                    <TableData>@user.Card</TableData>
-                                    <td>
-                                        <button type="button" class="button is-small is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='() => EditUser(user)'>
-                                            <span class="material-icons icon">edit</span>
-                                            <span>Edit</span>
-                                        </button>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="button is-small is-danger is-fullwidth my-1" disabled="@DisableControls" @onclick='() => DeleteUser(user)'>
-                                            <span class="material-icons icon">delete_forever</span>
-                                            <span>Delete</span>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </TableBody>
-                    </Table>
+            <div class="field mt-2">
+                <Label TValue="object" DisplayText="Filter by Name" />
+                <div class="control has-icons-left">
+                    <InputText class="input" @bind-Value="UserFilterName" disabled="@DisableControls" placeholder="Type a name..." />
+                    <span class="material-icons icon is-left">search</span>
                 </div>
             </div>
 
-        <Modal Title="@(NewUser.Index == 0 ? "Create User" : "Update User")" @bind-IsDisplayed=ModalAddUserDisplayed foot-class="is-justify-content-center">
-            <ModalBody>
-                <EditForm Model="NewUser">
-                    <DataAnnotationsValidator />
-
-                    @if (UserModalActionMessage != null)
-                    {
-                        <Message @key="UserModalActionMessage.RenderKey" class=@UserModalActionMessage.Class>
-                            @UserModalActionMessage.Message
-                        </Message>
-                    }
-
-                    <div class="field">
-                        <Label TValue="object" DisplayText="Name" />
-                        <div class="control has-icons-left">
-                            <InputText class="input" @bind-Value="NewUser.Name" disabled="@DisableControls" />
-                            <span class="material-icons icon is-left">title</span>
-                            <div class="help is-danger">
-                                <ValidationMessage For="() => NewUser.Name" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <Label TValue="object" DisplayText="Password" />
-                        <div class="control has-icons-left">
-                            <InputPassword class="input" @bind-Value="NewUser.Password" disabled="@DisableControls" />
-                            <div class="help is-danger">
-                                <ValidationMessage For="() => NewUser.Password" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <Label TValue="object" DisplayText="Privilege" />
-                        <div class="control has-icons-left has-icons-right">
-                            <InputSelectObject class='is-fullwidth' @bind-Value=NewUser.Privilege Items="Enum.GetValues<Privilege>().ToList()" DisplayValue="x => x.ToString()" disabled="@DisableControls" />
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <Label TValue="object" DisplayText="Group" />
-                        <div class="control has-icons-left">
-                            <InputText class="input" @bind-Value="NewUser.Group" disabled="@DisableControls" />
-                            <span class="material-icons icon is-left">title</span>
-                            <div class="help is-danger">
-                                <ValidationMessage For="() => NewUser.Group" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <Label TValue="object" DisplayText="User Id" />
-                        <div class="control has-icons-left">
-                            <InputText class="input" @bind-Value="NewUser.UserId" disabled="@DisableControls" />
-                            <span class="material-icons icon is-left">title</span>
-                            <div class="help is-danger">
-                                <ValidationMessage For="() => NewUser.UserId" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <Label TValue="object" DisplayText="RFID Card" />
-                        <div class="control has-icons-left">
-                            <InputNumber class="input" @bind-Value="NewUser.Card" disabled="@DisableControls" />
-                            <span class="material-icons icon is-left">numbers</span>
-                            <div class="help is-danger">
-                                <ValidationMessage For="() => NewUser.Card" />
-                            </div>
-                        </div>
-                    </div>
-                </EditForm>
-            </ModalBody>
-            <ModalFooter>
-                <button type="button" class="button" @onclick='CloseModalAddUser'>Cancel</button>
-
-                <button type="button" class="button is-info" disabled="@(DisableControls || DisableCreateUser)" @onclick='CreateUser'>
-                    <span class="material-icons icon">@(NewUser.Index == 0 ? "person_add" : "update")</span>
-                    <span>
-                        @if (NewUser.Index == 0)
-                        {
-                            @:Create User
-                        }
-                        else
-                        {
-                            @:Update User
-                        }
-                    </span>
-                </button>
-            </ModalFooter>
-        </Modal>
-    </Panel>
-
-    <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Attendance Management">
-        @if (AttendanceActionMessage != null)
-        {
-            <Message @key="AttendanceActionMessage.RenderKey" class=@AttendanceActionMessage.Class>
-                @AttendanceActionMessage.Message
-            </Message>
-        }
-        <div class="columns is-variable is-1">
-            <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
-                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetAttendanceRecords'>
-                    <span class="material-icons icon">event_note</span>
-                    <span>Get Attendance</span>
-                </button>
-
-                <button type="button" class="button is-danger is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenDeleteAttendanceModal'>
-                    <span class="material-icons icon">delete_forever</span>
-                    <span>Delete Attendance</span>
-                </button>
+            <div class="field">
+                <Label TValue="object" DisplayText="Filter by Privilege" />
+                <div class="control has-icons-left has-icons-right">
+                    <InputSelectObject class='is-fullwidth' @bind-Value=UserFilterPrivilege Items="Array.ConvertAll((Privilege[])Enum.GetValues<Privilege>(), x => (Privilege?)x)" DisplayValue='x => x.GetValueDisplayName()' NullText="All" disabled="@DisableControls" />
+                </div>
             </div>
 
-            <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
-                <Table class="is-fullwidth is-hoverable is-striped is-size-6">
-                    <TableHead>
-                        <tr>
-                            <th>User Id</th>
-                            <th>Name</th>
-                            <th>Privilege</th>
-                            <th>Group</th>
-                            <th>Card</th>
-                            <th>Time</th>
-                            <th>Status</th>
-                            <th>Punch</th>
-                        </tr>
-                    </TableHead>
-                    <TableBody>
-                        @foreach (var record in AttendanceDetails)
-                        {
-                            <tr>
-                                <TableData>@record.UserId</TableData>
-                                <TableData>@record.UserName</TableData>
-                                <TableData>@(record.UserPrivilege?.ToString() ?? "-")</TableData>
-                                <TableData>@(string.IsNullOrWhiteSpace(record.UserGroup) ? "-" : record.UserGroup)</TableData>
-                                <TableData>@(record.UserCard?.ToString() ?? "-")</TableData>
-                                <TableData>@record.Timestamp.ToString("G")</TableData>
-                                <TableData>@record.Status.ToString()</TableData>
-                                <TableData>@record.Punch.ToString()</TableData>
-                            </tr>
-                        }
-                    </TableBody>
-                </Table>
+            <div class="field">
+                <Label TValue="object" DisplayText="Filter by RFID Card" />
+                <div class="control has-icons-left">
+                    <InputNumber class="input" @bind-Value="UserFilterCard" disabled="@DisableControls" />
+                    <span class="material-icons icon is-left">numbers</span>
+                </div>
             </div>
+
+            <button type="button" class="button is-light is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearUserFilters'>
+                <span class="material-icons icon">filter_alt_off</span>
+                <span>Clear Filters</span>
+            </button>
         </div>
 
-        <Modal Title="Confirm Attendance Deletion" @bind-IsDisplayed=ModalDeleteAttendanceDisplayed foot-class="is-justify-content-center">
-            <ModalBody>
-                <p class="is-size-6">This will permanently delete all attendance records on the device.<br />Continue?</p>
-            </ModalBody>
-            <ModalFooter>
-                <button type="button" class="button" @onclick='CloseDeleteAttendanceModal'>Cancel</button>
-                <button type="button" class="button is-danger" @onclick='ConfirmClearAttendanceRecords'>Delete</button>
-            </ModalFooter>
-        </Modal>
-    </Panel>
-</div>
+        <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+            <Table class="is-fullwidth is-hoverable is-striped is-size-6">
+                <TableHead>
+                    <tr>
+                        <th>User Id</th>
+                        <th>Name</th>
+                        <th>Password</th>
+                        <th>Privilege</th>
+                        <th>Group</th>
+                        <th>Card</th>
+                        <th>&nbsp;</th>
+                        <th>&nbsp;</th>
+                    </tr>
+                </TableHead>
+                <TableBody>
+                    @foreach (var user in FilteredUsers)
+                    {
+                        <tr @key="user.UserId">
+                            <TableData>@user.UserId</TableData>
+                            <TableData>@user.Name</TableData>
+                            <TableData class="is-masked" tabindex="0">@user.Password</TableData>
+                            <TableData>@user.Privilege.GetValueDisplayName()</TableData>
+                            <TableData>@user.Group</TableData>
+                            <TableData>@user.Card</TableData>
+                            <td>
+                                <button type="button" class="button is-small is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='() => EditUser(user)'>
+                                    <span class="material-icons icon">edit</span>
+                                    <span>Edit</span>
+                                </button>
+                            </td>
+                            <td>
+                                <button type="button" class="button is-small is-danger is-fullwidth my-1" disabled="@DisableControls" @onclick='() => DeleteUser(user)'>
+                                    <span class="material-icons icon">delete_forever</span>
+                                    <span>Delete</span>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </TableBody>
+            </Table>
+        </div>
+    </div>
+</Panel>
+
+<Panel class="pt-2 px-2 mb-0 is-size-7" Title="Attendance Management">
+    @if (AttendanceActionMessage != null)
+    {
+        <div class=@(AttendanceActionMessage.Success ? "auto-hide" : null)>
+            <Message Title=@(AttendanceActionMessage.Success ? null : "Error") class=@AttendanceActionMessage.Class OnDeleteClicked="@(() => AttendanceActionMessage = null)">
+                @AttendanceActionMessage?.Message
+            </Message>
+        </div>
+    }
+    <div class="columns is-variable is-1">
+        <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+            <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetAttendanceRecords'>
+                <span class="material-icons icon">event_note</span>
+                <span>Get Attendance</span>
+            </button>
+
+            <button type="button" class="button is-danger is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenDeleteAttendanceModal'>
+                <span class="material-icons icon">delete_forever</span>
+                <span>Delete Attendance</span>
+            </button>
+        </div>
+
+        <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+            <Table class="is-fullwidth is-hoverable is-striped is-size-6">
+                <TableHead>
+                    <tr>
+                        <th>User Id</th>
+                        <th>Name</th>
+                        <th>Card</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Punch</th>
+                    </tr>
+                </TableHead>
+                <TableBody>
+                    @foreach (var record in Attendances)
+                    {
+                        <tr>
+                            <TableData>@record.UserId</TableData>
+                            <TableData>@record.UserName</TableData>
+                            <TableData>@(record.UserCard?.ToString() ?? "-")</TableData>
+                            <TableData>@record.Timestamp.ToString("G")</TableData>
+                            <TableData>@record.Status.ToString()</TableData>
+                            <TableData>@record.Punch.ToString()</TableData>
+                        </tr>
+                    }
+                </TableBody>
+            </Table>
+        </div>
+    </div>
+</Panel>
+
+<Modal Title=@($"Device Backup {BackupModalMode.ToString()}") @bind-IsDisplayed=ModalBackupDisplayed foot-class="is-justify-content-center">
+    <ModalBody>
+        @if (BackupModalActionMessage != null)
+        {
+            <div class=@(BackupModalActionMessage.Success ? "auto-hide" : null)>
+                <Message Title=@(BackupModalActionMessage.Success ? null : "Error") class=@BackupModalActionMessage.Class OnDeleteClicked="@(() => BackupModalActionMessage = null)">
+                    @BackupModalActionMessage?.Message
+                </Message>
+            </div>
+        }
+
+        @if (BackupModalMode == BackupOperationMode.Export)
+        {
+            <label class="label">Choose what to include in the backup export:</label>
+
+            <div class="field mb-2">
+                <InputSwitch @bind-Value="BackupIncludeSettings" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+            </div>
+
+            <div class="field mb-2 ml-5">
+                <InputSwitch @bind-Value="BackupIncludeNetworkSettings" disabled="@(BackupIncludeSettings == false)" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+            </div>
+
+            <div class="field mb-2">
+                <InputSwitch @bind-Value="BackupIncludeUsers" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+            </div>
+
+            <div class="field mb-2">
+                <InputSwitch @bind-Value="BackupIncludeAttendance" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+            </div>
+
+            @if (DisableBackupExport)
+            {
+                <p class="help is-danger">Select at least one section to export.</p>
+            }
+        }
+        else
+        {
+            <p class="is-size-6">Import support placeholder...</p>
+        }
+    </ModalBody>
+    <ModalFooter>
+        <button type="button" class="button" @onclick='CloseBackupModal'>Cancel</button>
+
+        @if (BackupModalMode == BackupOperationMode.Export)
+        {
+            <button type="button" class="button is-info" disabled="@(DisableControls || DisableBackupExport)" @onclick='ExportDeviceBackupAsync'>
+                <span class="material-icons icon">download</span>
+                <span>Export</span>
+            </button>
+        }
+        else
+        {
+            <button type="button" class="button is-info" disabled="@DisableControls">
+                <span class="material-icons icon">upload</span>
+                <span>Import</span>
+            </button>
+        }
+    </ModalFooter>
+</Modal>
+
+<Modal Title="@(NewUser.Index == 0 ? "Create User" : "Update User")" @bind-IsDisplayed=ModalAddUserDisplayed foot-class="is-justify-content-center">
+    <ModalBody>
+        <EditForm Model="NewUser">
+            <DataAnnotationsValidator />
+
+            @if (UserModalActionMessage != null)
+            {
+                <div class=@(UserModalActionMessage.Success ? "auto-hide" : null)>
+                    <Message Title=@(UserModalActionMessage.Success ? null : "Error") class=@UserModalActionMessage.Class OnDeleteClicked="@(() => UserModalActionMessage = null)">
+                        @UserModalActionMessage?.Message
+                    </Message>
+                </div>
+            }
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Name" />
+                <div class="control has-icons-left">
+                    <InputText class="input" @bind-Value="NewUser.Name" disabled="@DisableControls" />
+                    <span class="material-icons icon is-left">title</span>
+                    <div class="help is-danger">
+                        <ValidationMessage For="() => NewUser.Name" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Password" />
+                <div class="control has-icons-left">
+                    <InputPassword class="input" @bind-Value="NewUser.Password" disabled="@DisableControls" />
+                    <div class="help is-danger">
+                        <ValidationMessage For="() => NewUser.Password" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Privilege" />
+                <div class="control has-icons-left has-icons-right">
+                    <InputSelectObject class='is-fullwidth' @bind-Value=NewUser.Privilege Items="Enum.GetValues<Privilege>().ToList()" DisplayValue="x => x.GetValueDisplayName()" disabled="@DisableControls" />
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Group" />
+                <div class="control has-icons-left">
+                    <InputText class="input" @bind-Value="NewUser.Group" disabled="@DisableControls" />
+                    <span class="material-icons icon is-left">title</span>
+                    <div class="help is-danger">
+                        <ValidationMessage For="() => NewUser.Group" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="User Id" />
+                <div class="control has-icons-left">
+                    <InputText class="input" @bind-Value="NewUser.UserId" disabled="@DisableControls" />
+                    <span class="material-icons icon is-left">title</span>
+                    <div class="help is-danger">
+                        <ValidationMessage For="() => NewUser.UserId" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="RFID Card" />
+                <div class="control has-icons-left">
+                    <InputNumber class="input" @bind-Value="NewUser.Card" disabled="@DisableControls" />
+                    <span class="material-icons icon is-left">numbers</span>
+                    <div class="help is-danger">
+                        <ValidationMessage For="() => NewUser.Card" />
+                    </div>
+                </div>
+            </div>
+        </EditForm>
+    </ModalBody>
+    <ModalFooter>
+        <button type="button" class="button" @onclick='CloseModalAddUser'>Cancel</button>
+
+        <button type="button" class="button is-info" disabled="@DisableCreateUser" @onclick='CreateUser'>
+            <span class="material-icons icon">@(NewUser.Index == 0 ? "person_add" : "update")</span>
+            <span>
+                @if (NewUser.Index == 0)
+                {
+                    @:Create User
+                }
+                else
+                {
+                    @:Update User
+                }
+            </span>
+        </button>
+    </ModalFooter>
+</Modal>
+
+<Modal Title="Confirm Attendance Deletion" @bind-IsDisplayed=ModalDeleteAttendanceDisplayed foot-class="is-justify-content-center">
+    <ModalBody>
+        <p class="is-size-6">This will permanently delete all attendance records on the device.<br />Continue?</p>
+    </ModalBody>
+    <ModalFooter>
+        <button type="button" class="button" @onclick='CloseDeleteAttendanceModal'>Cancel</button>
+        <button type="button" class="button is-danger" @onclick='ConfirmClearAttendanceRecords'>Delete</button>
+    </ModalFooter>
+</Modal>

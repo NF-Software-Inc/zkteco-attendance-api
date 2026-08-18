@@ -16,7 +16,7 @@
 		<AssemblyVersion>1.1.4.0</AssemblyVersion>
 		<FileVersion>1.1.4.0</FileVersion>
 		<Version>1.1.4</Version>
-		<MauiVersion>10.0.80</MauiVersion>
+		<MauiVersion>10.0.90</MauiVersion>
 
         <!-- Display name -->
         <ApplicationTitle>ZKTeco Configurator</ApplicationTitle>
@@ -60,7 +60,7 @@
     </ItemGroup>
 
     <ItemGroup>
-		<PackageReference Include="Easy.Blazor.Bulma" Version="10.0.*" />
+		<PackageReference Include="Easy.Blazor.Bulma" Version="10.1.*" />
 		<PackageReference Include="Easy.Log.Writer.Blazor" Version="2.2.*" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />

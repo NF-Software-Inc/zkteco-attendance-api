@@ -1,19 +1,10 @@
-.app-version-label {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-
 /*
-    Applies only to status messages rendered inside Home.razor.
-    `::deep` is required because <Message> renders child DOM from another component,
-    and scoped CSS would not otherwise reach that generated element.
+    Success message styles
+    ----------------------
+    The success message is displayed after a successful action and is automatically hidden after a brief period.
 */
-.status-message-scope ::deep .auto-hide {
-    /* Keep the message visible briefly, then fade/collapse it and keep final hidden state. */
-    animation: auto-hide-fade 3s ease-out forwards;
+.auto-hide {
+    animation: auto-hide-fade 15s ease-out forwards;
 }
 
 /*
@@ -22,8 +13,7 @@
     - 100%: visually hidden and collapsed so it no longer takes interaction space
 */
 @keyframes auto-hide-fade {
-    0%,
-    80% {
+    0%, 80% {
         opacity: 1;
         max-height: 10rem;
         margin-bottom: 1rem;
@@ -37,3 +27,37 @@
         pointer-events: none;
     }
 }
+
+
+/*
+    Masked table cell styles
+    ------------------------
+    The masked table cell is used to hide sensitive information in a table. The user can hover over the cell to reveal the information.
+*/
+::deep td.is-masked {
+    position: relative;
+    color: transparent;
+}
+
+    ::deep td.is-masked::after {
+        content: "****";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding-left: 0.75rem;
+        color: var(--bulma-scheme-invert, #363636);
+        cursor: pointer;
+        pointer-events: none;
+    }
+
+    ::deep td.is-masked:hover,
+    ::deep td.is-masked:focus {
+        color: inherit;
+    }
+
+        ::deep td.is-masked:hover::after,
+        ::deep td.is-masked:focus::after {
+            display: none;
+        }
