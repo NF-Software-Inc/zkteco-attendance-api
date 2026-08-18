@@ -308,12 +308,42 @@
             <Table class="is-fullwidth is-hoverable is-striped is-size-6">
                 <TableHead>
                     <tr>
-                        <th>User Id</th>
-                        <th>Name</th>
+                        <th class="is-clickable @(UserSortBy == UserSortColumn.UserId ? "is-selected" : null)" @onclick='() => SortUsersBy(UserSortColumn.UserId)'>
+                            User Id
+                            @if (UserSortBy == UserSortColumn.UserId)
+                            {
+                                <span class="material-icons icon is-small">@(UserSortAscending ? "arrow_upward" : "arrow_downward")</span>
+                            }
+                        </th>
+                        <th class="is-clickable @(UserSortBy == UserSortColumn.Name ? "is-selected" : null)" @onclick='() => SortUsersBy(UserSortColumn.Name)'>
+                            Name
+                            @if (UserSortBy == UserSortColumn.Name)
+                            {
+                                <span class="material-icons icon is-small">@(UserSortAscending ? "arrow_upward" : "arrow_downward")</span>
+                            }
+                        </th>
                         <th>Password</th>
-                        <th>Privilege</th>
-                        <th>Group</th>
-                        <th>Card</th>
+                        <th class="is-clickable @(UserSortBy == UserSortColumn.Privilege ? "is-selected" : null)" @onclick='() => SortUsersBy(UserSortColumn.Privilege)'>
+                            Privilege
+                            @if (UserSortBy == UserSortColumn.Privilege)
+                            {
+                                <span class="material-icons icon is-small">@(UserSortAscending ? "arrow_upward" : "arrow_downward")</span>
+                            }
+                        </th>
+                        <th class="is-clickable @(UserSortBy == UserSortColumn.Group ? "is-selected" : null)" @onclick='() => SortUsersBy(UserSortColumn.Group)'>
+                            Group
+                            @if (UserSortBy == UserSortColumn.Group)
+                            {
+                                <span class="material-icons icon is-small">@(UserSortAscending ? "arrow_upward" : "arrow_downward")</span>
+                            }
+                        </th>
+                        <th class="is-clickable @(UserSortBy == UserSortColumn.Card ? "is-selected" : null)" @onclick='() => SortUsersBy(UserSortColumn.Card)'>
+                            Card
+                            @if (UserSortBy == UserSortColumn.Card)
+                            {
+                                <span class="material-icons icon is-small">@(UserSortAscending ? "arrow_upward" : "arrow_downward")</span>
+                            }
+                        </th>
                         <th>&nbsp;</th>
                         <th>&nbsp;</th>
                     </tr>
