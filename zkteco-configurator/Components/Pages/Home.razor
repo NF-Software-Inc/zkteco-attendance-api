@@ -464,7 +464,25 @@
 
         @if (BackupModalMode == BackupOperationMode.Import)
         {
-            <p class="is-size-6">Extra Import support placeholder...(Select Backup File button; Preview)</p>
+            <div class="field mb-2">
+                <button type="button" class="button is-info" disabled="@DisableControls" @onclick='SelectBackupFileAsync'>
+                    <span class="material-icons icon">folder_open</span>
+                    <span>Select Backup File</span>
+                </button>
+            </div>
+
+            @if (BackupLoadedPackage != null)
+            {
+                <div class="content">
+                    <p><strong>File:</strong> @BackupSelectedFileName</p>
+                    <p><strong>Created:</strong> @BackupLoadedPackage.CreatedAtUtc.ToLocalTime()</p>
+                    <p><strong>Source Device:</strong>
+                        Serial: @(BackupLoadedPackage.DeviceInfo.SerialNumber ?? "unknown"),
+                        Firmware: @(BackupLoadedPackage.DeviceInfo.FirmwareVersion ?? "unknown"),
+                        Platform: @(BackupLoadedPackage.DeviceInfo.Platform ?? "unknown")
+                    </p>
+                </div>
+            }
         }
     </ModalBody>
     <ModalFooter>
@@ -479,11 +497,25 @@
         }
         else
         {
-            <button type="button" class="button is-info" disabled="@DisableControls || DisableBackup">
+            <button type="button" class="button is-info" disabled="@(DisableControls || DisableBackup || BackupLoadedPackage == null)" @onclick='OpenConfirmImportModal'>
                 <span class="material-icons icon">upload</span>
                 <span>Import</span>
             </button>
         }
+    </ModalFooter>
+</Modal>
+
+<Modal Title="Confirm Import" @bind-IsDisplayed=ModalConfirmImportDisplayed foot-class="is-justify-content-center">
+    <ModalBody>
+        <p>Importing will write the selected backup data to the connected ZKTeco device. This action cannot be undone.</p>
+        <p>Are you sure you want to continue?</p>
+    </ModalBody>
+    <ModalFooter>
+        <button type="button" class="button" @onclick='CloseConfirmImportModal'>Cancel</button>
+        <button type="button" class="button is-danger" @onclick='ImportDeviceBackupAsync'>
+            <span class="material-icons icon">upload</span>
+            <span>Confirm Import</span>
+        </button>
     </ModalFooter>
 </Modal>
 

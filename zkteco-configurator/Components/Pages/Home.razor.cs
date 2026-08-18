@@ -48,7 +48,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private bool ModalAddUserDisplayed;
 	private bool ModalDeleteAttendanceDisplayed;
 	private bool ModalBackupDisplayed;
+	private bool ModalConfirmImportDisplayed;
 	private BackupOperationMode BackupModalMode = BackupOperationMode.Export;
+
+	private string? BackupSelectedFileName;
+	private DeviceBackupPackage? BackupLoadedPackage;
 
     [Display(Name = "Settings", Description = "Include the device settings.")]
     private bool BackupIncludeSettings = true;
@@ -597,13 +601,139 @@ public sealed partial class Home : ComponentBase, IDisposable
         BackupIncludeUsers = true;
         BackupIncludeAttendance = false;
         BackupIncludeNetworkSettings = false;
+		BackupSelectedFileName = null;
+		BackupLoadedPackage = null;
         ModalBackupDisplayed = true;
 	}
 
 	private void CloseBackupModal()
 	{
 		BackupModalActionMessage = null;
+		BackupSelectedFileName = null;
+		BackupLoadedPackage = null;
+		ModalConfirmImportDisplayed = false;
 		ModalBackupDisplayed = false;
+	}
+
+	/// <summary>
+	/// Lets the user select a device backup file to import, then previews its contents.
+	/// </summary>
+	private async Task SelectBackupFileAsync()
+	{
+		BackupModalActionMessage = null;
+
+		try
+		{
+			var selection = await DeviceBackupService.LoadBackupAsync();
+
+			if (selection == null)
+			{
+				SetActionMessage(ref BackupModalActionMessage, action: "Select Backup File", success: false, failureDetail: "selection canceled.");
+				return;
+			}
+
+			BackupSelectedFileName = selection.FileName;
+			BackupLoadedPackage = selection.Backup;
+		}
+		catch (Exception ex)
+		{
+			BackupSelectedFileName = null;
+			BackupLoadedPackage = null;
+			SetActionMessage(ref BackupModalActionMessage, action: "Select Backup File", success: false, failureDetail: $"failed loading backup file: {ex.Message}");
+		}
+	}
+
+	/// <summary>
+	/// Opens the confirmation prompt before writing any selected backup data to the connected device.
+	/// </summary>
+	private void OpenConfirmImportModal()
+	{
+		if (BackupLoadedPackage == null)
+		{
+			SetActionMessage(ref BackupModalActionMessage, action: "Import Device Backup", success: false, failureDetail: "select a backup file first.");
+			return;
+		}
+
+		if (DisableBackup)
+		{
+			SetActionMessage(ref BackupModalActionMessage, action: "Import Device Backup", success: false, failureDetail: "select at least one section to import.");
+			return;
+		}
+
+		ModalConfirmImportDisplayed = true;
+	}
+
+	private void CloseConfirmImportModal()
+	{
+		ModalConfirmImportDisplayed = false;
+	}
+
+	/// <summary>
+	/// Restores the user-selected sections of a previously loaded device backup to the connected ZKTeco device.
+	/// </summary>
+	private void ImportDeviceBackupAsync()
+	{
+		ModalConfirmImportDisplayed = false;
+
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			SetActionMessage(ref BackupModalActionMessage, action: "Import Device Backup", success: false,
+				failureDetail: "not connected to ZKTeco clock.");
+			return;
+		}
+
+		if (BackupLoadedPackage == null)
+		{
+			SetActionMessage(ref BackupModalActionMessage, action: "Import Device Backup", success: false, failureDetail: "select a backup file first.");
+			return;
+		}
+
+		try
+		{
+			var restored = new List<string>();
+			var skipped = new List<string>();
+
+			if (BackupIncludeSettings)
+			{
+				if (BackupLoadedPackage.Settings?.DeviceTime is DateTime deviceTime)
+				{
+					ZkTecoClock.SetTime(deviceTime);
+					restored.Add("settings");
+				}
+				else
+					skipped.Add("settings (not present in backup)");
+			}
+
+			if (BackupIncludeNetworkSettings)
+				skipped.Add("network settings (not supported by the connected device)");
+
+			if (BackupIncludeUsers)
+			{
+				if (BackupLoadedPackage.Users is { Count: > 0 } users)
+				{
+					foreach (var user in users)
+						ZkTecoClock.CreateUser(user);
+
+					restored.Add("users");
+					GetUsers(false);
+				}
+				else
+					skipped.Add("users (not present in backup)");
+			}
+
+			var detail = restored.Count > 0 ? $"restored {string.Join(", ", restored)}." : "no sections were restored.";
+
+			if (skipped.Count > 0)
+				detail += $" Skipped: {string.Join(", ", skipped)}.";
+
+			SetActionMessage(ref BackupActionMessage, action: "Import Device Backup", success: true, successDetail: detail);
+			CloseBackupModal();
+		}
+		catch (Exception ex)
+		{
+			SetActionMessage(ref BackupModalActionMessage, action: "Import Device Backup", success: false, failureDetail: $"failed importing device backup: {ex.Message}");
+		}
 	}
 
     /// <summary>
@@ -699,6 +829,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 		AttendanceActionMessage = null;
 		DeviceActionMessage = null;
 		BackupModalActionMessage = null;
+		BackupSelectedFileName = null;
+		BackupLoadedPackage = null;
 		DeviceDetailsMessage = null;
 		DeviceStorageCounts = null;
 
