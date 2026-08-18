@@ -50,20 +50,20 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private bool ModalBackupDisplayed;
 	private BackupOperationMode BackupModalMode = BackupOperationMode.Export;
 
-    [Display(Name = "Include Settings", Description = "Include the device settings in the backup.")]
+    [Display(Name = "Settings", Description = "Include the device settings.")]
     private bool BackupIncludeSettings = true;
 
-    [Display(Name = "Include Users", Description = "Include the user data in the backup.")]
+    [Display(Name = "Users", Description = "Include the users.")]
     private bool BackupIncludeUsers = true;
 
-    [Display(Name = "Include Attendance", Description = "Include the attendance data in the backup.")]
+    [Display(Name = "Attendance", Description = "Include the attendance records.")]
     private bool BackupIncludeAttendance = true;
 
-	[Display(Name = "Include network settings (IP/subnet/gateway/MAC)", Description = "Include the network settings in the backup.")]
+	[Display(Name = "Network settings (IP/subnet/gateway/MAC)", Description = "Include the network settings.")]
 	private bool BackupIncludeNetworkSettings;
 
     private readonly TooltipOptions BackupTooltipDisplayMode = TooltipOptions.Right | TooltipOptions.HasArrow | TooltipOptions.Multiline;
-    private bool DisableBackupExport => BackupIncludeSettings == false &&
+    private bool DisableBackup => BackupIncludeSettings == false &&
 		BackupIncludeUsers == false && BackupIncludeAttendance == false;
 
     private string? UserFilterName;
@@ -585,7 +585,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		BackupIncludeSettings = true;
 		BackupIncludeUsers = true;
 		BackupIncludeAttendance = true;
-		BackupIncludeNetworkSettings = false;
+		BackupIncludeNetworkSettings = true;
 		ModalBackupDisplayed = true;
 	}
 
@@ -593,7 +593,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 	{
 		BackupModalMode = BackupOperationMode.Import;
 		BackupModalActionMessage = null;
-		ModalBackupDisplayed = true;
+        BackupIncludeSettings = true;
+        BackupIncludeUsers = true;
+        BackupIncludeAttendance = false;
+        BackupIncludeNetworkSettings = false;
+        ModalBackupDisplayed = true;
 	}
 
 	private void CloseBackupModal()
@@ -616,7 +620,7 @@ public sealed partial class Home : ComponentBase, IDisposable
             return;
         }
 
-        if (DisableBackupExport)
+        if (DisableBackup)
 		{
 			SetActionMessage(ref BackupModalActionMessage, action: "Export Device Backup", success: false, failureDetail: "select at least one section to export.");
 			return;

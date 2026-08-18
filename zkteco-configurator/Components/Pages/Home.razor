@@ -146,15 +146,20 @@
             </Message>
         </div>
     }
-    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForExport'>
-        <span class="material-icons icon">download</span>
-        <span>Export</span>
-    </button>
-
-    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForImport'>
-        <span class="material-icons icon">upload</span>
-        <span>Import</span>
-    </button>
+    <div class="field is-grouped">
+        <div class="control is-expanded">
+            <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForExport'>
+                <span class="material-icons icon">download</span>
+                <span>Export</span>
+            </button>
+        </div>
+        <div class="control is-expanded">
+            <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForImport'>
+                <span class="material-icons icon">upload</span>
+                <span>Import</span>
+            </button>
+        </div>
+    </div>
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
@@ -431,34 +436,35 @@
             </div>
         }
 
+        <label class="label">Choose what to include in the @(BackupModalMode.ToString().ToLowerInvariant()):</label>
+
+        <div class="field mb-2">
+            <InputSwitch @bind-Value="BackupIncludeSettings" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+        </div>
+
+        <div class="field mb-2 ml-5">
+            <InputSwitch @bind-Value="BackupIncludeNetworkSettings" disabled="@(BackupIncludeSettings == false)" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+        </div>
+
+        <div class="field mb-2">
+            <InputSwitch @bind-Value="BackupIncludeUsers" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+        </div>
+
         @if (BackupModalMode == BackupOperationMode.Export)
         {
-            <label class="label">Choose what to include in the backup export:</label>
-
-            <div class="field mb-2">
-                <InputSwitch @bind-Value="BackupIncludeSettings" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-            </div>
-
-            <div class="field mb-2 ml-5">
-                <InputSwitch @bind-Value="BackupIncludeNetworkSettings" disabled="@(BackupIncludeSettings == false)" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-            </div>
-
-            <div class="field mb-2">
-                <InputSwitch @bind-Value="BackupIncludeUsers" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-            </div>
-
             <div class="field mb-2">
                 <InputSwitch @bind-Value="BackupIncludeAttendance" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
             </div>
-
-            @if (DisableBackupExport)
-            {
-                <p class="help is-danger">Select at least one section to export.</p>
-            }
         }
-        else
+
+        @if (DisableBackup)
         {
-            <p class="is-size-6">Import support placeholder...</p>
+            <p class="help is-danger">Select at least one section to @(BackupModalMode.ToString().ToLowerInvariant()).</p>
+        }
+
+        @if (BackupModalMode == BackupOperationMode.Import)
+        {
+            <p class="is-size-6">Extra Import support placeholder...(Select Backup File button; Preview)</p>
         }
     </ModalBody>
     <ModalFooter>
@@ -466,14 +472,14 @@
 
         @if (BackupModalMode == BackupOperationMode.Export)
         {
-            <button type="button" class="button is-info" disabled="@(DisableControls || DisableBackupExport)" @onclick='ExportDeviceBackupAsync'>
+            <button type="button" class="button is-info" disabled="@(DisableControls || DisableBackup)" @onclick='ExportDeviceBackupAsync'>
                 <span class="material-icons icon">download</span>
                 <span>Export</span>
             </button>
         }
         else
         {
-            <button type="button" class="button is-info" disabled="@DisableControls">
+            <button type="button" class="button is-info" disabled="@DisableControls || DisableBackup">
                 <span class="material-icons icon">upload</span>
                 <span>Import</span>
             </button>
