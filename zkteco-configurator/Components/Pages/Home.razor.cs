@@ -48,7 +48,29 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private int? UserFilterCard;
 
     /// <summary>
-    /// Gets the list of users filtered by the current filter settings.
+    /// Identifies the columns of the users table that can be sorted.
+    /// </summary>
+    private enum UserSortColumn
+    {
+        UserId,
+        Name,
+        Privilege,
+        Group,
+        Card
+    }
+
+    /// <summary>
+    /// The column currently used to sort the users table. Defaults to no sorting applied.
+    /// </summary>
+    private UserSortColumn? UserSortBy;
+
+    /// <summary>
+    /// Indicates whether the current sort direction is ascending.
+    /// </summary>
+    private bool UserSortAscending = true;
+
+    /// <summary>
+    /// Gets the list of users filtered by the current filter settings and sorted by the current sort settings.
     /// </summary>
     private IEnumerable<ZkTecoUser> FilteredUsers
 	{
@@ -69,8 +91,33 @@ public sealed partial class Home : ComponentBase, IDisposable
 				userFilterPredicate = userFilterPredicate.And(user => user.Card.ToString().StartsWith(cardPrefix, StringComparison.Ordinal));
 
 
-			return Users.Where((userFilterPredicate ?? PredicateBuilder.True<ZkTecoUser>()).Compile());
+			var filtered = Users.Where((userFilterPredicate ?? PredicateBuilder.True<ZkTecoUser>()).Compile());
+
+			return UserSortBy switch
+			{
+				UserSortColumn.UserId => UserSortAscending ? filtered.OrderBy(x => x.UserId) : filtered.OrderByDescending(x => x.UserId),
+				UserSortColumn.Name => UserSortAscending ? filtered.OrderBy(x => x.Name) : filtered.OrderByDescending(x => x.Name),
+				UserSortColumn.Privilege => UserSortAscending ? filtered.OrderBy(x => x.Privilege) : filtered.OrderByDescending(x => x.Privilege),
+				UserSortColumn.Group => UserSortAscending ? filtered.OrderBy(x => x.Group) : filtered.OrderByDescending(x => x.Group),
+				UserSortColumn.Card => UserSortAscending ? filtered.OrderBy(x => x.Card) : filtered.OrderByDescending(x => x.Card),
+				_ => filtered
+			};
         }
+	}
+
+    /// <summary>
+    /// Sorts the users table by the specified column, toggling the direction if the column is already selected.
+    /// </summary>
+    /// <param name="column">The column to sort by.</param>
+    private void SortUsersBy(UserSortColumn column)
+	{
+		if (UserSortBy == column)
+			UserSortAscending = !UserSortAscending;
+		else
+		{
+			UserSortBy = column;
+			UserSortAscending = true;
+		}
 	}
 
 	private List<SavedDevice> SavedDevices = [];
