@@ -75,8 +75,13 @@
 }
 
 ::deep th.is-selected {
-    background-color: var(--bulma-scheme-main-bis, #f5f5f5);
+    background-color: lightgoldenrodyellow;
+    color: var(--bulma-text-strong, #363636);
 }
+
+    ::deep th.is-selected .icon {
+        color: steelblue;
+    }
 
 ::deep th.is-clickable .icon {
     vertical-align: middle;
