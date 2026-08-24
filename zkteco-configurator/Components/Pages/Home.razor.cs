@@ -597,7 +597,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 	{
 		BackupModalMode = BackupOperationMode.Import;
 		BackupModalActionMessage = null;
-        BackupIncludeSettings = true;
+        BackupIncludeSettings = false;
         BackupIncludeUsers = true;
         BackupIncludeAttendance = false;
         BackupIncludeNetworkSettings = false;
@@ -690,20 +690,6 @@ public sealed partial class Home : ComponentBase, IDisposable
 		{
 			var restored = new List<string>();
 			var skipped = new List<string>();
-			var failed = new List<string>();
-
-			if (BackupIncludeSettings)
-			{
-				if (BackupLoadedPackage.Settings?.DeviceTime is DateTime deviceTime)
-				{
-					if (ZkTecoClock.SetTime(deviceTime))
-						restored.Add("device time");
-					else
-						failed.Add("device time (device rejected the update)");
-				}
-				else
-					skipped.Add("device time (not present in backup)");
-			}
 
 			if (BackupIncludeUsers)
 			{
@@ -719,16 +705,10 @@ public sealed partial class Home : ComponentBase, IDisposable
 					skipped.Add("users (not present in backup)");
 			}
 
-			if (BackupIncludeNetworkSettings)
-				skipped.Add("network settings (not supported by the connected device)");
-
 			var detail = restored.Count > 0 ? $"restored {string.Join(", ", restored)}." : "no sections were restored.";
 
 			if (skipped.Count > 0)
 				detail += $" Skipped: {string.Join(", ", skipped)}.";
-
-			if (failed.Count > 0)
-				detail += $" Failed: {string.Join(", ", failed)}.";
 
 			SetActionMessage(ref BackupActionMessage, action: "Import Device Backup", success: true, successDetail: detail);
 			CloseBackupModal();

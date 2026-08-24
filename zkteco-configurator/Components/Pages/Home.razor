@@ -438,13 +438,16 @@
 
         <label class="label">Choose what to include in the @(BackupModalMode.ToString().ToLowerInvariant()):</label>
 
-        <div class="field mb-2">
-            <InputSwitch @bind-Value="BackupIncludeSettings" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-        </div>
+        @if (BackupModalMode == BackupOperationMode.Export)
+        {
+            <div class="field mb-2">
+                <InputSwitch @bind-Value="BackupIncludeSettings" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+            </div>
 
-        <div class="field mb-2 ml-5">
-            <InputSwitch @bind-Value="BackupIncludeNetworkSettings" disabled="@(BackupIncludeSettings == false)" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-        </div>
+            <div class="field mb-2 ml-5">
+                <InputSwitch @bind-Value="BackupIncludeNetworkSettings" disabled="@(BackupIncludeSettings == false)" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+            </div>
+        }
 
         <div class="field mb-2">
             <InputSwitch @bind-Value="BackupIncludeUsers" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
