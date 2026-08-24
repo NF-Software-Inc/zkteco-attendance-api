@@ -398,22 +398,101 @@
                 <span class="material-icons icon">delete_forever</span>
                 <span>Delete Attendance</span>
             </button>
+
+            <div class="field mt-2">
+                <Label TValue="object" DisplayText="Filter by Start Time" />
+                <div class="control has-icons-left has-icons-right">
+                    <InputDateTime class='input' @bind-Value="AttendanceFilterStartTime" Options="InputDateTimeMode" disabled="@DisableControls" />
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Filter by End Time" />
+                <div class="control has-icons-left has-icons-right">
+                    <InputDateTime class='input' @bind-Value="AttendanceFilterEndTime" Options="InputDateTimeMode" disabled="@DisableControls" />
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Filter by Username" />
+                <div class="control has-icons-left">
+                    <InputText class="input" @bind-Value="AttendanceFilterUsername" disabled="@DisableControls" placeholder="Type a name..." />
+                    <span class="material-icons icon is-left">search</span>
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Filter by User Card" />
+                <div class="control has-icons-left">
+                    <InputNumber class="input" @bind-Value="AttendanceFilterCard" disabled="@DisableControls" />
+                    <span class="material-icons icon is-left">numbers</span>
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Filter by Status" />
+                <div class="control has-icons-left">
+                    <InputNumber class="input" @bind-Value="AttendanceFilterStatus" disabled="@DisableControls" />
+                    <span class="material-icons icon is-left">numbers</span>
+                </div>
+            </div>
+
+            <button type="button" class="button is-light is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearAttendanceFilters'>
+                <span class="material-icons icon">filter_alt_off</span>
+                <span>Clear Filters</span>
+            </button>
         </div>
 
         <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
             <Table class="is-fullwidth is-hoverable is-striped is-size-6">
                 <TableHead>
                     <tr>
-                        <th>User Id</th>
-                        <th>Name</th>
-                        <th>Card</th>
-                        <th>Time</th>
-                        <th>Status</th>
-                        <th>Punch</th>
+                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.UserId ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.UserId)'>
+                            User Id
+                            @if (AttendanceSortBy == AttendanceSortColumn.UserId)
+                            {
+                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
+                            }
+                        </th>
+                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Username ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Username)'>
+                            Name
+                            @if (AttendanceSortBy == AttendanceSortColumn.Username)
+                            {
+                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
+                            }
+                        </th>
+                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Card ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Card)'>
+                            Card
+                            @if (AttendanceSortBy == AttendanceSortColumn.Card)
+                            {
+                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
+                            }
+                        </th>
+                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Time ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Time)'>
+                            Time
+                            @if (AttendanceSortBy == AttendanceSortColumn.Time)
+                            {
+                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
+                            }
+                        </th>
+                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Status ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Status)'>
+                            Status
+                            @if (AttendanceSortBy == AttendanceSortColumn.Status)
+                            {
+                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
+                            }
+                        </th>
+                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Punch ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Punch)'>
+                            Punch
+                            @if (AttendanceSortBy == AttendanceSortColumn.Punch)
+                            {
+                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
+                            }
+                        </th>
                     </tr>
                 </TableHead>
                 <TableBody>
-                    @foreach (var record in Attendances)
+                    @foreach (var record in FilteredAttendances)
                     {
                         <tr>
                             <TableData>@record.UserId</TableData>
