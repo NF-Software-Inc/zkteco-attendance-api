@@ -414,15 +414,15 @@
             </div>
 
             <div class="field">
-                <Label TValue="object" DisplayText="Filter by Username" />
+                <Label TValue="object" DisplayText="Filter by Name" />
                 <div class="control has-icons-left">
-                    <InputText class="input" @bind-Value="AttendanceFilterUsername" disabled="@DisableControls" placeholder="Type a name..." />
+                    <InputText class="input" @bind-Value="AttendanceFilterName" disabled="@DisableControls" placeholder="Type a name..." />
                     <span class="material-icons icon is-left">search</span>
                 </div>
             </div>
 
             <div class="field">
-                <Label TValue="object" DisplayText="Filter by User Card" />
+                <Label TValue="object" DisplayText="Filter by RFID Card" />
                 <div class="control has-icons-left">
                     <InputNumber class="input" @bind-Value="AttendanceFilterCard" disabled="@DisableControls" />
                     <span class="material-icons icon is-left">numbers</span>
@@ -454,9 +454,9 @@
                                 <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
                             }
                         </th>
-                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Username ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Username)'>
+                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Name ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Name)'>
                             Name
-                            @if (AttendanceSortBy == AttendanceSortColumn.Username)
+                            @if (AttendanceSortBy == AttendanceSortColumn.Name)
                             {
                                 <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
                             }

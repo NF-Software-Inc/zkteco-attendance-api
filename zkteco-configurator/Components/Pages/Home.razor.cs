@@ -49,7 +49,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private DateTime? AttendanceFilterStartTime;
 	private DateTime? AttendanceFilterEndTime;
-	private string? AttendanceFilterUsername;
+	private string? AttendanceFilterName;
 	private int? AttendanceFilterCard;
 	private int? AttendanceFilterStatus;
 
@@ -132,7 +132,7 @@ public sealed partial class Home : ComponentBase, IDisposable
     private enum AttendanceSortColumn
     {
         UserId,
-        Username,
+        Name,
         Card,
         Time,
         Status,
@@ -140,9 +140,9 @@ public sealed partial class Home : ComponentBase, IDisposable
     }
 
     /// <summary>
-    /// The column currently used to sort the attendance table. Defaults to sorting by username ascending.
+    /// The column currently used to sort the attendance table. Defaults to sorting by name ascending.
     /// </summary>
-    private AttendanceSortColumn? AttendanceSortBy = AttendanceSortColumn.Username;
+    private AttendanceSortColumn? AttendanceSortBy = AttendanceSortColumn.Name;
 
     /// <summary>
     /// Indicates whether the current sort direction of the attendance table is ascending.
@@ -156,7 +156,7 @@ public sealed partial class Home : ComponentBase, IDisposable
     {
         get
         {
-            var username = AttendanceFilterUsername?.Trim();
+            var name = AttendanceFilterName?.Trim();
             var cardPrefix = AttendanceFilterCard?.ToString();
 
             var attendanceFilterPredicate = PredicateBuilder.Create<AttendanceDetailRow>();
@@ -167,8 +167,8 @@ public sealed partial class Home : ComponentBase, IDisposable
             if (AttendanceFilterEndTime.HasValue)
                 attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Timestamp <= AttendanceFilterEndTime.Value);
 
-            if (string.IsNullOrWhiteSpace(username) == false)
-                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserName.Contains(username, StringComparison.OrdinalIgnoreCase));
+            if (string.IsNullOrWhiteSpace(name) == false)
+                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserName.Contains(name, StringComparison.OrdinalIgnoreCase));
 
             if (string.IsNullOrWhiteSpace(cardPrefix) == false)
                 attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserCard != null && record.UserCard.Value.ToString().StartsWith(cardPrefix, StringComparison.Ordinal));
@@ -181,7 +181,7 @@ public sealed partial class Home : ComponentBase, IDisposable
             return AttendanceSortBy switch
             {
                 AttendanceSortColumn.UserId => AttendanceSortAscending ? filtered.OrderBy(x => x.UserId) : filtered.OrderByDescending(x => x.UserId),
-                AttendanceSortColumn.Username => AttendanceSortAscending ? filtered.OrderBy(x => x.UserName) : filtered.OrderByDescending(x => x.UserName),
+                AttendanceSortColumn.Name => AttendanceSortAscending ? filtered.OrderBy(x => x.UserName) : filtered.OrderByDescending(x => x.UserName),
                 AttendanceSortColumn.Card => AttendanceSortAscending ? filtered.OrderBy(x => x.UserCard) : filtered.OrderByDescending(x => x.UserCard),
                 AttendanceSortColumn.Time => AttendanceSortAscending ? filtered.OrderBy(x => x.Timestamp) : filtered.OrderByDescending(x => x.Timestamp),
                 AttendanceSortColumn.Status => AttendanceSortAscending ? filtered.OrderBy(x => x.Status) : filtered.OrderByDescending(x => x.Status),
@@ -725,7 +725,7 @@ public sealed partial class Home : ComponentBase, IDisposable
     {
         AttendanceFilterStartTime = null;
         AttendanceFilterEndTime = null;
-        AttendanceFilterUsername = null;
+        AttendanceFilterName = null;
         AttendanceFilterCard = null;
         AttendanceFilterStatus = null;
     }
