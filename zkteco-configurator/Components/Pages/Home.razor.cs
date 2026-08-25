@@ -455,12 +455,10 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			Users.AddRange(users!);
 
 		if (showMessage)
-		{
-			UserManagementActionMessage = null;
-            await StateHasChangedAsync();
             UserManagementActionMessage = GetActionMessage("Get Users", success, $"loaded {Users.Count} user(s).", "failed reading users from the ZKTeco device.");
-        }
-	}
+
+		await StateHasChangedAsync();
+    }
 
 	private void OpenModalAddUser()
 	{
