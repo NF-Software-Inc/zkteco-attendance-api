@@ -653,10 +653,13 @@ public sealed partial class Home : ComponentBase, IDisposable
 		ModalConfirmImportDisplayed = false;
 	}
 
-	/// <summary>
-	/// Restores the user-selected sections of a previously loaded device backup to the connected ZKTeco device.
-	/// </summary>
-	private void ImportDeviceBackupAsync()
+    /// <summary>
+    /// Restores the user-selected sections of a previously loaded device backup to the connected ZKTeco device.
+    /// </summary>
+    /// <remarks>
+    /// The import operation is currently limited to users only.
+    /// </remarks>
+    private void ImportDeviceBackupAsync()
 	{
 		ModalConfirmImportDisplayed = false;
 
@@ -670,48 +673,34 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		try
 		{
-            var backupPackage = BackupLoadedPackage!;
-			var restored = new List<string>();
-			var skipped = new List<string>();
-            var failed = new List<string>();
+            var detail = "The selected backup does not contain any users to import.";
+            var failedUsersCount = 0;
 
-			if (BackupIncludeUsers)
-			{
-				if (backupPackage.Users is { Count: > 0 } users)
+            if (BackupLoadedPackage!.Users is { Count: > 0 } users)
+            {
+                var restoredUsersCount = 0;
+
+                foreach (var user in users)
+                {
+                    if (ZkTecoClock.CreateUser(user))
+                        restoredUsersCount++;
+                    else
+                        failedUsersCount++;
+                }
+
+				if (restoredUsersCount > 0)
 				{
-                    var restoredUsersCount = 0;
-                    var failedUsersCount = 0;
-
-					foreach (var user in users)
-					{
-						if (ZkTecoClock.CreateUser(user))
-                            restoredUsersCount++;
-                        else
-                            failedUsersCount++;
-                    }
-
-                    if (restoredUsersCount > 0)
-                    {
-                        restored.Add($"users ({restoredUsersCount})");
-                        GetUsers(false);
-                    }
-
-                    if (failedUsersCount > 0)
-                        failed.Add($"users ({failedUsersCount} failed to create)");
+					detail = $"Imported {restoredUsersCount} user(s).";
+					GetUsers(false);
 				}
 				else
-					skipped.Add("users (not present in backup)");
-			}
+					detail = "No users were imported.";
 
-			var detail = restored.Count > 0 ? $"restored {string.Join(", ", restored)}." : "no sections were restored.";
+				if (failedUsersCount > 0)
+					detail += $" {failedUsersCount} user(s) could not be created.";
+            }
 
-			if (skipped.Count > 0)
-				detail += $" Skipped: {string.Join(", ", skipped)}.";
-
-            if (failed.Count > 0)
-                detail += $" Failed: {string.Join(", ", failed)}.";
-
-			SetActionMessage(ref BackupActionMessage, action: "Import Device Backup", success: true, successDetail: detail);
+			SetActionMessage(ref BackupActionMessage, action: "Import Device Backup", success: failedUsersCount == 0, successDetail: detail, failureDetail: detail);
 			CloseBackupModal();
 		}
 		catch (Exception ex)
@@ -734,12 +723,6 @@ public sealed partial class Home : ComponentBase, IDisposable
             return;
         }
 
-        if (HasSelectedExportSections == false)
-		{
-			SetActionMessage(ref BackupModalActionMessage, action: "Export Device Backup", success: false, failureDetail: "select at least one section to export.");
-			return;
-		}
-
 		try
 		{
 			var backup = BuildDeviceBackupPackage();
@@ -760,7 +743,10 @@ public sealed partial class Home : ComponentBase, IDisposable
         }
     }
 
-	private void OnBackupIncludeSettingsChanged()
+    /// <summary>
+    /// Uncheck "Network Settings" if "Settings" is unchecked.
+    /// </summary>
+    private void OnBackupIncludeSettingsChanged()
 	{
 		if (BackupIncludeSettings == false)
 			BackupIncludeNetworkSettings = false;

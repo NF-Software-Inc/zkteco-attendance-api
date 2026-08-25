@@ -110,34 +110,6 @@ public sealed class DeviceBackupService
     /// <exception cref="InvalidDataException">The JSON does not represent a valid device backup.</exception>
     private static DeviceBackupPackage DeserializeAndValidate(string json)
     {
-        JsonElement root;
-
-        try
-        {
-            using var document = JsonDocument.Parse(json);
-            root = document.RootElement.Clone();
-        }
-        catch (JsonException ex)
-        {
-            throw new InvalidDataException("The selected file is not valid JSON.", ex);
-        }
-
-        if (root.ValueKind != JsonValueKind.Object)
-            throw new InvalidDataException("The selected file does not contain a device backup.");
-
-        if (root.TryGetProperty(nameof(DeviceBackupPackage.SchemaVersion), out var schemaVersionElement) == false ||
-            schemaVersionElement.ValueKind != JsonValueKind.String ||
-            string.IsNullOrWhiteSpace(schemaVersionElement.GetString()))
-        {
-            throw new InvalidDataException("The selected file is missing the device backup schema version.");
-        }
-
-        if (root.TryGetProperty(nameof(DeviceBackupPackage.DeviceInfo), out var deviceInfoElement) == false ||
-            deviceInfoElement.ValueKind != JsonValueKind.Object)
-        {
-            throw new InvalidDataException("The selected file is missing source device information.");
-        }
-
         DeviceBackupPackage? backup;
 
         try
@@ -149,17 +121,14 @@ public sealed class DeviceBackupService
             throw new InvalidDataException("The selected file is not valid JSON.", ex);
         }
 
-        if (backup == null)
-            throw new InvalidDataException("The selected file does not contain a device backup.");
+        if (backup == null || backup.DeviceInfo == null)
+            throw new InvalidDataException("The selected file does not contain valid device information.");
 
         if (string.IsNullOrWhiteSpace(backup.SchemaVersion))
             throw new InvalidDataException("The selected file is missing the device backup schema version.");
 
         if (backup.SchemaVersion != DeviceBackupPackage.CurrentSchemaVersion)
             throw new InvalidDataException($"Unsupported device backup schema version '{backup.SchemaVersion}'. Expected '{DeviceBackupPackage.CurrentSchemaVersion}'.");
-
-        if (backup.DeviceInfo == null)
-            throw new InvalidDataException("The selected file is missing source device information.");
 
         return backup;
     }

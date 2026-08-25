@@ -457,19 +457,15 @@
             <InputSwitch @bind-Value="BackupIncludeUsers" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
         </div>
 
-        @if (BackupModalMode == BackupOperationMode.Export && HasSelectedExportSections == false)
+        @if ((BackupModalMode == BackupOperationMode.Export && HasSelectedExportSections == false) ||
+            (BackupModalMode == BackupOperationMode.Import && HasSelectedImportSections == false))
         {
-            <p class="help is-danger">Select at least one section to export.</p>
-        }
-
-        @if (BackupModalMode == BackupOperationMode.Import && HasSelectedImportSections == false)
-        {
-            <p class="help is-danger">Select at least one section to import.</p>
+            <p class="help is-danger">Select at least one section.</p>
         }
 
         @if (BackupModalMode == BackupOperationMode.Import)
         {
-            <div class="field mb-2">
+            <div class="field mt-4">
                 <button type="button" class="button is-info" disabled="@DisableControls" @onclick='SelectBackupFileAsync'>
                     <span class="material-icons icon">folder_open</span>
                     <span>Select Backup File</span>
@@ -482,7 +478,7 @@
             }
             else
             {
-                <div class="content">
+                <div class="content my-4">
                     <p><strong>File:</strong> @BackupSelectedFileName</p>
                     <p><strong>Created:</strong> @BackupLoadedPackage.CreatedAtUtc.ToLocalTime()</p>
                     <p><strong>Source Device:</strong>
