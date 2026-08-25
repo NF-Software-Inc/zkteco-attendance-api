@@ -55,15 +55,11 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private int? AttendanceFilterCard;
 	private int? AttendanceFilterStatus;
 
-    /// <summary>
-    /// The column currently used to sort the users table. Defaults to sorting by username ascending.
-    /// </summary>
-	private string UserSortBy = nameof(ZkTecoUser.Name);
 
     /// <summary>
-    /// Indicates whether the current sort direction is ascending.
+    /// Represents the current sort state for the user table, including the column being sorted and the sort direction (ascending or descending).
     /// </summary>
-    private bool UserSortAscending = true;
+    private readonly SortState UserSort = new(nameof(ZkTecoUser.Name));
 
     /// <summary>
     /// Gets the list of users filtered by the current filter settings and sorted by the current sort settings.
@@ -88,42 +84,23 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 			var filtered = Users.Where((predicate ?? PredicateBuilder.True<ZkTecoUser>()).Compile());
 
-			return UserSortBy switch
+			return UserSort.CurrentSortBy switch
 			{
-				nameof(ZkTecoUser.UserId) => UserSortAscending ? filtered.OrderBy(x => x.UserId) : filtered.OrderByDescending(x => x.UserId),
-				nameof(ZkTecoUser.Name) => UserSortAscending ? filtered.OrderBy(x => x.Name) : filtered.OrderByDescending(x => x.Name),
-				nameof(ZkTecoUser.Privilege) => UserSortAscending ? filtered.OrderBy(x => x.Privilege) : filtered.OrderByDescending(x => x.Privilege),
-				nameof(ZkTecoUser.Group) => UserSortAscending ? filtered.OrderBy(x => x.Group) : filtered.OrderByDescending(x => x.Group),
-				nameof(ZkTecoUser.Card) => UserSortAscending ? filtered.OrderBy(x => x.Card) : filtered.OrderByDescending(x => x.Card),
+				nameof(ZkTecoUser.UserId) => UserSort.Ascending ? filtered.OrderBy(x => x.UserId) : filtered.OrderByDescending(x => x.UserId),
+				nameof(ZkTecoUser.Name) => UserSort.Ascending ? filtered.OrderBy(x => x.Name) : filtered.OrderByDescending(x => x.Name),
+				nameof(ZkTecoUser.Privilege) => UserSort.Ascending ? filtered.OrderBy(x => x.Privilege) : filtered.OrderByDescending(x => x.Privilege),
+				nameof(ZkTecoUser.Group) => UserSort.Ascending ? filtered.OrderBy(x => x.Group) : filtered.OrderByDescending(x => x.Group),
+				nameof(ZkTecoUser.Card) => UserSort.Ascending ? filtered.OrderBy(x => x.Card) : filtered.OrderByDescending(x => x.Card),
 				_ => filtered
 			};
         }
 	}
 
-    /// <summary>
-    /// Sorts the users table by the specified column, toggling the direction if the column is already selected.
-    /// </summary>
-    /// <param name="column">The column to sort by.</param>
-	private void SortUsersBy(string column)
-	{
-		if (UserSortBy == column)
-			UserSortAscending = !UserSortAscending;
-		else
-		{
-			UserSortBy = column;
-			UserSortAscending = true;
-		}
-	}
 
     /// <summary>
-    /// The column currently used to sort the attendance table. Defaults to sorting by name ascending.
+    /// Represents the current sort state for the attendance table, including the column being sorted and the sort direction (ascending or descending).
     /// </summary>
-	private string AttendanceSortBy = nameof(AttendanceDetailRow.UserName);
-
-    /// <summary>
-    /// Indicates whether the current sort direction of the attendance table is ascending.
-    /// </summary>
-    private bool AttendanceSortAscending = true;
+    private readonly SortState AttendanceSort = new(nameof(AttendanceDetailRow.UserName));
 
     /// <summary>
     /// Gets the list of attendance records filtered by the current filter settings and sorted by the current sort settings.
@@ -154,60 +131,18 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
             var filtered = Attendances.Where((attendanceFilterPredicate ?? PredicateBuilder.True<AttendanceDetailRow>()).Compile());
 
-            return AttendanceSortBy switch
+			return AttendanceSort.CurrentSortBy switch
             {
-				nameof(AttendanceDetailRow.UserId) => AttendanceSortAscending ? filtered.OrderBy(x => x.UserId) : filtered.OrderByDescending(x => x.UserId),
-				nameof(AttendanceDetailRow.UserName) => AttendanceSortAscending ? filtered.OrderBy(x => x.UserName) : filtered.OrderByDescending(x => x.UserName),
-				nameof(AttendanceDetailRow.UserCard) => AttendanceSortAscending ? filtered.OrderBy(x => x.UserCard) : filtered.OrderByDescending(x => x.UserCard),
-				nameof(AttendanceDetailRow.Timestamp) => AttendanceSortAscending ? filtered.OrderBy(x => x.Timestamp) : filtered.OrderByDescending(x => x.Timestamp),
-				nameof(AttendanceDetailRow.Status) => AttendanceSortAscending ? filtered.OrderBy(x => x.Status) : filtered.OrderByDescending(x => x.Status),
-				nameof(AttendanceDetailRow.Punch) => AttendanceSortAscending ? filtered.OrderBy(x => x.Punch) : filtered.OrderByDescending(x => x.Punch),
+				nameof(AttendanceDetailRow.UserId) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.UserId) : filtered.OrderByDescending(x => x.UserId),
+				nameof(AttendanceDetailRow.UserName) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.UserName) : filtered.OrderByDescending(x => x.UserName),
+				nameof(AttendanceDetailRow.UserCard) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.UserCard) : filtered.OrderByDescending(x => x.UserCard),
+				nameof(AttendanceDetailRow.Timestamp) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.Timestamp) : filtered.OrderByDescending(x => x.Timestamp),
+				nameof(AttendanceDetailRow.Status) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.Status) : filtered.OrderByDescending(x => x.Status),
+				nameof(AttendanceDetailRow.Punch) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.Punch) : filtered.OrderByDescending(x => x.Punch),
                 _ => filtered
             };
         }
     }
-
-    /// <summary>
-    /// Sorts the attendance table by the specified column, toggling the direction if the column is already selected.
-    /// </summary>
-    /// <param name="column">The column to sort by.</param>
-	private void SortAttendancesBy(string column)
-    {
-        if (AttendanceSortBy == column)
-            AttendanceSortAscending = !AttendanceSortAscending;
-        else
-        {
-            AttendanceSortBy = column;
-            AttendanceSortAscending = true;
-        }
-    }
-
-    /// <summary>
-    /// Returns the appropriate CSS class for a table header based on the current sort column and direction.
-    /// </summary>
-    /// <param name="sortBy">The column currently used to sort the table.</param>
-    /// <param name="column">The column for which to get the CSS class.</param>
-    /// <returns>The CSS class for the table header.</returns>
-    private static string GetThClass(string sortBy, string column)
-    {
-        return sortBy == column
-            ? "is-clickable is-selected"
-            : "is-clickable";
-    }
-
-    /// <summary>
-    /// Returns the appropriate sort arrow icon for a table header based on the current sort column and direction.
-    /// </summary>
-    /// <param name="sortBy">The column currently used to sort the table.</param>
-    /// <param name="column">The column for which to get the sort arrow icon.</param>
-    /// <param name="sortAscending">Indicates whether the sort direction is ascending.</param>
-    /// <returns>The sort arrow icon for the table header.</returns>
-    private static string? GetThSortArrow(string sortBy, string column, bool sortAscending)
-	{
-		return sortBy == column
-			? sortAscending ? "arrow_upward" : "arrow_downward"
-			: null;
-	}
 
     private List<SavedDevice> SavedDevices = [];
 
@@ -775,12 +710,68 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		public int? UserCard { get; }
 	}
 
-	/// <summary>
-	/// Represents a user-management operation message with UI style metadata.
-	/// </summary>
-	/// <param name="Class">The CSS class to apply for styling the message, including optional auto-hide behavior.</param>
-	/// <param name="Message">The message text to display.</param>
-	private sealed record ActionMessage(bool Success, string Class, string Message);
+    /// <summary>
+    /// Represents a user-management operation message with UI style metadata.
+    /// </summary>
+    /// <param name="Class">The CSS class to apply for styling the message, including optional auto-hide behavior.</param>
+    /// <param name="Message">The message text to display.</param>
+    private sealed record ActionMessage(bool Success, string Class, string Message);
+
+    /// <summary>
+    /// Represents the current sort state for a table, including the column being sorted and the sort direction (ascending or descending).
+    /// </summary>
+    /// <param name="defaultSortColumn">The name of the column to sort by initially.</param>
+    private sealed class SortState(string defaultSortColumn)
+	{
+        /// <summary>
+        /// Name of the column currently being sorted.
+        /// </summary>
+        public string CurrentSortBy { get; private set; } = defaultSortColumn;
+
+        /// <summary>
+        /// Indicates whether the current sort direction is ascending (true) or descending (false).
+        /// </summary>
+        public bool Ascending { get; private set; } = true;
+
+        /// <summary>
+		/// Sorts the by the specified column, toggling the direction if the column is already selected.
+        /// </summary>
+        /// <param name="column">The name of the column to sort by.</param>
+        public void SortBy(string column)
+		{
+			if (CurrentSortBy == column)
+				Ascending = !Ascending;
+			else
+			{
+				CurrentSortBy = column;
+				Ascending = true;
+			}
+		}
+
+        /// <summary>
+        /// Returns the appropriate CSS class for a table header based on whether it is the current sort column and the sort direction.
+        /// </summary>
+		/// <param name="column">The name of the column to sort by.</param>
+		/// <returns>The CSS class to apply to the table header.</returns>
+        public string GetThClass(string column)
+		{
+			return CurrentSortBy == column
+				? "is-clickable is-selected"
+				: "is-clickable";
+		}
+
+        /// <summary>
+        /// Returns the appropriate Material Icon name for a table header based on whether it is the current sort column and the sort direction.
+        /// </summary>
+        /// <param name="column">The name of the column to sort by.</param>
+        /// <returns>The name of the Material Icon to display, or null if the column is not the current sort column.</returns>
+        public string? GetThSortArrow(string column)
+		{
+			return CurrentSortBy == column
+				? Ascending ? "arrow_upward" : "arrow_downward"
+				: null;
+		}
+	}
 
 	private class PageModel
 	{
