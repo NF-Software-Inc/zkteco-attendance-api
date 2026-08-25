@@ -8,7 +8,7 @@ using zkteco_configurator.Services;
 
 namespace zkteco_configurator.Components.Pages;
 
-public sealed partial class Home : ComponentBase, IDisposable
+public sealed partial class Home : EasyComponentBase, IDisposable
 {
 	private static string AppVersion => typeof(App).Assembly.GetName().Version?.ToString() ?? "0.0.0";
 
@@ -180,7 +180,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 			SavedDevices.Remove(device);
 	}
 
-	private void GetDeviceDetails()
+	private async Task GetDeviceDetails()
 	{
 		// Connection check
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
@@ -224,13 +224,15 @@ public sealed partial class Home : ComponentBase, IDisposable
 		}
 
 		// Report status
-		var commandErrorDetails = string.Join(Environment.NewLine, errors.Distinct(StringComparer.Ordinal));
+		var error = string.Join(Environment.NewLine, errors.Distinct(StringComparer.Ordinal));
 		var success = errors.Count == 0;
 
-		DeviceActionMessage = GetActionMessage("Get Device Details", success, "loaded device details.", $"loaded partial device details with communication errors:{Environment.NewLine}{commandErrorDetails}");
+		DeviceActionMessage = GetActionMessage("Get Device Details", success, "loaded device details.", $"loaded partial device details with communication errors:{Environment.NewLine}{error}");
+
+		await StateHasChangedAsync();
 	}
 
-	private void EnableDevice()
+	private async Task EnableDevice()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -241,9 +243,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 		var success = ZkTecoClock.EnableDevice();
 
 		DeviceActionMessage = GetActionMessage("Enable Device", success, "device enabled.", "failed enabling ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void DisableDevice()
+	private async Task DisableDevice()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -254,9 +258,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 		var success = ZkTecoClock.DisableDevice();
 
 		DeviceActionMessage = GetActionMessage("Disable Device", success, "device disabled.", "failed disabling ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void RestartDevice()
+	private async Task RestartDevice()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -270,9 +276,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		if (success)
 			ZkTecoClock = null;
+
+		await StateHasChangedAsync();
 	}
 
-	private void ShutdownDevice()
+	private async Task ShutdownDevice()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -286,9 +294,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		if (success)
 			ZkTecoClock = null;
+
+		await StateHasChangedAsync();
 	}
 
-	private void ClearAndRefresh()
+	private async Task ClearAndRefresh()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
@@ -300,9 +310,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: "failed refreshing device data.");
 		else
 			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", true, "cleared errors and refreshed data.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void SetClockTime()
+	private async Task SetClockTime()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -315,9 +327,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 			: ZkTecoClock.SetTime();
 
 		DeviceActionMessage = GetActionMessage("Set Device Time", success, "device time updated.", "failed setting device time on ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void SetDisplayText()
+	private async Task SetDisplayText()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -329,9 +343,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 		var success = ZkTecoClock.SetDisplayText(displayText);
 
 		DeviceActionMessage = GetActionMessage("Set Device Display Text", success, "device display text updated.", "failed setting display text on ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void ClearDisplayText()
+	private async Task ClearDisplayText()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -342,14 +358,16 @@ public sealed partial class Home : ComponentBase, IDisposable
 		var success = ZkTecoClock.ClearDisplayText();
 
 		DeviceActionMessage = GetActionMessage("Clear Device Display Text", success, "device display text cleared.", "failed clearing display text on ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void GetUsers()
+	private async Task GetUsers()
 	{
-		GetUsers(true);
+		await GetUsers(true);
 	}
 
-	private void GetUsers(bool showMessage)
+	private async Task GetUsers(bool showMessage)
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -367,6 +385,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		if (showMessage)
 			UserManagementActionMessage = GetActionMessage("Get Users", success, $"loaded {Users.Count} user(s).", "failed reading users from the ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
 	private void OpenModalAddUser()
@@ -396,7 +416,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		ModalAddUserDisplayed = false;
 	}
 
-	private void CreateUser()
+	private async Task CreateUser()
 	{
 		// Connection check
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
@@ -404,6 +424,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 			UserModalActionMessage = GetActionMessage("Save User", false, failureDetail: "not connected to ZKTeco clock.");
 
+			await StateHasChangedAsync();
 			return;
 		}
 
@@ -437,6 +458,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 		{
 			UserModalActionMessage = GetActionMessage(action, false, failureDetail: $"failed saving user '{userName}' to the ZKTeco device.");
 		}
+
+		await StateHasChangedAsync();
 	}
 
 	/// <summary>
@@ -451,7 +474,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		ModalAddUserDisplayed = true;
 	}
 
-	private void DeleteUser(ZkTecoUser user)
+	private async Task DeleteUser(ZkTecoUser user)
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -465,9 +488,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 			Users.Remove(user);
 
 		UserManagementActionMessage = GetActionMessage("Delete User", success, $"deleted user '{user.UserId}'.", $"failed deleting user '{user.UserId}' from the ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void GetAttendanceRecords()
+	private async Task GetAttendanceRecords()
 	{
 		// Connection check
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
@@ -478,7 +503,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		// Ensure users are loaded
 		if (Users.Count == 0)
-			GetUsers(showMessage: false);
+			await GetUsers(false);
 
 		Attendances.Clear();
 
@@ -497,9 +522,11 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 		// Update status
 		AttendanceActionMessage = GetActionMessage("Get Attendance", success, $"loaded {Attendances.Count} attendance record(s).", "failed reading attendance records from the ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void ClearAttendanceRecords()
+	private async Task ClearAttendanceRecords()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -513,6 +540,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 			Attendances.Clear();
 
 		AttendanceActionMessage = GetActionMessage("Delete Attendance", success, "deleted all attendance records.", "failed deleting attendance records from the ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
 	private void OpenDeleteAttendanceModal()
@@ -525,9 +554,10 @@ public sealed partial class Home : ComponentBase, IDisposable
 		ModalDeleteAttendanceDisplayed = false;
 	}
 
-	private void ConfirmClearAttendanceRecords()
+	private async Task ConfirmClearAttendanceRecords()
 	{
-		ClearAttendanceRecords();
+		await ClearAttendanceRecords();
+
 		ModalDeleteAttendanceDisplayed = false;
 	}
 
