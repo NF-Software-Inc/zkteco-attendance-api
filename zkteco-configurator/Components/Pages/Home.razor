@@ -476,8 +476,6 @@
         </EditForm>
     </ModalBody>
     <ModalFooter>
-        <button type="button" class="button" @onclick='CloseModalAddUser'>Cancel</button>
-
         <button type="button" class="button is-info" disabled="@DisableCreateUser" @onclick='CreateUser'>
             <span class="material-icons icon">@(NewUser.Index == 0 ? "person_add" : "update")</span>
             <span>
@@ -491,6 +489,8 @@
                 }
             </span>
         </button>
+
+        <button type="button" class="button" @onclick='CloseModalAddUser'>Cancel</button>
     </ModalFooter>
 </Modal>
 
@@ -499,7 +499,7 @@
         <p class="is-size-6">This will permanently delete all attendance records on the device.<br />Continue?</p>
     </ModalBody>
     <ModalFooter>
-        <button type="button" class="button" @onclick='CloseDeleteAttendanceModal'>Cancel</button>
         <button type="button" class="button is-danger" @onclick='ConfirmClearAttendanceRecords'>Delete</button>
+        <button type="button" class="button" @onclick='CloseDeleteAttendanceModal'>Cancel</button>
     </ModalFooter>
 </Modal>
