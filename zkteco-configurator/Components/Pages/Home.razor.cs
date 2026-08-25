@@ -47,6 +47,12 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private Privilege? UserFilterPrivilege;
 	private int? UserFilterCard;
 
+	private DateTime? AttendanceFilterStartTime;
+	private DateTime? AttendanceFilterEndTime;
+	private string? AttendanceFilterName;
+	private int? AttendanceFilterCard;
+	private int? AttendanceFilterStatus;
+
     /// <summary>
     /// Identifies the columns of the users table that can be sorted.
     /// </summary>
@@ -60,9 +66,9 @@ public sealed partial class Home : ComponentBase, IDisposable
     }
 
     /// <summary>
-    /// The column currently used to sort the users table. Defaults to no sorting applied.
+    /// The column currently used to sort the users table. Defaults to sorting by username ascending.
     /// </summary>
-    private UserSortColumn? UserSortBy;
+    private UserSortColumn? UserSortBy = UserSortColumn.Name;
 
     /// <summary>
     /// Indicates whether the current sort direction is ascending.
@@ -119,6 +125,86 @@ public sealed partial class Home : ComponentBase, IDisposable
 			UserSortAscending = true;
 		}
 	}
+
+    /// <summary>
+    /// Identifies the columns of the attendance table that can be sorted.
+    /// </summary>
+    private enum AttendanceSortColumn
+    {
+        UserId,
+        Name,
+        Card,
+        Time,
+        Status,
+        Punch
+    }
+
+    /// <summary>
+    /// The column currently used to sort the attendance table. Defaults to sorting by name ascending.
+    /// </summary>
+    private AttendanceSortColumn? AttendanceSortBy = AttendanceSortColumn.Name;
+
+    /// <summary>
+    /// Indicates whether the current sort direction of the attendance table is ascending.
+    /// </summary>
+    private bool AttendanceSortAscending = true;
+
+    /// <summary>
+    /// Gets the list of attendance records filtered by the current filter settings and sorted by the current sort settings.
+    /// </summary>
+    private IEnumerable<AttendanceDetailRow> FilteredAttendances
+    {
+        get
+        {
+            var name = AttendanceFilterName?.Trim();
+            var cardPrefix = AttendanceFilterCard?.ToString();
+
+            var attendanceFilterPredicate = PredicateBuilder.Create<AttendanceDetailRow>();
+
+            if (AttendanceFilterStartTime.HasValue)
+                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Timestamp >= AttendanceFilterStartTime.Value);
+
+            if (AttendanceFilterEndTime.HasValue)
+                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Timestamp <= AttendanceFilterEndTime.Value);
+
+            if (string.IsNullOrWhiteSpace(name) == false)
+                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserName.Contains(name, StringComparison.OrdinalIgnoreCase));
+
+            if (string.IsNullOrWhiteSpace(cardPrefix) == false)
+                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserCard != null && record.UserCard.Value.ToString().StartsWith(cardPrefix, StringComparison.Ordinal));
+
+            if (AttendanceFilterStatus.HasValue)
+                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Status == AttendanceFilterStatus.Value);
+
+            var filtered = Attendances.Where((attendanceFilterPredicate ?? PredicateBuilder.True<AttendanceDetailRow>()).Compile());
+
+            return AttendanceSortBy switch
+            {
+                AttendanceSortColumn.UserId => AttendanceSortAscending ? filtered.OrderBy(x => x.UserId) : filtered.OrderByDescending(x => x.UserId),
+                AttendanceSortColumn.Name => AttendanceSortAscending ? filtered.OrderBy(x => x.UserName) : filtered.OrderByDescending(x => x.UserName),
+                AttendanceSortColumn.Card => AttendanceSortAscending ? filtered.OrderBy(x => x.UserCard) : filtered.OrderByDescending(x => x.UserCard),
+                AttendanceSortColumn.Time => AttendanceSortAscending ? filtered.OrderBy(x => x.Timestamp) : filtered.OrderByDescending(x => x.Timestamp),
+                AttendanceSortColumn.Status => AttendanceSortAscending ? filtered.OrderBy(x => x.Status) : filtered.OrderByDescending(x => x.Status),
+                AttendanceSortColumn.Punch => AttendanceSortAscending ? filtered.OrderBy(x => x.Punch) : filtered.OrderByDescending(x => x.Punch),
+                _ => filtered
+            };
+        }
+    }
+
+    /// <summary>
+    /// Sorts the attendance table by the specified column, toggling the direction if the column is already selected.
+    /// </summary>
+    /// <param name="column">The column to sort by.</param>
+    private void SortAttendancesBy(AttendanceSortColumn column)
+    {
+        if (AttendanceSortBy == column)
+            AttendanceSortAscending = !AttendanceSortAscending;
+        else
+        {
+            AttendanceSortBy = column;
+            AttendanceSortAscending = true;
+        }
+    }
 
 	private List<SavedDevice> SavedDevices = [];
 
@@ -619,6 +705,7 @@ public sealed partial class Home : ComponentBase, IDisposable
 		Users.Clear();
 		Attendances.Clear();
 		ClearUserFilters();
+		ClearAttendanceFilters();
 	}
 
     /// <summary>
@@ -629,6 +716,18 @@ public sealed partial class Home : ComponentBase, IDisposable
 		UserFilterName = null;
 		UserFilterPrivilege = null;
 		UserFilterCard = null;
+    }
+
+    /// <summary>
+    /// Resets all attendance-table filters to show the full list after reconnecting or clearing state.
+    /// </summary>
+    private void ClearAttendanceFilters()
+    {
+        AttendanceFilterStartTime = null;
+        AttendanceFilterEndTime = null;
+        AttendanceFilterName = null;
+        AttendanceFilterCard = null;
+        AttendanceFilterStatus = null;
     }
 
     /// <summary>
