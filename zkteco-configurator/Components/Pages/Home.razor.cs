@@ -1,4 +1,5 @@
 ﻿using easy_blazor_bulma;
+using easy_core;
 using Microsoft.AspNetCore.Components;
 using System.ComponentModel.DataAnnotations;
 using zkteco_attendance_api;
@@ -7,24 +8,70 @@ using zkteco_configurator.Services;
 
 namespace zkteco_configurator.Components.Pages;
 
-public sealed partial class Home : ComponentBase, IDisposable
+public sealed partial class Home : EasyComponentBase, IDisposable
 {
+	private static string AppVersion => typeof(App).Assembly.GetName().Version?.ToString() ?? "0.0.0";
+
 	[Inject]
 	private SavedDeviceService SavedDeviceService { get; set; } = default!;
 
 	private readonly PageModel InputModel = new();
 	private ZkTeco? ZkTecoClock;
+
+	/// <summary>
+	/// Represents the user being created or edited in the modal dialog.
+	/// </summary>
 	private ZkTecoUser NewUser = new();
 
+	/// <summary>
+	/// Stores the original user data when editing an existing user, allowing for restoration if the edit is canceled.
+	/// </summary>
+	private ZkTecoUser? OriginalUser;
+
 	private readonly PlaceholderModel DeviceDetailsPlaceholder = new();
-	private readonly PlaceholderModel UserDetailsPlaceholder = new();
 
 	private string? ConnectionStatusMessage;
 	private string? DeviceDetailsMessage;
 
+	private ActionMessage? UserManagementActionMessage;
+	private ActionMessage? UserModalActionMessage;
+	private ActionMessage? AttendanceActionMessage;
+	private ActionMessage? DeviceActionMessage;
+
 	private RecordCounts? DeviceStorageCounts;
 	private readonly List<ZkTecoUser> Users = [];
-	private readonly List<ZkTecoAttendance> Attendances = [];
+	private readonly List<AttendanceDetailRow> Attendances = [];
+
+	private bool ModalAddUserDisplayed;
+	private bool ModalDeleteAttendanceDisplayed;
+
+	private string? UserFilterName;
+	private Privilege? UserFilterPrivilege;
+	private int? UserFilterCard;
+
+	/// <summary>
+	/// Gets the list of users filtered by the current filter settings.
+	/// </summary>
+	private IEnumerable<ZkTecoUser> FilteredUsers
+	{
+		get
+		{
+			var name = UserFilterName?.Trim();
+			var card = UserFilterCard?.ToString();
+			var predicate = PredicateBuilder.Create<ZkTecoUser>();
+
+			if (string.IsNullOrEmpty(name) == false)
+				predicate = predicate.And(user => user.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+
+			if (UserFilterPrivilege.HasValue)
+				predicate = predicate.And(user => user.Privilege == UserFilterPrivilege.Value);
+
+			if (string.IsNullOrEmpty(card) == false)
+				predicate = predicate.And(user => user.Card.ToString().StartsWith(card, StringComparison.Ordinal));
+
+			return Users.Where((predicate ?? PredicateBuilder.True<ZkTecoUser>()).Compile());
+		}
+	}
 
 	private List<SavedDevice> SavedDevices = [];
 
@@ -35,7 +82,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 	private bool DisableControls => ZkTecoClock == null || ZkTecoClock.IsConnected == false;
 
-	private bool DisableCreateUser => string.IsNullOrWhiteSpace(NewUser.Name) ||
+	private bool DisableCreateUser => DisableControls ||
+		string.IsNullOrWhiteSpace(NewUser.Name) ||
 		string.IsNullOrWhiteSpace(NewUser.UserId);
 
 	private readonly TooltipOptions TooltipTop = TooltipOptions.Top | TooltipOptions.HasArrow | TooltipOptions.Multiline;
@@ -132,36 +180,59 @@ public sealed partial class Home : ComponentBase, IDisposable
 			SavedDevices.Remove(device);
 	}
 
-	private void GetDeviceDetails()
+	private async Task GetDeviceDetails()
 	{
+		// Connection check
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 			return;
 		}
 
-		DeviceDetailsMessage = string.Empty;
+		// Register error handler
+		var errors = new List<string>();
 
-		DeviceDetailsMessage += "Time: " + ZkTecoClock.GetTime()?.ToString("G") + Environment.NewLine;
-		DeviceDetailsMessage += "Name: " + ZkTecoClock.GetDeviceName() + Environment.NewLine;
-		DeviceDetailsMessage += "IP: " + ZkTecoClock.GetDeviceIp() + Environment.NewLine;
-		DeviceDetailsMessage += "Subnet: " + ZkTecoClock.GetDeviceSubnetMask() + Environment.NewLine;
-		DeviceDetailsMessage += "Gateway IP: " + ZkTecoClock.GetDeviceGatewayIp() + Environment.NewLine;
-		DeviceDetailsMessage += "MAC: " + ZkTecoClock.GetDeviceMac() + Environment.NewLine;
-		DeviceDetailsMessage += "Serial: " + ZkTecoClock.GetDeviceSerial() + Environment.NewLine;
+		CommandError onCommandError = errors.Add;
+		ZkTecoClock.NotifyCommandError += onCommandError;
 
-		DeviceDetailsMessage += "Format: " + ZkTecoClock.GetDeviceExtendedFormat() + Environment.NewLine;
-		DeviceDetailsMessage += "User Format: " + ZkTecoClock.GetDeviceUserExtendedFormat() + Environment.NewLine;
-		DeviceDetailsMessage += "Face Version: " + ZkTecoClock.GetDeviceFaceVersion() + Environment.NewLine;
-		DeviceDetailsMessage += "Fingerprint Version: " + ZkTecoClock.GetDeviceFingerprintVersion() + Environment.NewLine;
-		DeviceDetailsMessage += "Firmware Version: " + ZkTecoClock.GetFirmwareVersion() + Environment.NewLine;
-		DeviceDetailsMessage += "Old Firmware Version: " + ZkTecoClock.GetDeviceOldFirmwareVersion() + Environment.NewLine;
-		DeviceDetailsMessage += "Platform: " + ZkTecoClock.GetDevicePlatform() + Environment.NewLine;
+		// Get details
+		try
+		{
+			DeviceDetailsMessage = string.Empty;
 
-		DeviceStorageCounts = ZkTecoClock.GetStorageDetails();
+			DeviceDetailsMessage += "Time: " + ZkTecoClock.GetTime()?.ToString("G") + Environment.NewLine;
+			DeviceDetailsMessage += "Name: " + ZkTecoClock.GetDeviceName() + Environment.NewLine;
+			DeviceDetailsMessage += "IP: " + ZkTecoClock.GetDeviceIp() + Environment.NewLine;
+			DeviceDetailsMessage += "Subnet: " + ZkTecoClock.GetDeviceSubnetMask() + Environment.NewLine;
+			DeviceDetailsMessage += "Gateway IP: " + ZkTecoClock.GetDeviceGatewayIp() + Environment.NewLine;
+			DeviceDetailsMessage += "MAC: " + ZkTecoClock.GetDeviceMac() + Environment.NewLine;
+			DeviceDetailsMessage += "Serial: " + ZkTecoClock.GetDeviceSerial() + Environment.NewLine;
+
+			DeviceDetailsMessage += "Format: " + ZkTecoClock.GetDeviceExtendedFormat() + Environment.NewLine;
+			DeviceDetailsMessage += "User Format: " + ZkTecoClock.GetDeviceUserExtendedFormat() + Environment.NewLine;
+			DeviceDetailsMessage += "Face Version: " + ZkTecoClock.GetDeviceFaceVersion() + Environment.NewLine;
+			DeviceDetailsMessage += "Fingerprint Version: " + ZkTecoClock.GetDeviceFingerprintVersion() + Environment.NewLine;
+			DeviceDetailsMessage += "Firmware Version: " + ZkTecoClock.GetFirmwareVersion() + Environment.NewLine;
+			DeviceDetailsMessage += "Old Firmware Version: " + ZkTecoClock.GetDeviceOldFirmwareVersion() + Environment.NewLine;
+			DeviceDetailsMessage += "Platform: " + ZkTecoClock.GetDevicePlatform() + Environment.NewLine;
+
+			DeviceStorageCounts = ZkTecoClock.GetStorageDetails();
+		}
+		finally
+		{
+			ZkTecoClock.NotifyCommandError -= onCommandError;
+		}
+
+		// Report status
+		var error = string.Join(Environment.NewLine, errors.Distinct(StringComparer.Ordinal));
+		var success = errors.Count == 0;
+
+		DeviceActionMessage = GetActionMessage("Get Device Details", success, "loaded device details.", $"loaded partial device details with communication errors:{Environment.NewLine}{error}");
+
+		await StateHasChangedAsync();
 	}
 
-	private void EnableDevice()
+	private async Task EnableDevice()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -169,10 +240,14 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 		}
 
-		ZkTecoClock.EnableDevice();
+		var success = ZkTecoClock.EnableDevice();
+
+		DeviceActionMessage = GetActionMessage("Enable Device", success, "device enabled.", "failed enabling ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void DisableDevice()
+	private async Task DisableDevice()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -180,10 +255,14 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 		}
 
-		ZkTecoClock.DisableDevice();
+		var success = ZkTecoClock.DisableDevice();
+
+		DeviceActionMessage = GetActionMessage("Disable Device", success, "device disabled.", "failed disabling ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void RestartDevice()
+	private async Task RestartDevice()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -191,11 +270,17 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 		}
 
-		if (ZkTecoClock.RestartDevice())
+		var success = ZkTecoClock.RestartDevice();
+
+		DeviceActionMessage = GetActionMessage("Restart Device", success, "restart success.", "failed restarting ZKTeco device.");
+
+		if (success)
 			ZkTecoClock = null;
+
+		await StateHasChangedAsync();
 	}
 
-	private void ShutdownDevice()
+	private async Task ShutdownDevice()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -203,38 +288,33 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 		}
 
-		if (ZkTecoClock.ShutdownDevice())
+		var success = ZkTecoClock.ShutdownDevice();
+
+		DeviceActionMessage = GetActionMessage("Shutdown Device", success, "shutdown success.", "failed turning off ZKTeco device.");
+
+		if (success)
 			ZkTecoClock = null;
+
+		await StateHasChangedAsync();
 	}
 
-	private void ClearAndRefresh()
+	private async Task ClearAndRefresh()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
-		ZkTecoClock.ClearBuffer();
-		ZkTecoClock.ClearError();
-		ZkTecoClock.RefreshData();
-	}
-
-	private void SetClockTime()
-	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
-		if (InputModel.ClockTime != null)
-			ZkTecoClock.SetTime(InputModel.ClockTime.Value);
+		else if (ZkTecoClock.ClearBuffer() == false)
+			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: "failed clearing the device buffer.");
+		else if (ZkTecoClock.ClearError() == false)
+			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: "failed clearing device errors.");
+		else if (ZkTecoClock.RefreshData() == false)
+			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: "failed refreshing device data.");
 		else
-			ZkTecoClock.SetTime();
+			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", true, "cleared errors and refreshed data.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void SetDisplayText()
+	private async Task SetClockTime()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -242,13 +322,16 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 		}
 
-		if (string.IsNullOrWhiteSpace(InputModel.DisplayText))
-			ZkTecoClock.SetDisplayText("Welcome");
-		else
-			ZkTecoClock.SetDisplayText(InputModel.DisplayText);
+		var success = InputModel.ClockTime != null
+			? ZkTecoClock.SetTime(InputModel.ClockTime.Value)
+			: ZkTecoClock.SetTime();
+
+		DeviceActionMessage = GetActionMessage("Set Device Time", success, "device time updated.", "failed setting device time on ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void ClearDisplayText()
+	private async Task SetDisplayText()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -256,10 +339,35 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 		}
 
-		ZkTecoClock.ClearDisplayText();
+		var displayText = string.IsNullOrWhiteSpace(InputModel.DisplayText) ? "Welcome" : InputModel.DisplayText;
+		var success = ZkTecoClock.SetDisplayText(displayText);
+
+		DeviceActionMessage = GetActionMessage("Set Device Display Text", success, "device display text updated.", "failed setting display text on ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void GetUsers()
+	private async Task ClearDisplayText()
+	{
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			return;
+		}
+
+		var success = ZkTecoClock.ClearDisplayText();
+
+		DeviceActionMessage = GetActionMessage("Clear Device Display Text", success, "device display text cleared.", "failed clearing display text on ZKTeco device.");
+
+		await StateHasChangedAsync();
+	}
+
+	private async Task GetUsers()
+	{
+		await GetUsers(true);
+	}
+
+	private async Task GetUsers(bool showMessage)
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -270,19 +378,57 @@ public sealed partial class Home : ComponentBase, IDisposable
 		Users.Clear();
 
 		var users = ZkTecoClock.GetUsers();
+		var success = users != null;
 
-		if (users != null)
-			Users.AddRange(users);
+		if (success)
+			Users.AddRange(users!);
+
+		if (showMessage)
+			UserManagementActionMessage = GetActionMessage("Get Users", success, $"loaded {Users.Count} user(s).", "failed reading users from the ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void CreateUser()
+	private void OpenModalAddUser()
 	{
+		NewUser = new();
+		UserModalActionMessage = null;
+		ModalAddUserDisplayed = true;
+	}
+
+	private void CloseModalAddUser()
+	{
+		// Restore user on cancel
+		if (NewUser.Index != 0 && OriginalUser != null)
+		{
+			NewUser.UserId = OriginalUser.UserId;
+			NewUser.Name = OriginalUser.Name;
+			NewUser.Index = OriginalUser.Index;
+			NewUser.Password = OriginalUser.Password;
+			NewUser.Privilege = OriginalUser.Privilege;
+			NewUser.Group = OriginalUser.Group;
+			NewUser.Card = OriginalUser.Card;
+		}
+
+		// Hide modal
+		UserModalActionMessage = null;
+		OriginalUser = null;
+		ModalAddUserDisplayed = false;
+	}
+
+	private async Task CreateUser()
+	{
+		// Connection check
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			UserModalActionMessage = GetActionMessage("Save User", false, failureDetail: "not connected to ZKTeco clock.");
+
+			await StateHasChangedAsync();
 			return;
 		}
 
+		// Check for existing
 		var existing = ZkTecoClock.GetUsers();
 		var index = existing != null && existing.Count > 0 ? existing.Max(x => x.Index) + 1 : 1;
 		var add = NewUser.Index == 0;
@@ -290,21 +436,45 @@ public sealed partial class Home : ComponentBase, IDisposable
 		if (add)
 			NewUser.Index = index;
 
+		// Save user
+		var userName = NewUser.Name;
+		var action = add ? "Create User" : "Update User";
+
 		if (ZkTecoClock.CreateUser(NewUser))
 		{
 			if (add)
 				Users.Add(NewUser);
 
+			ModalAddUserDisplayed = false;
+			UserModalActionMessage = null;
+
+			// Cleanup and status message
 			NewUser = new();
+			OriginalUser = null;
+
+			UserManagementActionMessage = GetActionMessage(action, true, $"saved user '{userName}'.");
 		}
+		else
+		{
+			UserModalActionMessage = GetActionMessage(action, false, failureDetail: $"failed saving user '{userName}' to the ZKTeco device.");
+		}
+
+		await StateHasChangedAsync();
 	}
 
+	/// <summary>
+	/// Opens the modal to edit an existing user by populating the NewUser model with the selected user's data.
+	/// </summary>
+	/// <param name="user">The user to edit.</param>
 	private void EditUser(ZkTecoUser user)
 	{
 		NewUser = user;
+		OriginalUser = new(user.UserId, user.Name, user.Index, user.Password, user.Privilege, user.Group, user.Card);
+		UserModalActionMessage = null;
+		ModalAddUserDisplayed = true;
 	}
 
-	private void DeleteUser(ZkTecoUser user)
+	private async Task DeleteUser(ZkTecoUser user)
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -312,27 +482,51 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 		}
 
-		if (ZkTecoClock.DeleteUser(user))
+		var success = ZkTecoClock.DeleteUser(user);
+
+		if (success)
 			Users.Remove(user);
+
+		UserManagementActionMessage = GetActionMessage("Delete User", success, $"deleted user '{user.UserId}'.", $"failed deleting user '{user.UserId}' from the ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void GetAttendanceRecords()
+	private async Task GetAttendanceRecords()
 	{
+		// Connection check
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 			return;
 		}
+
+		// Ensure users are loaded
+		if (Users.Count == 0)
+			await GetUsers(false);
 
 		Attendances.Clear();
 
+		// Get attendance records
 		var records = ZkTecoClock.GetAttendance();
+		var success = records != null;
 
-		if (records != null)
-			Attendances.AddRange(records);
+		if (success)
+		{
+			Attendances.AddRange(records!.Select(attendance =>
+			{
+				var user = Users.FirstOrDefault(x => x.UserId == attendance.UserId);
+				return new AttendanceDetailRow(attendance, user?.Name ?? "-", user?.Card);
+			}));
+		}
+
+		// Update status
+		AttendanceActionMessage = GetActionMessage("Get Attendance", success, $"loaded {Attendances.Count} attendance record(s).", "failed reading attendance records from the ZKTeco device.");
+
+		await StateHasChangedAsync();
 	}
 
-	private void ClearAttendanceRecords()
+	private async Task ClearAttendanceRecords()
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -340,7 +534,31 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 		}
 
-		ZkTecoClock.ClearAttendance();
+		var success = ZkTecoClock.ClearAttendance();
+
+		if (success)
+			Attendances.Clear();
+
+		AttendanceActionMessage = GetActionMessage("Delete Attendance", success, "deleted all attendance records.", "failed deleting attendance records from the ZKTeco device.");
+
+		await StateHasChangedAsync();
+	}
+
+	private void OpenDeleteAttendanceModal()
+	{
+		ModalDeleteAttendanceDisplayed = true;
+	}
+
+	private void CloseDeleteAttendanceModal()
+	{
+		ModalDeleteAttendanceDisplayed = false;
+	}
+
+	private async Task ConfirmClearAttendanceRecords()
+	{
+		await ClearAttendanceRecords();
+
+		ModalDeleteAttendanceDisplayed = false;
 	}
 
 	private void Reset()
@@ -352,12 +570,66 @@ public sealed partial class Home : ComponentBase, IDisposable
 		}
 
 		ConnectionStatusMessage = null;
+		UserManagementActionMessage = null;
+		AttendanceActionMessage = null;
+		DeviceActionMessage = null;
 		DeviceDetailsMessage = null;
 		DeviceStorageCounts = null;
 
 		Users.Clear();
 		Attendances.Clear();
+		ClearUserFilters();
 	}
+
+	/// <summary>
+	/// Resets all user-table filters to show the full list after reconnecting or clearing state.
+	/// </summary>
+	private void ClearUserFilters()
+	{
+		UserFilterName = null;
+		UserFilterPrivilege = null;
+		UserFilterCard = null;
+	}
+
+	/// <summary>
+	/// Sets a standardized status message in the provided operation message target.
+	/// </summary>
+	/// <param name="action">The name of the action being performed.</param>
+	/// <param name="success">Indicates whether the action was successful.</param>
+	/// <param name="successDetail">Optional detailed message for a successful action.</param>
+	/// <param name="failureDetail">Optional detailed message for a failed action.</param>
+	/// <remarks>
+	/// The <c>ref</c> modifier is required because this method replaces the ActionMessage reference.
+	///  Without <c>ref</c>, only the local parameter would be reassigned and the caller's state would not be updated.
+	/// </remarks>
+	private ActionMessage GetActionMessage(string action, bool success, string? successDetail = null, string? failureDetail = null)
+	{
+		var detail = success ? (successDetail ?? "action succeeded.") : (failureDetail ?? "action failed.");
+
+		return new ActionMessage(success, success ? "is-success" : "is-danger", $"[{action}] {(success ? "Success" : "Fail")}: {detail}");
+	}
+
+	/// <summary>
+	/// Represents one attendance row enriched with user details for table display.
+	/// </summary>
+	private sealed class AttendanceDetailRow : ZkTecoAttendance
+	{
+		public AttendanceDetailRow(ZkTecoAttendance attendance, string userName, int? userCard) : base(attendance.UserId, attendance.Timestamp, attendance.Index, attendance.Status, attendance.Punch)
+		{
+			UserName = userName;
+			UserCard = userCard;
+		}
+
+		public string UserName { get; }
+		public int? UserCard { get; }
+	}
+
+	/// <summary>
+	/// Represents a user-management operation message with UI style metadata.
+	/// </summary>
+	/// <param name="Class">The CSS class to apply for styling the message, including optional auto-hide behavior.</param>
+	/// <param name="Message">The message text to display.</param>
+	private sealed record ActionMessage(bool Success, string Class, string Message);
 
 	private class PageModel
 	{
