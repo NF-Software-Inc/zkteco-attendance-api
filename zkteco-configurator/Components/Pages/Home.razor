@@ -307,41 +307,26 @@
             <Table class="is-fullwidth is-hoverable is-striped is-size-6">
                 <TableHead>
                     <tr>
-                        <th class="is-clickable @(UserSortBy == UserSortColumn.UserId ? "is-selected" : null)" @onclick='() => SortUsersBy(UserSortColumn.UserId)'>
+                        <th class="@GetThClass(UserSortBy, nameof(ZkTecoUser.UserId))" @onclick='() => SortUsersBy(nameof(ZkTecoUser.UserId))'>
                             User Id
-                            @if (UserSortBy == UserSortColumn.UserId)
-                            {
-                                <span class="material-icons icon is-small">@(UserSortAscending ? "arrow_upward" : "arrow_downward")</span>
-                            }
+                            <span class="material-icons icon is-small">@GetThSortArrow(UserSortBy, nameof(ZkTecoUser.UserId), UserSortAscending)</span>
                         </th>
-                        <th class="is-clickable @(UserSortBy == UserSortColumn.Name ? "is-selected" : null)" @onclick='() => SortUsersBy(UserSortColumn.Name)'>
+                        <th class="@GetThClass(UserSortBy, nameof(ZkTecoUser.Name))" @onclick='() => SortUsersBy(nameof(ZkTecoUser.Name))'>
                             Name
-                            @if (UserSortBy == UserSortColumn.Name)
-                            {
-                                <span class="material-icons icon is-small">@(UserSortAscending ? "arrow_upward" : "arrow_downward")</span>
-                            }
+                            <span class="material-icons icon is-small">@GetThSortArrow(UserSortBy, nameof(ZkTecoUser.Name), UserSortAscending)</span>
                         </th>
                         <th>Password</th>
-                        <th class="is-clickable @(UserSortBy == UserSortColumn.Privilege ? "is-selected" : null)" @onclick='() => SortUsersBy(UserSortColumn.Privilege)'>
+                        <th class="@GetThClass(UserSortBy, nameof(ZkTecoUser.Privilege))" @onclick='() => SortUsersBy(nameof(ZkTecoUser.Privilege))'>
                             Privilege
-                            @if (UserSortBy == UserSortColumn.Privilege)
-                            {
-                                <span class="material-icons icon is-small">@(UserSortAscending ? "arrow_upward" : "arrow_downward")</span>
-                            }
+                            <span class="material-icons icon is-small">@GetThSortArrow(UserSortBy, nameof(ZkTecoUser.Privilege), UserSortAscending)</span>
                         </th>
-                        <th class="is-clickable @(UserSortBy == UserSortColumn.Group ? "is-selected" : null)" @onclick='() => SortUsersBy(UserSortColumn.Group)'>
+                        <th class="@GetThClass(UserSortBy, nameof(ZkTecoUser.Group))" @onclick='() => SortUsersBy(nameof(ZkTecoUser.Group))'>
                             Group
-                            @if (UserSortBy == UserSortColumn.Group)
-                            {
-                                <span class="material-icons icon is-small">@(UserSortAscending ? "arrow_upward" : "arrow_downward")</span>
-                            }
+                            <span class="material-icons icon is-small">@GetThSortArrow(UserSortBy, nameof(ZkTecoUser.Group), UserSortAscending)</span>
                         </th>
-                        <th class="is-clickable @(UserSortBy == UserSortColumn.Card ? "is-selected" : null)" @onclick='() => SortUsersBy(UserSortColumn.Card)'>
+                        <th class="@GetThClass(UserSortBy, nameof(ZkTecoUser.Card))" @onclick='() => SortUsersBy(nameof(ZkTecoUser.Card))'>
                             Card
-                            @if (UserSortBy == UserSortColumn.Card)
-                            {
-                                <span class="material-icons icon is-small">@(UserSortAscending ? "arrow_upward" : "arrow_downward")</span>
-                            }
+                            <span class="material-icons icon is-small">@GetThSortArrow(UserSortBy, nameof(ZkTecoUser.Card), UserSortAscending)</span>
                         </th>
                         <th>&nbsp;</th>
                         <th>&nbsp;</th>
@@ -399,16 +384,16 @@
             </button>
 
             <div class="field mt-2">
-                <Label TValue="object" DisplayText="Filter by Start Time" />
+                <Label TValue="object" DisplayText="Filter From Time" />
                 <div class="control has-icons-left has-icons-right">
-                    <InputDateTime class='input' @bind-Value="AttendanceFilterStartTime" Options="InputDateTimeMode" disabled="@DisableControls" />
+                    <InputDateTime class='input' @bind-Value="AttendanceFilterFromTime" Options="InputDateTimeMode" disabled="@DisableControls" />
                 </div>
             </div>
 
             <div class="field">
-                <Label TValue="object" DisplayText="Filter by End Time" />
+                <Label TValue="object" DisplayText="Filter To Time" />
                 <div class="control has-icons-left has-icons-right">
-                    <InputDateTime class='input' @bind-Value="AttendanceFilterEndTime" Options="InputDateTimeMode" disabled="@DisableControls" />
+                    <InputDateTime class='input' @bind-Value="AttendanceFilterToTime" Options="InputDateTimeMode" disabled="@DisableControls" />
                 </div>
             </div>
 
@@ -446,47 +431,29 @@
             <Table class="is-fullwidth is-hoverable is-striped is-size-6">
                 <TableHead>
                     <tr>
-                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.UserId ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.UserId)'>
+                        <th class="@GetThClass(AttendanceSortBy, nameof(AttendanceDetailRow.UserId))" @onclick='() => SortAttendancesBy(nameof(AttendanceDetailRow.UserId))'>
                             User Id
-                            @if (AttendanceSortBy == AttendanceSortColumn.UserId)
-                            {
-                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
-                            }
+                            <span class="material-icons icon is-small">@GetThSortArrow(AttendanceSortBy, nameof(AttendanceDetailRow.UserId), AttendanceSortAscending)</span>
                         </th>
-                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Name ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Name)'>
+                        <th class="@GetThClass(AttendanceSortBy, nameof(AttendanceDetailRow.UserName))" @onclick='() => SortAttendancesBy(nameof(AttendanceDetailRow.UserName))'>
                             Name
-                            @if (AttendanceSortBy == AttendanceSortColumn.Name)
-                            {
-                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
-                            }
+                            <span class="material-icons icon is-small">@GetThSortArrow(AttendanceSortBy, nameof(AttendanceDetailRow.UserName), AttendanceSortAscending)</span>
                         </th>
-                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Card ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Card)'>
+                        <th class="@GetThClass(AttendanceSortBy, nameof(AttendanceDetailRow.UserCard))" @onclick='() => SortAttendancesBy(nameof(AttendanceDetailRow.UserCard))'>
                             Card
-                            @if (AttendanceSortBy == AttendanceSortColumn.Card)
-                            {
-                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
-                            }
+                            <span class="material-icons icon is-small">@GetThSortArrow(AttendanceSortBy, nameof(AttendanceDetailRow.UserCard), AttendanceSortAscending)</span>
                         </th>
-                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Time ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Time)'>
+                        <th class="@GetThClass(AttendanceSortBy, nameof(AttendanceDetailRow.Timestamp))" @onclick='() => SortAttendancesBy(nameof(AttendanceDetailRow.Timestamp))'>
                             Time
-                            @if (AttendanceSortBy == AttendanceSortColumn.Time)
-                            {
-                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
-                            }
+                            <span class="material-icons icon is-small">@GetThSortArrow(AttendanceSortBy, nameof(AttendanceDetailRow.Timestamp), AttendanceSortAscending)</span>
                         </th>
-                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Status ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Status)'>
+                        <th class="@GetThClass(AttendanceSortBy, nameof(AttendanceDetailRow.Status))" @onclick='() => SortAttendancesBy(nameof(AttendanceDetailRow.Status))'>
                             Status
-                            @if (AttendanceSortBy == AttendanceSortColumn.Status)
-                            {
-                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
-                            }
+                            <span class="material-icons icon is-small">@GetThSortArrow(AttendanceSortBy, nameof(AttendanceDetailRow.Status), AttendanceSortAscending)</span>
                         </th>
-                        <th class="is-clickable @(AttendanceSortBy == AttendanceSortColumn.Punch ? "is-selected" : null)" @onclick='() => SortAttendancesBy(AttendanceSortColumn.Punch)'>
+                        <th class="@GetThClass(AttendanceSortBy, nameof(AttendanceDetailRow.Punch))" @onclick='() => SortAttendancesBy(nameof(AttendanceDetailRow.Punch))'>
                             Punch
-                            @if (AttendanceSortBy == AttendanceSortColumn.Punch)
-                            {
-                                <span class="material-icons icon is-small">@(AttendanceSortAscending ? "arrow_upward" : "arrow_downward")</span>
-                            }
+                            <span class="material-icons icon is-small">@GetThSortArrow(AttendanceSortBy, nameof(AttendanceDetailRow.Punch), AttendanceSortAscending)</span>
                         </th>
                     </tr>
                 </TableHead>
