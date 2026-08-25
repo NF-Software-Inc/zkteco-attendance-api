@@ -441,11 +441,15 @@
         @if (BackupModalMode == BackupOperationMode.Export)
         {
             <div class="field mb-2">
-                <InputSwitch @bind-Value="BackupIncludeSettings" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+                <InputSwitch @bind-Value="BackupIncludeSettings" @bind-Value:after="OnBackupIncludeSettingsChanged" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
             </div>
 
             <div class="field mb-2 ml-5">
                 <InputSwitch @bind-Value="BackupIncludeNetworkSettings" disabled="@(BackupIncludeSettings == false)" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+            </div>
+
+            <div class="field mb-2">
+                <InputSwitch @bind-Value="BackupIncludeAttendance" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
             </div>
         }
 
@@ -453,16 +457,14 @@
             <InputSwitch @bind-Value="BackupIncludeUsers" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
         </div>
 
-        @if (BackupModalMode == BackupOperationMode.Export)
+        @if (BackupModalMode == BackupOperationMode.Export && HasSelectedExportSections == false)
         {
-            <div class="field mb-2">
-                <InputSwitch @bind-Value="BackupIncludeAttendance" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-            </div>
+            <p class="help is-danger">Select at least one section to export.</p>
         }
 
-        @if (DisableBackup)
+        @if (BackupModalMode == BackupOperationMode.Import && HasSelectedImportSections == false)
         {
-            <p class="help is-danger">Select at least one section to @(BackupModalMode.ToString().ToLowerInvariant()).</p>
+            <p class="help is-danger">Select at least one section to import.</p>
         }
 
         @if (BackupModalMode == BackupOperationMode.Import)
@@ -474,7 +476,11 @@
                 </button>
             </div>
 
-            @if (BackupLoadedPackage != null)
+            @if (BackupLoadedPackage == null)
+            {
+                <p class="help">Select a backup file to import.</p>
+            }
+            else
             {
                 <div class="content">
                     <p><strong>File:</strong> @BackupSelectedFileName</p>
@@ -493,14 +499,14 @@
 
         @if (BackupModalMode == BackupOperationMode.Export)
         {
-            <button type="button" class="button is-info" disabled="@(DisableControls || DisableBackup)" @onclick='ExportDeviceBackupAsync'>
+            <button type="button" class="button is-info" disabled="@(DisableControls || HasSelectedExportSections == false)" @onclick='ExportDeviceBackupAsync'>
                 <span class="material-icons icon">download</span>
                 <span>Export</span>
             </button>
         }
         else
         {
-            <button type="button" class="button is-info" disabled="@(DisableControls || DisableBackup || BackupLoadedPackage == null)" @onclick='OpenConfirmImportModal'>
+            <button type="button" class="button is-info" disabled="@(DisableControls || HasSelectedImportSections == false || BackupLoadedPackage == null)" @onclick='OpenConfirmImportModal'>
                 <span class="material-icons icon">upload</span>
                 <span>Import</span>
             </button>

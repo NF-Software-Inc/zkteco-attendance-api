@@ -67,8 +67,8 @@ public sealed partial class Home : ComponentBase, IDisposable
 	private bool BackupIncludeNetworkSettings;
 
     private readonly TooltipOptions BackupTooltipDisplayMode = TooltipOptions.Right | TooltipOptions.HasArrow | TooltipOptions.Multiline;
-    private bool DisableBackup => BackupIncludeSettings == false &&
-		BackupIncludeUsers == false && BackupIncludeAttendance == false;
+	private bool HasSelectedExportSections => BackupIncludeSettings || BackupIncludeUsers || BackupIncludeAttendance;
+	private bool HasSelectedImportSections => BackupIncludeUsers;
 
     private string? UserFilterName;
 	private Privilege? UserFilterPrivilege;
@@ -645,18 +645,6 @@ public sealed partial class Home : ComponentBase, IDisposable
 	/// </summary>
 	private void OpenConfirmImportModal()
 	{
-		if (BackupLoadedPackage == null)
-		{
-			SetActionMessage(ref BackupModalActionMessage, action: "Import Device Backup", success: false, failureDetail: "select a backup file first.");
-			return;
-		}
-
-		if (DisableBackup)
-		{
-			SetActionMessage(ref BackupModalActionMessage, action: "Import Device Backup", success: false, failureDetail: "select at least one section to import.");
-			return;
-		}
-
 		ModalConfirmImportDisplayed = true;
 	}
 
@@ -680,26 +668,36 @@ public sealed partial class Home : ComponentBase, IDisposable
 			return;
 		}
 
-		if (BackupLoadedPackage == null)
-		{
-			SetActionMessage(ref BackupModalActionMessage, action: "Import Device Backup", success: false, failureDetail: "select a backup file first.");
-			return;
-		}
-
 		try
 		{
+            var backupPackage = BackupLoadedPackage!;
 			var restored = new List<string>();
 			var skipped = new List<string>();
+            var failed = new List<string>();
 
 			if (BackupIncludeUsers)
 			{
-				if (BackupLoadedPackage.Users is { Count: > 0 } users)
+				if (backupPackage.Users is { Count: > 0 } users)
 				{
-					foreach (var user in users)
-						ZkTecoClock.CreateUser(user);
+                    var restoredUsersCount = 0;
+                    var failedUsersCount = 0;
 
-					restored.Add("users");
-					GetUsers(false);
+					foreach (var user in users)
+					{
+						if (ZkTecoClock.CreateUser(user))
+                            restoredUsersCount++;
+                        else
+                            failedUsersCount++;
+                    }
+
+                    if (restoredUsersCount > 0)
+                    {
+                        restored.Add($"users ({restoredUsersCount})");
+                        GetUsers(false);
+                    }
+
+                    if (failedUsersCount > 0)
+                        failed.Add($"users ({failedUsersCount} failed to create)");
 				}
 				else
 					skipped.Add("users (not present in backup)");
@@ -709,6 +707,9 @@ public sealed partial class Home : ComponentBase, IDisposable
 
 			if (skipped.Count > 0)
 				detail += $" Skipped: {string.Join(", ", skipped)}.";
+
+            if (failed.Count > 0)
+                detail += $" Failed: {string.Join(", ", failed)}.";
 
 			SetActionMessage(ref BackupActionMessage, action: "Import Device Backup", success: true, successDetail: detail);
 			CloseBackupModal();
@@ -733,7 +734,7 @@ public sealed partial class Home : ComponentBase, IDisposable
             return;
         }
 
-        if (DisableBackup)
+        if (HasSelectedExportSections == false)
 		{
 			SetActionMessage(ref BackupModalActionMessage, action: "Export Device Backup", success: false, failureDetail: "select at least one section to export.");
 			return;
@@ -758,6 +759,12 @@ public sealed partial class Home : ComponentBase, IDisposable
 			SetActionMessage(ref BackupModalActionMessage, action: "Export Device Backup", success: false, failureDetail: $"Failed exporting device backup: {ex.Message}");
         }
     }
+
+	private void OnBackupIncludeSettingsChanged()
+	{
+		if (BackupIncludeSettings == false)
+			BackupIncludeNetworkSettings = false;
+	}
 
     /// <summary>
 	/// Builds a DeviceBackupPackage containing the current state of the connected ZKTeco device, including users and attendance records.
