@@ -40,8 +40,8 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private ActionMessage? UserModalActionMessage;
 	private ActionMessage? AttendanceActionMessage;
 	private ActionMessage? DeviceActionMessage;
-    private ActionMessage? BackupActionMessage;
-    private ActionMessage? BackupModalActionMessage;
+	private ActionMessage? BackupActionMessage;
+	private ActionMessage? BackupModalActionMessage;
 
 	private RecordCounts? DeviceStorageCounts;
 	private readonly List<ZkTecoUser> Users = [];
@@ -451,7 +451,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 			UserModalActionMessage = GetActionMessage("Save User", false, failureDetail: "not connected to ZKTeco clock.");
 
-			//await StateHasChangedAsync();
+			await StateHasChangedAsync();
 			return;
 		}
 
