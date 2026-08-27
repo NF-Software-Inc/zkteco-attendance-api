@@ -780,7 +780,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 					user.Index = existingByUserId.TryGetValue(user.UserId, out var existingUser)
 						 ? existingUser.Index : nextIndex++;
 
-					if (ZkTecoClock.CreateUser(user, false))
+					if (ZkTecoClock.CreateUser(user))
 						restoredUsersCount++;
 					else
 						failedUsersCount++;

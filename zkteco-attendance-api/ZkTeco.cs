@@ -571,8 +571,7 @@ namespace zkteco_attendance_api
 		/// Adds a new user to the ZKTeco device with the provided values.
 		/// </summary>
 		/// <param name="user">The details of the user to create.</param>
-		/// <param name="refreshData">Whether to refresh the device data after creating the user.</param>
-		public bool CreateUser(ZkTecoUser user, bool refreshData = true)
+		public bool CreateUser(ZkTecoUser user)
 		{
 			var password = new byte[8];
 			var bytes = Encoding.UTF8.GetBytes(user.Password ?? string.Empty);
@@ -617,7 +616,7 @@ namespace zkteco_attendance_api
 				return false;
 			}
 
-			return packet.Command == Commands.Success && (refreshData == false || RefreshData());
+			return packet.Command == Commands.Success && RefreshData();
 		}
 
 		/// <summary>
@@ -764,7 +763,7 @@ namespace zkteco_attendance_api
 		/// Refreshes the data on the ZKTeco device.
 		/// </summary>
 		/// <remarks>
-		/// This is required to be able to read the attendance records after adding or deleting users. By default, this will be automatically called when creating or deleting users.
+		/// This is required to be able to read the attendance records after adding or deleting users. This will be automatically called when creating or deleting users.
 		/// </remarks>
 		public bool RefreshData()
 		{
