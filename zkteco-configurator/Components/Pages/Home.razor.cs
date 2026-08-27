@@ -50,7 +50,6 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private bool ModalAddUserDisplayed;
 	private bool ModalDeleteAttendanceDisplayed;
 	private bool ModalBackupDisplayed;
-	private bool ModalConfirmImportDisplayed;
 	private BackupOperationMode BackupModalMode = BackupOperationMode.Export;
 
 	private string? BackupSelectedFileName;
@@ -68,9 +67,30 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	[Display(Name = "Network settings (IP/subnet/gateway/MAC)", Description = "Include the network settings.")]
 	private bool BackupIncludeNetworkSettings;
 
-    private readonly TooltipOptions BackupTooltipDisplayMode = TooltipOptions.Right | TooltipOptions.HasArrow | TooltipOptions.Multiline;
-	private bool HasSelectedExportSections => BackupIncludeSettings || BackupIncludeUsers || BackupIncludeAttendance;
-	private bool HasSelectedImportSections => BackupIncludeUsers;
+    /// <summary>
+    /// The available import modes for importing data from a backup package.
+    /// </summary>
+    private readonly Dictionary<string, ImportMode> ImportModeOptions = new()
+    {
+        ["Wipe & Import (Recommended)"] = ImportMode.WipeAndImport,
+        ["Merge - Skip Existing Users"] = ImportMode.MergeSkipExisting
+    };
+
+    /// <summary>
+    /// The currently selected import mode for importing data from a backup package.
+    /// </summary>
+    private ImportMode SelectedImportMode = ImportMode.WipeAndImport;
+
+	private readonly TooltipOptions BackupTooltipDisplayMode = TooltipOptions.Right | TooltipOptions.HasArrow | TooltipOptions.Multiline;
+
+	/// <summary>
+	/// Indicates whether the import/export action for the current <see cref="BackupModalMode"/> should be disabled,
+	/// either controls are globally disabled or no applicable sections have been selected.
+	/// </summary>
+	private bool DisableImportExport =>
+		DisableControls ||
+		(BackupModalMode == BackupOperationMode.Export && BackupIncludeSettings == false && BackupIncludeUsers == false && BackupIncludeAttendance == false) ||
+		(BackupModalMode == BackupOperationMode.Import && BackupIncludeUsers == false);
 
     private string? UserFilterName;
 	private Privilege? UserFilterPrivilege;
@@ -693,7 +713,6 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		BackupModalActionMessage = null;
 		BackupSelectedFileName = null;
 		BackupLoadedPackage = null;
-		ModalConfirmImportDisplayed = false;
 		ModalBackupDisplayed = false;
 	}
 
@@ -723,27 +742,13 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	}
 
 	/// <summary>
-	/// Opens the confirmation prompt before writing any selected backup data to the connected device.
+	/// Restores the user-selected sections of a previously loaded device backup to the connected ZKTeco device.
 	/// </summary>
-	private void OpenConfirmImportModal()
+	/// <remarks>
+	/// The import operation is currently limited to users only.
+	/// </remarks>
+	private async Task ImportDeviceBackupAsync()
 	{
-		ModalConfirmImportDisplayed = true;
-	}
-
-	private void CloseConfirmImportModal()
-	{
-		ModalConfirmImportDisplayed = false;
-	}
-
-    /// <summary>
-    /// Restores the user-selected sections of a previously loaded device backup to the connected ZKTeco device.
-    /// </summary>
-    /// <remarks>
-    /// The import operation is currently limited to users only.
-    /// </remarks>
-    private async Task ImportDeviceBackupAsync()
-	{
-		ModalConfirmImportDisplayed = false;
 
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
@@ -760,42 +765,63 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			if (BackupLoadedPackage!.Users is not { Count: > 0 } users)
 				detail = "The selected backup does not contain any users to import.";
 
-            else
+			else
 			{
-				// Get existing users to avoid duplicates and determine the next available index
 				var existingUsers = ZkTecoClock.GetUsers() ?? [];
-				var existingByUserId = existingUsers
-					.Where(u => string.IsNullOrWhiteSpace(u.UserId) == false)
-					.ToDictionary(u => u.UserId, StringComparer.OrdinalIgnoreCase);
+				IEnumerable<ZkTecoUser> usersToAdd = users;
+                var nextIndex = 0;
 
-				var nextIndex = existingUsers.Count > 0 ? existingUsers.Max(u => u.Index) + 1 : 1;
 
-                // Attempt to restore each user from the backup
                 var restoredUsersCount = 0;
-                var failedUsersCount = 0;
+				var failedUsersCount = 0;
+				var deletedUsersCount = 0;
+				var failedDeletesCount = 0;
 
-                foreach (var user in users)
+                // Determine import mode and handle existing users accordingly
+                if (SelectedImportMode == ImportMode.WipeAndImport)
 				{
-					// Reuse the existing index if user exists; otherwise assign a new one.
-					user.Index = existingByUserId.TryGetValue(user.UserId, out var existingUser)
-						 ? existingUser.Index : nextIndex++;
+					// Remove existing users if any
+                    foreach (var existingUser in existingUsers)
+                    {
+                        if (ZkTecoClock.DeleteUser(existingUser))
+                            deletedUsersCount++;
+                        else
+                            failedDeletesCount++;
+                    }
 
-					if (ZkTecoClock.CreateUser(user))
-						restoredUsersCount++;
-					else
-						failedUsersCount++;
+                    nextIndex = 1;
 				}
+				else
+				{
+					// Merge mode: skip existing users
+					usersToAdd = users.Where(user => existingUsers.All(existing =>
+						!string.Equals(existing.UserId, user.UserId, StringComparison.OrdinalIgnoreCase)));
+
+					nextIndex = existingUsers.Count > 0 ? existingUsers.Max(u => u.Index) + 1 : 1;
+				}
+
+                foreach (var user in usersToAdd)
+                {
+                    user.Index = nextIndex++;
+
+                    if (ZkTecoClock.CreateUser(user))
+                        restoredUsersCount++;
+                    else
+                        failedUsersCount++;
+                }
 
                 // Provide feedback on the import operation
                 if (restoredUsersCount == 0)
+				{
                     detail = "No users were imported.";
-				else
-                {
+                }
+                else
+				{
 					detail = $"Imported {restoredUsersCount} user(s).";
-                    success = failedUsersCount == 0;
+					success = failedUsersCount == 0 && failedDeletesCount == 0;
 
-                    // Refresh device data so local state reflects the import.
-                    if (ZkTecoClock.RefreshData() == false)
+					// Refresh device data so local state reflects the import.
+					if (ZkTecoClock.RefreshData() == false)
 						detail += " Warning: device data could not be refreshed after import.";
 
 					await GetUsers(false);
@@ -803,6 +829,9 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 				if (failedUsersCount > 0)
 					detail += $" {failedUsersCount} user(s) could not be created.";
+
+				if (failedDeletesCount > 0)
+					detail += $" Removed {deletedUsersCount} existing user(s). {failedDeletesCount} existing user(s) could not be removed.";
 			}
 
             BackupActionMessage = GetActionMessage("Import Device Backup", success, successDetail: detail, failureDetail: detail);
@@ -1049,7 +1078,13 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		Import,
 	}
 
-	private class PageModel
+    private enum ImportMode
+    {
+        WipeAndImport,
+        MergeSkipExisting
+    }
+
+    private class PageModel
 	{
 		/// <summary>
 		/// IP Address of the ZKTeco device to connect to.

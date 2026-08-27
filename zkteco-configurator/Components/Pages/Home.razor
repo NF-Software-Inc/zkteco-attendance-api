@@ -145,18 +145,28 @@
             </Message>
         </div>
     }
-    <div class="field is-grouped">
-        <div class="control is-expanded">
-            <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForExport'>
-                <span class="material-icons icon">download</span>
-                <span>Export</span>
-            </button>
+    <div class="columns is-variable is-1">
+        <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k mr-4">
+            <p class="is-size-6">
+                <strong>Export</strong> saves the device's settings, users, and attendance records to a backup file.
+            </p>
+            <p class="is-size-6">
+                <strong>Import</strong> restores users from a previously exported backup file onto the device.
+            </p>
         </div>
-        <div class="control is-expanded">
-            <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForImport'>
-                <span class="material-icons icon">upload</span>
-                <span>Import</span>
-            </button>
+        <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+            <div class="control">
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForExport'>
+                    <span class="material-icons icon">download</span>
+                    <span>Export</span>
+                </button>
+            </div>
+            <div class="control">
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForImport'>
+                    <span class="material-icons icon">upload</span>
+                    <span>Import</span>
+                </button>
+            </div>
         </div>
     </div>
 </Panel>
@@ -500,7 +510,7 @@
     </div>
 </Panel>
 
-<Modal Title=@($"Device Backup {BackupModalMode.ToString()}") @bind-IsDisplayed=ModalBackupDisplayed foot-class="is-justify-content-center">
+<Modal Title=@($"Device {BackupModalMode.ToString()}") @bind-IsDisplayed=ModalBackupDisplayed foot-class="is-justify-content-center">
     <ModalBody>
         @if (BackupModalActionMessage != null)
         {
@@ -532,8 +542,14 @@
             <InputSwitch @bind-Value="BackupIncludeUsers" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
         </div>
 
-        @if ((BackupModalMode == BackupOperationMode.Export && HasSelectedExportSections == false) ||
-            (BackupModalMode == BackupOperationMode.Import && HasSelectedImportSections == false))
+        @if (BackupModalMode == BackupOperationMode.Import)
+        {
+            <div class="field mb-2 ml-5">
+                <InputRadioGroupObject @bind-Value=SelectedImportMode Options="ImportModeOptions" disabled="@(BackupIncludeUsers == false)" />
+            </div>
+        }
+
+        @if (DisableImportExport)
         {
             <p class="help is-danger">Select at least one section.</p>
         }
@@ -562,40 +578,28 @@
                         Platform: @(BackupLoadedPackage.DeviceInfo.Platform ?? "unknown")
                     </p>
                 </div>
+
+                <p class="help is-danger">Importing will write the selected backup data to the connected ZKTeco device. This action cannot be undone.</p>
             }
         }
     </ModalBody>
     <ModalFooter>
         @if (BackupModalMode == BackupOperationMode.Export)
         {
-            <button type="button" class="button is-info" disabled="@(DisableControls || HasSelectedExportSections == false)" @onclick='ExportDeviceBackupAsync'>
+            <button type="button" class="button is-info" disabled="@DisableImportExport" @onclick='ExportDeviceBackupAsync'>
                 <span class="material-icons icon">download</span>
                 <span>Export</span>
             </button>
         }
         else
         {
-            <button type="button" class="button is-info" disabled="@(DisableControls || HasSelectedImportSections == false || BackupLoadedPackage == null)" @onclick='OpenConfirmImportModal'>
+            <button type="button" class="button is-info" disabled="@(DisableImportExport || BackupLoadedPackage == null)" @onclick='ImportDeviceBackupAsync'>
                 <span class="material-icons icon">upload</span>
                 <span>Import</span>
             </button>
         }
 
         <button type="button" class="button" @onclick='CloseBackupModal'>Cancel</button>
-    </ModalFooter>
-</Modal>
-
-<Modal Title="Confirm Import" @bind-IsDisplayed=ModalConfirmImportDisplayed foot-class="is-justify-content-center">
-    <ModalBody>
-        <p>Importing will write the selected backup data to the connected ZKTeco device. This action cannot be undone.</p>
-        <p>Are you sure you want to continue?</p>
-    </ModalBody>
-    <ModalFooter>
-        <button type="button" class="button is-danger" @onclick='ImportDeviceBackupAsync'>
-            <span class="material-icons icon">upload</span>
-            <span>Confirm Import</span>
-        </button>
-        <button type="button" class="button" @onclick='CloseConfirmImportModal'>Cancel</button>
     </ModalFooter>
 </Modal>
 
