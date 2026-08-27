@@ -1,3 +1,4 @@
+using Microsoft.JSInterop;
 using System.Text.Json;
 using zkteco_configurator.Models;
 
@@ -18,88 +19,59 @@ public sealed class DeviceBackupService
     private static readonly JsonSerializerOptions SerializerOptions = new() { WriteIndented = true };
 
     /// <summary>
-    /// Serializes and saves a device backup to a location selected by the user.
+    /// Serializes a device backup to its JSON representation.
     /// </summary>
-    /// <param name="backup">The backup to save.</param>
-    /// <returns>The full path of the saved backup file, or <see langword="null"/> when the user cancels.</returns>
-    /// <exception cref="PlatformNotSupportedException">A save picker is unavailable on the current platform.</exception>
-    public async Task<string?> SaveBackupAsync(DeviceBackupPackage backup)
-    {
-        ArgumentNullException.ThrowIfNull(backup);
-
-        var fileName = $"zkteco_backup_{DateTime.Now:yyyyMMdd_HHmm}.json";
-        var json = JsonSerializer.Serialize(backup, SerializerOptions);
-
-#if WINDOWS
-        var appWindow = Application.Current?.Windows is { Count: > 0 } windows
-            ? windows[0]?.Handler?.PlatformView as Microsoft.UI.Xaml.Window
-            : null;
-
-        if (appWindow == null)
-            throw new InvalidOperationException("Unable to get the active app window for backup export.");
-
-        var picker = new Windows.Storage.Pickers.FileSavePicker
-        {
-            SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary,
-            SuggestedFileName = Path.GetFileNameWithoutExtension(fileName),
-        };
-
-        picker.FileTypeChoices.Add("JSON file", [".json"]);
-
-        var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(appWindow);
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
-
-        var file = await picker.PickSaveFileAsync();
-
-        if (file == null)
-            return null;
-
-        await Windows.Storage.FileIO.WriteTextAsync(file, json);
-
-        return file.Path;
-#else
-        throw new PlatformNotSupportedException("Backup export with a save picker is currently supported on Windows only.");
-#endif
-    }
+    /// <param name="backup">The backup to serialize.</param>
+    /// <returns>The JSON representation of the backup.</returns>
+    private static string SerializeBackup(DeviceBackupPackage backup) => JsonSerializer.Serialize(backup, SerializerOptions);
 
     /// <summary>
-    /// Lets the user select a device backup file, then deserializes and validates it.
+    /// Serializes and saves a device backup by triggering a browser-style download through the BlazorWebView's
+    /// JavaScript interop. This works uniformly across all platforms (Windows, Android, iOS, Mac Catalyst) since
+    /// it relies only on the webview's file download support rather than any platform-specific save picker.
     /// </summary>
-    /// <returns>The selected file name and the deserialized backup, or <see langword="null"/> when the user cancels.</returns>
-    /// <exception cref="PlatformNotSupportedException">An open picker is unavailable on the current platform.</exception>
-    /// <exception cref="InvalidDataException">The selected file is not a valid device backup.</exception>
-    public async Task<DeviceBackupSelection?> LoadBackupAsync()
+    /// <param name="backup">The backup to save.</param>
+    /// <param name="jsRuntime">Used to trigger the browser-style download.</param>
+    /// <returns>The file name of the saved backup.</returns>
+    /// <exception cref="InvalidOperationException">Downloading the backup via JavaScript interop failed. Future implementation should consider replacing this with a dedicated cross-platform file saver (e.g. FileSaver.Default.SaveAsync()) for devices where this is not supported.</exception>
+    public async Task<string> SaveBackupAsync(DeviceBackupPackage backup, IJSRuntime jsRuntime)
     {
-#if WINDOWS
-        var appWindow = Application.Current?.Windows is { Count: > 0 } windows
-            ? windows[0]?.Handler?.PlatformView as Microsoft.UI.Xaml.Window
-            : null;
+        ArgumentNullException.ThrowIfNull(backup);
+        ArgumentNullException.ThrowIfNull(jsRuntime);
 
-        if (appWindow == null)
-            throw new InvalidOperationException("Unable to get the active app window for backup import.");
+        var fileName = $"zkteco_backup_{DateTime.Now:yyyyMMdd_HHmm}.json";
+        var json = SerializeBackup(backup);
 
-        var picker = new Windows.Storage.Pickers.FileOpenPicker
+        try
         {
-            SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary,
-        };
+            var base64Content = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
+            await jsRuntime.InvokeVoidAsync("fileDownload.downloadFileFromBase64", fileName, base64Content, "application/json");
 
-        picker.FileTypeFilter.Add(".json");
+            return fileName;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Downloading the backup file is not supported on this device.", ex);
+        }
+    }
 
-        var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(appWindow);
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
 
-        var file = await picker.PickSingleFileAsync();
+    /// <summary>
+    /// Reads, deserializes, and validates a device backup file selected via an <see cref="Microsoft.AspNetCore.Components.Forms.InputFile"/>.
+    /// </summary>
+    /// <param name="stream">The stream containing the JSON contents of the backup file.</param>
+    /// <param name="fileName">The name of the selected backup file.</param>
+    /// <returns>The selected file name and the deserialized backup.</returns>
+    /// <exception cref="InvalidDataException">The selected file is not a valid device backup.</exception>
+    public static async Task<DeviceBackupSelection> LoadBackupFromStreamAsync(Stream stream, string fileName)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
 
-        if (file == null)
-            return null;
-
-        var json = await Windows.Storage.FileIO.ReadTextAsync(file);
+        using var reader = new StreamReader(stream);
+        var json = await reader.ReadToEndAsync();
         var backup = DeserializeAndValidate(json);
 
-        return new DeviceBackupSelection(file.Name, backup);
-#else
-        throw new PlatformNotSupportedException("Backup import with an open picker is currently supported on Windows only.");
-#endif
+        return new DeviceBackupSelection(fileName, backup);
     }
 
     /// <summary>

@@ -521,67 +521,87 @@
             </div>
         }
 
-        <label class="label">Choose what to include in the @(BackupModalMode.ToString().ToLowerInvariant()):</label>
+        <div class="columns is-variable is-2">
+            <div class="column is-6">
+                <label class="label">Choose what to include in the @(BackupModalMode.ToString().ToLowerInvariant()):</label>
 
-        @if (BackupModalMode == BackupOperationMode.Export)
-        {
-            <div class="field mb-2">
-                <InputSwitch @bind-Value="BackupIncludeSettings" @bind-Value:after="OnBackupIncludeSettingsChanged" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-            </div>
+                @if (BackupModalMode == BackupOperationMode.Export)
+                {
+                    <div class="field mb-2">
+                        <InputSwitch @bind-Value="BackupIncludeSettings" @bind-Value:after="OnBackupIncludeSettingsChanged" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+                    </div>
 
-            <div class="field mb-2 ml-5">
-                <InputSwitch @bind-Value="BackupIncludeNetworkSettings" disabled="@(BackupIncludeSettings == false)" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-            </div>
+                    <div class="field mb-2 ml-5">
+                        <InputSwitch @bind-Value="BackupIncludeNetworkSettings" @bind-Value:after="RefreshBackupExportPreview" disabled="@(BackupIncludeSettings == false)" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+                    </div>
 
-            <div class="field mb-2">
-                <InputSwitch @bind-Value="BackupIncludeAttendance" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-            </div>
-        }
+                    <div class="field mb-2">
+                        <InputSwitch @bind-Value="BackupIncludeAttendance" @bind-Value:after="RefreshBackupExportPreview" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
+                    </div>
+                }
 
-        <div class="field mb-2">
-            <InputSwitch @bind-Value="BackupIncludeUsers" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
-        </div>
-
-        @if (BackupModalMode == BackupOperationMode.Import)
-        {
-            <div class="field mb-2 ml-5">
-                <InputRadioGroupObject @bind-Value=SelectedImportMode Options="ImportModeOptions" disabled="@(BackupIncludeUsers == false)" />
-            </div>
-        }
-
-        @if (DisableImportExport)
-        {
-            <p class="help is-danger">Select at least one section.</p>
-        }
-
-        @if (BackupModalMode == BackupOperationMode.Import)
-        {
-            <div class="field mt-4">
-                <button type="button" class="button is-info" disabled="@DisableControls" @onclick='SelectBackupFileAsync'>
-                    <span class="material-icons icon">folder_open</span>
-                    <span>Select Backup File</span>
-                </button>
-            </div>
-
-            @if (BackupLoadedPackage == null)
-            {
-                <p class="help">Select a backup file to import.</p>
-            }
-            else
-            {
-                <div class="content my-4">
-                    <p><strong>File:</strong> @BackupSelectedFileName</p>
-                    <p><strong>Created:</strong> @BackupLoadedPackage.CreatedAtUtc.ToLocalTime()</p>
-                    <p><strong>Source Device:</strong>
-                        Serial: @(BackupLoadedPackage.DeviceInfo.SerialNumber ?? "unknown"),
-                        Firmware: @(BackupLoadedPackage.DeviceInfo.FirmwareVersion ?? "unknown"),
-                        Platform: @(BackupLoadedPackage.DeviceInfo.Platform ?? "unknown")
-                    </p>
+                <div class="field mb-2">
+                    <InputSwitch @bind-Value="BackupIncludeUsers" @bind-Value:after="RefreshBackupExportPreview" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
                 </div>
 
-                <p class="help is-danger">Importing will write the selected backup data to the connected ZKTeco device. This action cannot be undone.</p>
-            }
-        }
+                @if (BackupModalMode == BackupOperationMode.Import)
+                {
+                    <div class="field mb-2 ml-5">
+                        <InputRadioGroupObject @bind-Value=SelectedImportMode Options="ImportModeOptions" disabled="@(BackupIncludeUsers == false)" />
+                    </div>
+                }
+
+                @if (DisableImportExport)
+                {
+                    <p class="help is-danger">Select at least one section.</p>
+                }
+
+                @if (BackupModalMode == BackupOperationMode.Import)
+                {
+                    <div class="field my-4">
+                        <label class="label">Select Backup File</label>
+                        <div class="control has-icons-left">
+                            <InputFile class="input" OnChange="OnBackupFileSelected" accept=".json" disabled="@DisableControls" />
+                            <span class="material-icons icon is-left">file_upload</span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="column is-6">
+                @*TODO: Display actual file content preview?*@
+                <label class="label">Preview</label>
+                @if (BackupModalMode == BackupOperationMode.Export)
+                {
+                    @if (BackupExportPreviewPackage != null)
+                    {
+                        <div class="content">
+                            <p><strong>TODO: File content preview</strong></p>
+                        </div>
+                    }
+                }
+                else
+                {
+                    @if (BackupLoadedPackage == null)
+                    {
+                        <p class="help">Select a backup file to preview its contents.</p>
+                    }
+                    else
+                    {
+                        <div class="content">
+                            <p><strong>File Created:</strong> @BackupLoadedPackage.CreatedAtUtc.ToLocalTime()</p>
+                            <p><strong>Source Device:</strong>
+                                Serial: @(BackupLoadedPackage.DeviceInfo.SerialNumber ?? "unknown"),
+                                Firmware: @(BackupLoadedPackage.DeviceInfo.FirmwareVersion ?? "unknown"),
+                                Platform: @(BackupLoadedPackage.DeviceInfo.Platform ?? "unknown")
+                            </p>
+                        </div>
+
+                        <p class="help is-danger">Importing will write the selected backup data to the connected ZKTeco device. This action cannot be undone.</p>
+                    }
+                }
+            </div>
+        </div>
     </ModalBody>
     <ModalFooter>
         @if (BackupModalMode == BackupOperationMode.Export)

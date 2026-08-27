@@ -1,6 +1,8 @@
 ﻿using easy_blazor_bulma;
 using easy_core;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 using System.ComponentModel.DataAnnotations;
 using zkteco_attendance_api;
 using zkteco_configurator.Models;
@@ -17,6 +19,12 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	[Inject]
 	private DeviceBackupService DeviceBackupService { get; set; } = default!;
+
+    //[Inject]
+    //private IContentWriter ContentWriter { get; init; } = default!;
+
+    [Inject]
+	private IJSRuntime JSRuntime { get; set; } = default!;
 
 	private readonly PageModel InputModel = new();
 	private ZkTeco? ZkTecoClock;
@@ -52,8 +60,9 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private bool ModalBackupDisplayed;
 	private BackupOperationMode BackupModalMode = BackupOperationMode.Export;
 
-	private string? BackupSelectedFileName;
 	private DeviceBackupPackage? BackupLoadedPackage;
+
+	private DeviceBackupPackage? BackupExportPreviewPackage;
 
     [Display(Name = "Settings", Description = "Include the device settings.")]
     private bool BackupIncludeSettings = true;
@@ -693,6 +702,8 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		BackupIncludeAttendance = true;
 		BackupIncludeNetworkSettings = true;
 		ModalBackupDisplayed = true;
+
+		RefreshBackupExportPreview();
 	}
 
 	private void OpenBackupModalForImport()
@@ -703,7 +714,6 @@ public sealed partial class Home : EasyComponentBase, IDisposable
         BackupIncludeUsers = true;
         BackupIncludeAttendance = false;
         BackupIncludeNetworkSettings = false;
-		BackupSelectedFileName = null;
 		BackupLoadedPackage = null;
         ModalBackupDisplayed = true;
 	}
@@ -711,33 +721,32 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private void CloseBackupModal()
 	{
 		BackupModalActionMessage = null;
-		BackupSelectedFileName = null;
 		BackupLoadedPackage = null;
+		BackupExportPreviewPackage = null;
 		ModalBackupDisplayed = false;
 	}
 
 	/// <summary>
-	/// Lets the user select a device backup file to import, then previews its contents.
+	/// Reads the device backup file selected via the file input, then previews its contents.
 	/// </summary>
-	private async Task SelectBackupFileAsync()
+	/// <param name="args">The file selection change event containing the selected backup file.</param>
+	private async Task OnBackupFileSelected(InputFileChangeEventArgs args)
 	{
 		BackupModalActionMessage = null;
+		BackupLoadedPackage = null;
 
 		try
 		{
-			var selection = await DeviceBackupService.LoadBackupAsync();
+            var max = 100 * 1_048_576;
+			await using var stream = args.File.OpenReadStream(max);
+			var selection = await DeviceBackupService.LoadBackupFromStreamAsync(stream, args.File.Name);
 
-			if (selection == null)
-				return;
-
-			BackupSelectedFileName = selection.FileName;
 			BackupLoadedPackage = selection.Backup;
 		}
 		catch (Exception ex)
 		{
-			BackupSelectedFileName = null;
 			BackupLoadedPackage = null;
-            BackupModalActionMessage = GetActionMessage("Select Backup File", false, failureDetail: $"failed loading backup file: {ex.Message}");
+			BackupModalActionMessage = GetActionMessage("Select Backup File", false, failureDetail: $"failed loading backup file: {ex.Message}");
 		}
 	}
 
@@ -845,31 +854,34 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		}
 	}
 
-    /// <summary>
-    /// Exports the current state of the connected ZKTeco device, including users and attendance records, to a JSON file.
-    /// </summary>
-    /// <returns></returns>
+	/// <summary>
+	/// Exports the current state of the connected ZKTeco device, including users and attendance records, to a JSON file.
+	/// </summary>
+	/// <returns></returns>
 	private async Task ExportDeviceBackupAsync()
 	{
-        if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-        {
-            ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-            BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: "not connected to ZKTeco clock.");
-            return;
-        }
+		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		{
+			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: "not connected to ZKTeco clock.");
+			return;
+		}
 
 		try
 		{
-			var backup = BuildDeviceBackupPackage();
-			var filePath = await DeviceBackupService.SaveBackupAsync(backup);
+			// Reuse the cached preview package built when the modal was opened/sections were changed, avoiding a redundant round-trip to the device.
+			var backup = BackupExportPreviewPackage ?? BuildDeviceBackupPackage();
 
-			if (filePath == null)
+			if (backup == null)
 			{
-				BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: "export canceled.");
+				ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+				BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: "not connected to ZKTeco clock.");
 				return;
 			}
 
-			BackupActionMessage = GetActionMessage("Export Device Backup", true, successDetail: $"Device backup exported to '{filePath}'.");
+			var fileName = await DeviceBackupService.SaveBackupAsync(backup, JSRuntime);
+
+			BackupActionMessage = GetActionMessage("Export Device Backup", true, successDetail: $"Device backup downloaded as '{fileName}'.");
 			await StateHasChangedAsync();
 			CloseBackupModal();
         }
@@ -879,36 +891,50 @@ public sealed partial class Home : EasyComponentBase, IDisposable
         }
     }
 
-    /// <summary>
-    /// Uncheck "Network Settings" if "Settings" is unchecked.
-    /// </summary>
-    private void OnBackupIncludeSettingsChanged()
+	/// <summary>
+	/// Uncheck "Network Settings" if "Settings" is unchecked, then refresh the cached export preview.
+	/// </summary>
+	private void OnBackupIncludeSettingsChanged()
 	{
 		if (BackupIncludeSettings == false)
 			BackupIncludeNetworkSettings = false;
+
+		RefreshBackupExportPreview();
 	}
 
-    /// <summary>
-	/// Builds a DeviceBackupPackage containing the current state of the connected ZKTeco device, including users and attendance records.
-    /// </summary>
-	/// <returns>The constructed <see cref="DeviceBackupPackage"/>.</returns>
-	private DeviceBackupPackage BuildDeviceBackupPackage()
+	/// <summary>
+	/// Rebuilds the cached export preview package from the currently selected export sections.
+	/// </summary>
+	private void RefreshBackupExportPreview()
 	{
-		var users = BackupIncludeUsers ? ZkTecoClock?.GetUsers() ?? [] : null;
-		var attendanceRecords = BackupIncludeAttendance ? ZkTecoClock?.GetAttendance() ?? [] : null;
+		if (BackupModalMode == BackupOperationMode.Export)
+			BackupExportPreviewPackage = BuildDeviceBackupPackage();
+	}
+
+	/// <summary>
+	/// Builds a DeviceBackupPackage containing the current state of the connected ZKTeco device, including users and attendance records.
+	/// </summary>
+	/// <returns>The constructed <see cref="DeviceBackupPackage"/>, or <see langword="null"/> when there is no connected device.</returns>
+	private DeviceBackupPackage? BuildDeviceBackupPackage()
+	{
+		if (ZkTecoClock == null)
+			return null;
+
+		var users = BackupIncludeUsers ? ZkTecoClock.GetUsers() ?? [] : null;
+		var attendanceRecords = BackupIncludeAttendance ? ZkTecoClock.GetAttendance() ?? [] : null;
 		var settings = BackupIncludeSettings
 			? new BackupDeviceSettings
 			{
-				DeviceName = ZkTecoClock?.GetDeviceName(),
-				DeviceTime = ZkTecoClock?.GetTime(),
-				ExtendedFormat = ZkTecoClock?.GetDeviceExtendedFormat(),
-				UserExtendedFormat = ZkTecoClock?.GetDeviceUserExtendedFormat(),
-				FaceVersion = ZkTecoClock?.GetDeviceFaceVersion(),
-				FingerprintVersion = ZkTecoClock?.GetDeviceFingerprintVersion(),
-				DeviceIp = BackupIncludeNetworkSettings ? ZkTecoClock?.GetDeviceIp() : null,
-				SubnetMask = BackupIncludeNetworkSettings ? ZkTecoClock?.GetDeviceSubnetMask() : null,
-				GatewayIp = BackupIncludeNetworkSettings ? ZkTecoClock?.GetDeviceGatewayIp() : null,
-				MacAddress = BackupIncludeNetworkSettings ? ZkTecoClock?.GetDeviceMac() : null,
+				DeviceName = ZkTecoClock.GetDeviceName(),
+				DeviceTime = ZkTecoClock.GetTime(),
+				ExtendedFormat = ZkTecoClock.GetDeviceExtendedFormat(),
+				UserExtendedFormat = ZkTecoClock.GetDeviceUserExtendedFormat(),
+				FaceVersion = ZkTecoClock.GetDeviceFaceVersion(),
+				FingerprintVersion = ZkTecoClock.GetDeviceFingerprintVersion(),
+				DeviceIp = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceIp() : null,
+				SubnetMask = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceSubnetMask() : null,
+				GatewayIp = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceGatewayIp() : null,
+				MacAddress = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceMac() : null,
 			}
 			: null;
 
@@ -917,9 +943,9 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			CreatedAtUtc = DateTime.UtcNow,
 			DeviceInfo = new BackupDeviceInfo
 			{
-				SerialNumber = ZkTecoClock?.GetDeviceSerial(),
-				FirmwareVersion = ZkTecoClock?.GetFirmwareVersion(),
-				Platform = ZkTecoClock?.GetDevicePlatform(),
+				SerialNumber = ZkTecoClock.GetDeviceSerial(),
+				FirmwareVersion = ZkTecoClock.GetFirmwareVersion(),
+				Platform = ZkTecoClock.GetDevicePlatform(),
 			},
 			Settings = settings,
 			Users = users,
@@ -941,8 +967,8 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		AttendanceActionMessage = null;
 		DeviceActionMessage = null;
 		BackupModalActionMessage = null;
-		BackupSelectedFileName = null;
 		BackupLoadedPackage = null;
+		BackupExportPreviewPackage = null;
 		DeviceDetailsMessage = null;
 		DeviceStorageCounts = null;
 
