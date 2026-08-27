@@ -307,12 +307,27 @@
             <Table class="is-fullwidth is-hoverable is-striped is-size-6">
                 <TableHead>
                     <tr>
-                        <th>User Id</th>
-                        <th>Name</th>
+                        <th class="@UserSort.GetThClass(nameof(ZkTecoUser.UserId))" @onclick='() => UserSort.SortBy(nameof(ZkTecoUser.UserId))'>
+                            User Id
+                            <span class="material-icons icon is-small">@UserSort.GetThSortArrow(nameof(ZkTecoUser.UserId))</span>
+                        </th>
+                        <th class="@UserSort.GetThClass(nameof(ZkTecoUser.Name))" @onclick='() => UserSort.SortBy(nameof(ZkTecoUser.Name))'>
+                            Name
+                            <span class="material-icons icon is-small">@UserSort.GetThSortArrow(nameof(ZkTecoUser.Name))</span>
+                        </th>
                         <th>Password</th>
-                        <th>Privilege</th>
-                        <th>Group</th>
-                        <th>Card</th>
+                        <th class="@UserSort.GetThClass(nameof(ZkTecoUser.Privilege))" @onclick='() => UserSort.SortBy(nameof(ZkTecoUser.Privilege))'>
+                            Privilege
+                            <span class="material-icons icon is-small">@UserSort.GetThSortArrow(nameof(ZkTecoUser.Privilege))</span>
+                        </th>
+                        <th class="@UserSort.GetThClass(nameof(ZkTecoUser.Group))" @onclick='() => UserSort.SortBy(nameof(ZkTecoUser.Group))'>
+                            Group
+                            <span class="material-icons icon is-small">@UserSort.GetThSortArrow(nameof(ZkTecoUser.Group))</span>
+                        </th>
+                        <th class="@UserSort.GetThClass(nameof(ZkTecoUser.Card))" @onclick='() => UserSort.SortBy(nameof(ZkTecoUser.Card))'>
+                            Card
+                            <span class="material-icons icon is-small">@UserSort.GetThSortArrow(nameof(ZkTecoUser.Card))</span>
+                        </th>
                         <th>&nbsp;</th>
                         <th>&nbsp;</th>
                     </tr>
@@ -367,22 +382,83 @@
                 <span class="material-icons icon">delete_forever</span>
                 <span>Delete Attendance</span>
             </button>
+
+            <div class="field mt-2">
+                <Label TValue="object" DisplayText="Filter From Time" />
+                <div class="control has-icons-left has-icons-right">
+                    <InputDateTime class='input' @bind-Value="AttendanceFilterFromTime" Options="InputDateTimeMode" disabled="@DisableControls" />
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Filter To Time" />
+                <div class="control has-icons-left has-icons-right">
+                    <InputDateTime class='input' @bind-Value="AttendanceFilterToTime" Options="InputDateTimeMode" disabled="@DisableControls" />
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Filter by Name" />
+                <div class="control has-icons-left">
+                    <InputText class="input" @bind-Value="AttendanceFilterName" disabled="@DisableControls" placeholder="Type a name..." />
+                    <span class="material-icons icon is-left">search</span>
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Filter by RFID Card" />
+                <div class="control has-icons-left">
+                    <InputNumber class="input" @bind-Value="AttendanceFilterCard" disabled="@DisableControls" />
+                    <span class="material-icons icon is-left">numbers</span>
+                </div>
+            </div>
+
+            <div class="field">
+                <Label TValue="object" DisplayText="Filter by Status" />
+                <div class="control has-icons-left">
+                    <InputNumber class="input" @bind-Value="AttendanceFilterStatus" disabled="@DisableControls" />
+                    <span class="material-icons icon is-left">numbers</span>
+                </div>
+            </div>
+
+            <button type="button" class="button is-light is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearAttendanceFilters'>
+                <span class="material-icons icon">filter_alt_off</span>
+                <span>Clear Filters</span>
+            </button>
         </div>
 
         <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
             <Table class="is-fullwidth is-hoverable is-striped is-size-6">
                 <TableHead>
                     <tr>
-                        <th>User Id</th>
-                        <th>Name</th>
-                        <th>Card</th>
-                        <th>Time</th>
-                        <th>Status</th>
-                        <th>Punch</th>
+                        <th class="@AttendanceSort.GetThClass(nameof(AttendanceDetailRow.UserId))" @onclick='() => AttendanceSort.SortBy(nameof(AttendanceDetailRow.UserId))'>
+                            User Id
+                            <span class="material-icons icon is-small">@AttendanceSort.GetThSortArrow(nameof(AttendanceDetailRow.UserId))</span>
+                        </th>
+                        <th class="@AttendanceSort.GetThClass(nameof(AttendanceDetailRow.UserName))" @onclick='() => AttendanceSort.SortBy(nameof(AttendanceDetailRow.UserName))'>
+                            Name
+                            <span class="material-icons icon is-small">@AttendanceSort.GetThSortArrow(nameof(AttendanceDetailRow.UserName))</span>
+                        </th>
+                        <th class="@AttendanceSort.GetThClass(nameof(AttendanceDetailRow.UserCard))" @onclick='() => AttendanceSort.SortBy(nameof(AttendanceDetailRow.UserCard))'>
+                            Card
+                            <span class="material-icons icon is-small">@AttendanceSort.GetThSortArrow(nameof(AttendanceDetailRow.UserCard))</span>
+                        </th>
+                        <th class="@AttendanceSort.GetThClass(nameof(AttendanceDetailRow.Timestamp))" @onclick='() => AttendanceSort.SortBy(nameof(AttendanceDetailRow.Timestamp))'>
+                            Time
+                            <span class="material-icons icon is-small">@AttendanceSort.GetThSortArrow(nameof(AttendanceDetailRow.Timestamp))</span>
+                        </th>
+                        <th class="@AttendanceSort.GetThClass(nameof(AttendanceDetailRow.Status))" @onclick='() => AttendanceSort.SortBy(nameof(AttendanceDetailRow.Status))'>
+                            Status
+                            <span class="material-icons icon is-small">@AttendanceSort.GetThSortArrow(nameof(AttendanceDetailRow.Status))</span>
+                        </th>
+                        <th class="@AttendanceSort.GetThClass(nameof(AttendanceDetailRow.Punch))" @onclick='() => AttendanceSort.SortBy(nameof(AttendanceDetailRow.Punch))'>
+                            Punch
+                            <span class="material-icons icon is-small">@AttendanceSort.GetThSortArrow(nameof(AttendanceDetailRow.Punch))</span>
+                        </th>
                     </tr>
                 </TableHead>
                 <TableBody>
-                    @foreach (var record in Attendances)
+                    @foreach (var record in FilteredAttendances)
                     {
                         <tr>
                             <TableData>@record.UserId</TableData>

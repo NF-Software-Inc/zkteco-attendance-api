@@ -49,10 +49,22 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private Privilege? UserFilterPrivilege;
 	private int? UserFilterCard;
 
-	/// <summary>
-	/// Gets the list of users filtered by the current filter settings.
-	/// </summary>
-	private IEnumerable<ZkTecoUser> FilteredUsers
+	private DateTime? AttendanceFilterFromTime;
+	private DateTime? AttendanceFilterToTime;
+	private string? AttendanceFilterName;
+	private int? AttendanceFilterCard;
+	private int? AttendanceFilterStatus;
+
+
+    /// <summary>
+    /// Represents the current sort state for the user table, including the column being sorted and the sort direction (ascending or descending).
+    /// </summary>
+    private readonly SortState UserSort = new(nameof(ZkTecoUser.Name));
+
+    /// <summary>
+    /// Gets the list of users filtered by the current filter settings and sorted by the current sort settings.
+    /// </summary>
+    private IEnumerable<ZkTecoUser> FilteredUsers
 	{
 		get
 		{
@@ -69,11 +81,70 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			if (string.IsNullOrEmpty(card) == false)
 				predicate = predicate.And(user => user.Card.ToString().StartsWith(card, StringComparison.Ordinal));
 
-			return Users.Where((predicate ?? PredicateBuilder.True<ZkTecoUser>()).Compile());
-		}
+
+			var filtered = Users.Where((predicate ?? PredicateBuilder.True<ZkTecoUser>()).Compile());
+
+			return UserSort.CurrentSortBy switch
+			{
+				nameof(ZkTecoUser.UserId) => UserSort.Ascending ? filtered.OrderBy(x => x.UserId) : filtered.OrderByDescending(x => x.UserId),
+				nameof(ZkTecoUser.Name) => UserSort.Ascending ? filtered.OrderBy(x => x.Name) : filtered.OrderByDescending(x => x.Name),
+				nameof(ZkTecoUser.Privilege) => UserSort.Ascending ? filtered.OrderBy(x => x.Privilege) : filtered.OrderByDescending(x => x.Privilege),
+				nameof(ZkTecoUser.Group) => UserSort.Ascending ? filtered.OrderBy(x => x.Group) : filtered.OrderByDescending(x => x.Group),
+				nameof(ZkTecoUser.Card) => UserSort.Ascending ? filtered.OrderBy(x => x.Card) : filtered.OrderByDescending(x => x.Card),
+				_ => filtered
+			};
+        }
 	}
 
-	private List<SavedDevice> SavedDevices = [];
+
+    /// <summary>
+    /// Represents the current sort state for the attendance table, including the column being sorted and the sort direction (ascending or descending).
+    /// </summary>
+    private readonly SortState AttendanceSort = new(nameof(AttendanceDetailRow.UserName));
+
+    /// <summary>
+    /// Gets the list of attendance records filtered by the current filter settings and sorted by the current sort settings.
+    /// </summary>
+    private IEnumerable<AttendanceDetailRow> FilteredAttendances
+    {
+        get
+        {
+            var name = AttendanceFilterName?.Trim();
+            var cardPrefix = AttendanceFilterCard?.ToString();
+
+            var attendanceFilterPredicate = PredicateBuilder.Create<AttendanceDetailRow>();
+
+            if (AttendanceFilterFromTime.HasValue)
+                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Timestamp >= AttendanceFilterFromTime.Value);
+
+            if (AttendanceFilterToTime.HasValue)
+                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Timestamp <= AttendanceFilterToTime.Value);
+
+            if (string.IsNullOrWhiteSpace(name) == false)
+                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserName.Contains(name, StringComparison.OrdinalIgnoreCase));
+
+            if (string.IsNullOrWhiteSpace(cardPrefix) == false)
+                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserCard != null && record.UserCard.Value.ToString().StartsWith(cardPrefix, StringComparison.Ordinal));
+
+            if (AttendanceFilterStatus.HasValue)
+                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Status == AttendanceFilterStatus.Value);
+
+            var filtered = Attendances.Where((attendanceFilterPredicate ?? PredicateBuilder.True<AttendanceDetailRow>()).Compile());
+
+			return AttendanceSort.CurrentSortBy switch
+            {
+				nameof(AttendanceDetailRow.UserId) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.UserId) : filtered.OrderByDescending(x => x.UserId),
+				nameof(AttendanceDetailRow.UserName) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.UserName) : filtered.OrderByDescending(x => x.UserName),
+				nameof(AttendanceDetailRow.UserCard) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.UserCard) : filtered.OrderByDescending(x => x.UserCard),
+				nameof(AttendanceDetailRow.Timestamp) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.Timestamp) : filtered.OrderByDescending(x => x.Timestamp),
+				nameof(AttendanceDetailRow.Status) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.Status) : filtered.OrderByDescending(x => x.Status),
+				nameof(AttendanceDetailRow.Punch) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.Punch) : filtered.OrderByDescending(x => x.Punch),
+                _ => filtered
+            };
+        }
+    }
+
+    private List<SavedDevice> SavedDevices = [];
 
 	private bool DisableSubmit => string.IsNullOrWhiteSpace(InputModel.IpAddress) ||
 		InputModel.Port < 1 ||
@@ -384,10 +455,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			Users.AddRange(users!);
 
 		if (showMessage)
-			UserManagementActionMessage = GetActionMessage("Get Users", success, $"loaded {Users.Count} user(s).", "failed reading users from the ZKTeco device.");
+		{
+			UserManagementActionMessage = null;
 
-		await StateHasChangedAsync();
-	}
+			await StateHasChangedAsync();
+
+			UserManagementActionMessage = GetActionMessage("Get Users", success, $"loaded {Users.Count} user(s).", "failed reading users from the ZKTeco device.");
+		}
+    }
 
 	private void OpenModalAddUser()
 	{
@@ -579,6 +654,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		Users.Clear();
 		Attendances.Clear();
 		ClearUserFilters();
+		ClearAttendanceFilters();
 	}
 
 	/// <summary>
@@ -589,7 +665,19 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		UserFilterName = null;
 		UserFilterPrivilege = null;
 		UserFilterCard = null;
-	}
+    }
+
+    /// <summary>
+    /// Resets all attendance-table filters to show the full list after reconnecting or clearing state.
+    /// </summary>
+    private void ClearAttendanceFilters()
+    {
+        AttendanceFilterFromTime = null;
+        AttendanceFilterToTime = null;
+        AttendanceFilterName = null;
+        AttendanceFilterCard = null;
+        AttendanceFilterStatus = null;
+    }
 
 	/// <summary>
 	/// Sets a standardized status message in the provided operation message target.
@@ -624,12 +712,71 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		public int? UserCard { get; }
 	}
 
-	/// <summary>
-	/// Represents a user-management operation message with UI style metadata.
-	/// </summary>
-	/// <param name="Class">The CSS class to apply for styling the message, including optional auto-hide behavior.</param>
-	/// <param name="Message">The message text to display.</param>
-	private sealed record ActionMessage(bool Success, string Class, string Message);
+    /// <summary>
+    /// Represents a user-management operation message with UI style metadata.
+    /// </summary>
+    /// <param name="Class">The CSS class to apply for styling the message, including optional auto-hide behavior.</param>
+    /// <param name="Message">The message text to display.</param>
+    private sealed record ActionMessage(bool Success, string Class, string Message);
+
+    /// <summary>
+    /// Represents the current sort state for a table, including the column being sorted and the sort direction (ascending or descending).
+    /// </summary>
+    /// <param name="defaultSortColumn">The name of the column to sort by initially.</param>
+    private sealed class SortState(string defaultSortColumn)
+	{
+        /// <summary>
+        /// Name of the column currently being sorted.
+        /// </summary>
+        public string CurrentSortBy { get; private set; } = defaultSortColumn;
+
+        /// <summary>
+        /// Indicates whether the current sort direction is ascending (true) or descending (false).
+        /// </summary>
+        public bool Ascending { get; private set; } = true;
+
+        /// <summary>
+		/// Sorts the by the specified column, toggling the direction if the column is already selected.
+        /// </summary>
+        /// <param name="column">The name of the column to sort by.</param>
+        public void SortBy(string column)
+		{
+			if (CurrentSortBy == column)
+			{
+				Ascending = !Ascending;
+			}
+			else
+			{
+				CurrentSortBy = column;
+				Ascending = true;
+			}
+		}
+
+        /// <summary>
+        /// Returns the appropriate CSS class for a table header based on whether it is the current sort column and the sort direction.
+        /// </summary>
+		/// <param name="column">The name of the column to sort by.</param>
+		/// <returns>The CSS class to apply to the table header.</returns>
+        public string GetThClass(string column)
+		{
+			return CurrentSortBy == column
+				? "is-clickable is-selected"
+				: "is-clickable";
+		}
+
+        /// <summary>
+        /// Returns the appropriate Material Icon name for a table header based on whether it is the current sort column and the sort direction.
+        /// </summary>
+        /// <param name="column">The name of the column to sort by.</param>
+        /// <returns>The name of the Material Icon to display, or null if the column is not the current sort column.</returns>
+        public string? GetThSortArrow(string column)
+		{
+			if (CurrentSortBy == column)
+				return Ascending ? "arrow_upward" : "arrow_downward";
+			else
+				return null;
+		}
+	}
 
 	private class PageModel
 	{
