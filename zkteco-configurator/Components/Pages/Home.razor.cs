@@ -455,9 +455,13 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			Users.AddRange(users!);
 
 		if (showMessage)
-            UserManagementActionMessage = GetActionMessage("Get Users", success, $"loaded {Users.Count} user(s).", "failed reading users from the ZKTeco device.");
+		{
+			UserManagementActionMessage = null;
 
-		await StateHasChangedAsync();
+			await StateHasChangedAsync();
+
+			UserManagementActionMessage = GetActionMessage("Get Users", success, $"loaded {Users.Count} user(s).", "failed reading users from the ZKTeco device.");
+		}
     }
 
 	private void OpenModalAddUser()
@@ -738,7 +742,9 @@ public sealed partial class Home : EasyComponentBase, IDisposable
         public void SortBy(string column)
 		{
 			if (CurrentSortBy == column)
+			{
 				Ascending = !Ascending;
+			}
 			else
 			{
 				CurrentSortBy = column;
@@ -765,9 +771,10 @@ public sealed partial class Home : EasyComponentBase, IDisposable
         /// <returns>The name of the Material Icon to display, or null if the column is not the current sort column.</returns>
         public string? GetThSortArrow(string column)
 		{
-			return CurrentSortBy == column
-				? Ascending ? "arrow_upward" : "arrow_downward"
-				: null;
+			if (CurrentSortBy == column)
+				return Ascending ? "arrow_upward" : "arrow_downward";
+			else
+				return null;
 		}
 	}
 
