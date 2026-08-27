@@ -61,3 +61,29 @@
         ::deep td.is-masked:focus::after {
             display: none;
         }
+
+
+/*
+    Sortable table header styles
+    -----------------------------
+    Sortable column headers are clickable and highlight the active sort column, an arrow icon indicates the sort direction.
+*/
+::deep th.is-clickable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+::deep th.is-selected {
+    background-color: lightgoldenrodyellow;
+    color: var(--bulma-text-strong, #363636);
+}
+
+    ::deep th.is-selected .icon {
+        color: steelblue;
+    }
+
+::deep th.is-clickable .icon {
+    vertical-align: middle;
+    font-size: 1rem;
+}
