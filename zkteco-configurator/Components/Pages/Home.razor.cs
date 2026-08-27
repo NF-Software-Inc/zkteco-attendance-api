@@ -679,37 +679,59 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 		try
 		{
-            var detail = "The selected backup does not contain any users to import.";
-            var failedUsersCount = 0;
+			var detail = string.Empty;
+			bool success = false;
 
-            if (BackupLoadedPackage!.Users is { Count: > 0 } users)
-            {
+			if (BackupLoadedPackage!.Users is not { Count: > 0 } users)
+				detail = "The selected backup does not contain any users to import.";
+
+            else
+			{
+				// Get existing users to avoid duplicates and determine the next available index
+				var existingUsers = ZkTecoClock.GetUsers() ?? [];
+				var existingByUserId = existingUsers
+					.Where(u => string.IsNullOrWhiteSpace(u.UserId) == false)
+					.ToDictionary(u => u.UserId, StringComparer.OrdinalIgnoreCase);
+
+				var nextIndex = existingUsers.Count > 0 ? existingUsers.Max(u => u.Index) + 1 : 1;
+
+                // Attempt to restore each user from the backup
                 var restoredUsersCount = 0;
+                var failedUsersCount = 0;
 
                 foreach (var user in users)
-                {
-                    if (ZkTecoClock.CreateUser(user))
-                        restoredUsersCount++;
-                    else
-                        failedUsersCount++;
-                }
-
-				if (restoredUsersCount > 0)
 				{
+					// Reuse the existing index if user exists; otherwise assign a new one.
+					user.Index = existingByUserId.TryGetValue(user.UserId, out var existingUser)
+						 ? existingUser.Index : nextIndex++;
+
+					if (ZkTecoClock.CreateUser(user, false))
+						restoredUsersCount++;
+					else
+						failedUsersCount++;
+				}
+
+                // Provide feedback on the import operation
+                if (restoredUsersCount == 0)
+                    detail = "No users were imported.";
+				else
+                {
 					detail = $"Imported {restoredUsersCount} user(s).";
+                    success = failedUsersCount == 0;
+
+                    // Refresh device data so local state reflects the import.
+                    if (ZkTecoClock.RefreshData() == false)
+						detail += " Warning: device data could not be refreshed after import.";
+
 					await GetUsers(false);
 				}
-				else
-					detail = "No users were imported.";
 
 				if (failedUsersCount > 0)
 					detail += $" {failedUsersCount} user(s) could not be created.";
-            }
-
-			var success = failedUsersCount == 0;
+			}
 
             BackupActionMessage = GetActionMessage("Import Device Backup", success, successDetail: detail, failureDetail: detail);
-			await StateHasChangedAsync();
+            await StateHasChangedAsync();
 
             CloseBackupModal();
 		}
