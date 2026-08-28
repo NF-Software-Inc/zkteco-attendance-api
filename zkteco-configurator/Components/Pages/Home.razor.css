@@ -3,7 +3,18 @@
     ----------------------
     The success message is displayed after a successful action and is automatically hidden after a brief period.
 */
-.auto-hide {
+.action-message {
+    z-index: 1000;
+    position: absolute;
+    right: 0.5rem;
+    max-width: 500px;
+}
+
+.auto-hide-fast {
+    animation: auto-hide-fade 5s ease-out forwards;
+}
+
+.auto-hide-slow {
     animation: auto-hide-fade 15s ease-out forwards;
 }
 
@@ -16,18 +27,15 @@
     0%, 80% {
         opacity: 1;
         max-height: 10rem;
-        margin-bottom: 1rem;
     }
 
     100% {
         opacity: 0;
         max-height: 0;
-        margin-bottom: 0;
-        overflow: hidden;
         pointer-events: none;
+        z-index: -1;
     }
 }
-
 
 /*
     Masked table cell styles
