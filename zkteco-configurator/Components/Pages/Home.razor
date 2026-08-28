@@ -5,7 +5,7 @@
 @inherits EasyComponentBase
 @implements IDisposable
 
-<TitleBlock Title="ZKTeco Configurator" >
+<TitleBlock Title="ZKTeco Configurator">
     <div class="p-0 m-0 mt-1 is-pulled-right">
         @($"V{AppVersion}")
     </div>
@@ -136,25 +136,30 @@
     </EditForm>
 </Panel>
 
-<Panel class="pt-2 px-2 mb-0 is-size-7" Title="Import / Export">
+<Panel class="pt-2 px-2 mb-0 is-size-7" Title="Import & Export">
     @if (BackupActionMessage != null)
     {
-        <div class=@(BackupActionMessage.Success ? "auto-hide" : null)>
-            <Message Title=@(BackupActionMessage.Success ? null : "Error") class=@BackupActionMessage.Class OnDeleteClicked="@(() => BackupActionMessage = null)">
+        <div class='@(BackupActionMessage.Success ? "action-message auto-hide-fast" : "action-message auto-hide-slow")'>
+            <Message class=@BackupActionMessage.Class OnDeleteClicked="@(() => BackupActionMessage = null)">
                 @BackupActionMessage?.Message
             </Message>
         </div>
     }
-    <div class="columns is-variable is-1">
-        <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k mr-4">
+
+    <div class="columns is-variable is-1" style="min-height: 250px;">
+        <div class="column is-6-desktop">
+            <h2 class="is-size-4">Export</h2>
             <p class="is-size-6">
-                <strong>Export</strong> saves the device's settings, users, and attendance records to a backup file.
+                Saves the device's settings, users, and attendance records to a JSON backup file.
             </p>
+
+            <h2 class="is-size-4">Import</h2>
             <p class="is-size-6">
-                <strong>Import</strong> restores users from a previously exported backup file onto the device.
+                Restores users from a previously exported backup file onto the device.
             </p>
         </div>
-        <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+
+        <div class="column is-6-desktop">
             <div class="control">
                 <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='OpenBackupModalForExport'>
                     <span class="material-icons icon">download</span>
@@ -174,129 +179,131 @@
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Device Details & Management">
     @if (DeviceActionMessage != null)
     {
-        <div class=@(DeviceActionMessage.Success ? "auto-hide" : null)>
-            <Message Title=@(DeviceActionMessage.Success ? null : "Error") class=@DeviceActionMessage.Class OnDeleteClicked="@(() => DeviceActionMessage = null)">
+        <div class='@(DeviceActionMessage.Success ? "action-message auto-hide-fast" : "action-message auto-hide-slow")'>
+            <Message class=@DeviceActionMessage.Class OnDeleteClicked="@(() => DeviceActionMessage = null)">
                 @DeviceActionMessage?.Message
             </Message>
         </div>
     }
+
     <EditForm Model="DeviceDetailsPlaceholder">
-            <div class="columns is-variable is-1">
-                <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
-                    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetDeviceDetails'>
-                        <span class="material-icons icon">play_arrow</span>
-                        <span>Get Device Details</span>
-                    </button>
+        <div class="columns is-variable is-1">
+            <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetDeviceDetails'>
+                    <span class="material-icons icon">play_arrow</span>
+                    <span>Get Device Details</span>
+                </button>
 
-                    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='EnableDevice'>
-                        <span class="material-icons icon">enable</span>
-                        <span>Enable Device</span>
-                    </button>
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='EnableDevice'>
+                    <span class="material-icons icon">enable</span>
+                    <span>Enable Device</span>
+                </button>
 
-                    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='DisableDevice'>
-                        <span class="material-icons icon">disabled_by_default</span>
-                        <span>Disable Device</span>
-                    </button>
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='DisableDevice'>
+                    <span class="material-icons icon">disabled_by_default</span>
+                    <span>Disable Device</span>
+                </button>
 
-                    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='RestartDevice'>
-                        <span class="material-icons icon">restart_alt</span>
-                        <span>Restart Device</span>
-                    </button>
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='RestartDevice'>
+                    <span class="material-icons icon">restart_alt</span>
+                    <span>Restart Device</span>
+                </button>
 
-                    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='ShutdownDevice'>
-                        <span class="material-icons icon">settings_power</span>
-                        <span>Shutdown Device</span>
-                    </button>
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='ShutdownDevice'>
+                    <span class="material-icons icon">settings_power</span>
+                    <span>Shutdown Device</span>
+                </button>
 
-                    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearAndRefresh'>
-                        <span class="material-icons icon">reset_wrench</span>
-                        <span>Clear Errors and Refresh</span>
-                    </button>
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearAndRefresh'>
+                    <span class="material-icons icon">reset_wrench</span>
+                    <span>Clear Errors and Refresh</span>
+                </button>
 
-                    <hr class="my-4" />
+                <hr class="my-4" />
 
-                    <div class="field">
-                        <Label For="() => InputModel.ClockTime" TooltipMode="TooltipTop" />
-                        <div class="control has-icons-left has-icons-right">
-                            <InputDateTime class='input' @bind-Value=InputModel.ClockTime Options="InputDateTimeMode" disabled="@DisableControls" />
-                            <div class="help is-danger">
-                                <ValidationMessage For="() => InputModel.ClockTime" />
-                            </div>
+                <div class="field">
+                    <Label For="() => InputModel.ClockTime" TooltipMode="TooltipTop" />
+                    <div class="control has-icons-left has-icons-right">
+                        <InputDateTime class='input' @bind-Value=InputModel.ClockTime Options="InputDateTimeMode" disabled="@DisableControls" />
+                        <div class="help is-danger">
+                            <ValidationMessage For="() => InputModel.ClockTime" />
                         </div>
                     </div>
-
-                    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='SetClockTime'>
-                        <span class="material-icons icon">schedule</span>
-                        <span>Set Device Time</span>
-                    </button>
-
-                    <hr class="my-4" />
-
-                    <div class="field">
-                        <Label For="() => InputModel.DisplayText" TooltipMode="TooltipTop" />
-                        <div class="control has-icons-left">
-                            <InputText class="input" @bind-Value="InputModel.DisplayText" disabled="@DisableControls" />
-                            <span class="material-icons icon is-left">title</span>
-                            <div class="help is-danger">
-                                <ValidationMessage For="() => InputModel.DisplayText" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='SetDisplayText'>
-                        <span class="material-icons icon">title</span>
-                        <span>Set Device Display Text</span>
-                    </button>
-
-                    <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearDisplayText'>
-                        <span class="material-icons icon">delete_forever</span>
-                        <span>Clear Device Display Text</span>
-                    </button>
                 </div>
 
-                <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
-                    @if (DeviceStorageCounts != null)
-                    {
-                        <Level class="has-text-centered">
-                            <LevelItem Heading="User Count" Title='@DeviceStorageCounts.Users.ToString("N0")' style="width: 33.33333%" />
-                            <LevelItem Heading="Attendance Count" Title='@DeviceStorageCounts.Records.ToString("N0")' style="width: 33.33333%" />
-                            <LevelItem Heading="Fingerprint Count" Title='@DeviceStorageCounts.Fingers.ToString("N0")' style="width: 33.33333%" />
-                        </Level>
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='SetClockTime'>
+                    <span class="material-icons icon">schedule</span>
+                    <span>Set Device Time</span>
+                </button>
 
-                        <Level class="has-text-centered">
-                            <LevelItem Heading="Remaining Users" Title='@DeviceStorageCounts.AvailableUsers.ToString("N0")' style="width: 33.33333%" />
-                            <LevelItem Heading="Remaining Attendance Records" Title='@DeviceStorageCounts.AvailableRecords.ToString("N0")' style="width: 33.33333%" />
-                            <LevelItem Heading="Remaining Fingerprints" Title='@DeviceStorageCounts.AvailableFingers.ToString("N0")' style="width: 33.33333%" />
-                        </Level>
+                <hr class="my-4" />
 
-                        <Level class="has-text-centered">
-                            <LevelItem Heading="Max Users" Title='@DeviceStorageCounts.MaximumUsers.ToString("N0")' style="width: 33.33333%" />
-                            <LevelItem Heading="Max Attendance Records" Title='@DeviceStorageCounts.MaximumRecords.ToString("N0")' style="width: 33.33333%" />
-                            <LevelItem Heading="Max Fingerprints" Title='@DeviceStorageCounts.MaximumFingers.ToString("N0")' style="width: 33.33333%" />
-                        </Level>
-                    }
-
-                    <div class="field">
-                        <Label TValue="object" DisplayText="Device Details" />
-                        <div class="control has-icons-left">
-                            <InputTextArea class="input textarea is-info is-fullwidth" @bind-Value="DeviceDetailsMessage" rows="12" readonly />
-                            <span class="material-icons icon is-left">description</span>
+                <div class="field">
+                    <Label For="() => InputModel.DisplayText" TooltipMode="TooltipTop" />
+                    <div class="control has-icons-left">
+                        <InputText class="input" @bind-Value="InputModel.DisplayText" disabled="@DisableControls" />
+                        <span class="material-icons icon is-left">title</span>
+                        <div class="help is-danger">
+                            <ValidationMessage For="() => InputModel.DisplayText" />
                         </div>
+                    </div>
+                </div>
+
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='SetDisplayText'>
+                    <span class="material-icons icon">title</span>
+                    <span>Set Device Display Text</span>
+                </button>
+
+                <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='ClearDisplayText'>
+                    <span class="material-icons icon">delete_forever</span>
+                    <span>Clear Device Display Text</span>
+                </button>
+            </div>
+
+            <div class="column is-8-desktop is-8-widescreen is-9-fullhd is-10-4k">
+                @if (DeviceStorageCounts != null)
+                {
+                    <Level class="has-text-centered">
+                        <LevelItem Heading="User Count" Title='@DeviceStorageCounts.Users.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Attendance Count" Title='@DeviceStorageCounts.Records.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Fingerprint Count" Title='@DeviceStorageCounts.Fingers.ToString("N0")' style="width: 33.33333%" />
+                    </Level>
+
+                    <Level class="has-text-centered">
+                        <LevelItem Heading="Remaining Users" Title='@DeviceStorageCounts.AvailableUsers.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Remaining Attendance Records" Title='@DeviceStorageCounts.AvailableRecords.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Remaining Fingerprints" Title='@DeviceStorageCounts.AvailableFingers.ToString("N0")' style="width: 33.33333%" />
+                    </Level>
+
+                    <Level class="has-text-centered">
+                        <LevelItem Heading="Max Users" Title='@DeviceStorageCounts.MaximumUsers.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Max Attendance Records" Title='@DeviceStorageCounts.MaximumRecords.ToString("N0")' style="width: 33.33333%" />
+                        <LevelItem Heading="Max Fingerprints" Title='@DeviceStorageCounts.MaximumFingers.ToString("N0")' style="width: 33.33333%" />
+                    </Level>
+                }
+
+                <div class="field">
+                    <Label TValue="object" DisplayText="Device Details" />
+                    <div class="control has-icons-left">
+                        <InputTextArea class="input textarea is-info is-fullwidth" @bind-Value="DeviceDetailsMessage" rows="12" readonly />
+                        <span class="material-icons icon is-left">description</span>
                     </div>
                 </div>
             </div>
-        </EditForm>
+        </div>
+    </EditForm>
 </Panel>
 
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="User Management">
     @if (UserManagementActionMessage != null)
     {
-        <div class=@(UserManagementActionMessage.Success ? "auto-hide" : null)>
-            <Message Title=@(UserManagementActionMessage.Success ? null : "Error") class=@UserManagementActionMessage.Class OnDeleteClicked="@(() => UserManagementActionMessage = null)">
+        <div class='@(UserManagementActionMessage.Success ? "action-message auto-hide-fast" : "action-message auto-hide-slow")'>
+            <Message class=@UserManagementActionMessage.Class OnDeleteClicked="@(() => UserManagementActionMessage = null)">
                 @UserManagementActionMessage?.Message
             </Message>
         </div>
     }
+
     <div class="columns is-variable is-1">
         <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
             <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetUsers'>
@@ -400,12 +407,13 @@
 <Panel class="pt-2 px-2 mb-0 is-size-7" Title="Attendance Management">
     @if (AttendanceActionMessage != null)
     {
-        <div class=@(AttendanceActionMessage.Success ? "auto-hide" : null)>
-            <Message Title=@(AttendanceActionMessage.Success ? null : "Error") class=@AttendanceActionMessage.Class OnDeleteClicked="@(() => AttendanceActionMessage = null)">
+        <div class='@(AttendanceActionMessage.Success ? "action-message auto-hide-fast" : "action-message auto-hide-slow")'>
+            <Message class=@AttendanceActionMessage.Class OnDeleteClicked="@(() => AttendanceActionMessage = null)">
                 @AttendanceActionMessage?.Message
             </Message>
         </div>
     }
+    
     <div class="columns is-variable is-1">
         <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
             <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetAttendanceRecords'>
@@ -510,12 +518,12 @@
     </div>
 </Panel>
 
-<Modal Title=@($"Device {BackupModalMode.ToString()}") @bind-IsDisplayed=ModalBackupDisplayed foot-class="is-justify-content-center">
+<Modal Title=@($"Device {BackupModalMode.ToString()}") @bind-IsDisplayed=ModalBackupDisplayed foot-class="is-justify-content-center" card-style="width: 75%">
     <ModalBody>
         @if (BackupModalActionMessage != null)
         {
-            <div class=@(BackupModalActionMessage.Success ? "auto-hide" : null)>
-                <Message Title=@(BackupModalActionMessage.Success ? null : "Error") class=@BackupModalActionMessage.Class OnDeleteClicked="@(() => BackupModalActionMessage = null)">
+            <div class='@(BackupModalActionMessage.Success ? "action-message auto-hide-fast" : "action-message auto-hide-slow")'>
+                <Message class=@BackupModalActionMessage.Class OnDeleteClicked="@(() => BackupModalActionMessage = null)">
                     @BackupModalActionMessage?.Message
                 </Message>
             </div>
@@ -531,7 +539,7 @@
                         <InputSwitch @bind-Value="BackupIncludeSettings" @bind-Value:after="OnBackupIncludeSettingsChanged" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
                     </div>
 
-                    <div class="field mb-2 ml-5">
+                    <div class="field mb-2">
                         <InputSwitch @bind-Value="BackupIncludeNetworkSettings" @bind-Value:after="RefreshBackupExportPreview" disabled="@(BackupIncludeSettings == false)" TooltipMode="BackupTooltipDisplayMode" IsBoxed="false" />
                     </div>
 
@@ -546,7 +554,8 @@
 
                 @if (BackupModalMode == BackupOperationMode.Import)
                 {
-                    <div class="field mb-2 ml-5">
+                    <div class="field mb-2">
+                        <label class="label">Import Mode</label>
                         <InputRadioGroupObject @bind-Value=SelectedImportMode Options="ImportModeOptions" disabled="@(BackupIncludeUsers == false)" />
                     </div>
                 }
@@ -569,34 +578,43 @@
             </div>
 
             <div class="column is-6">
-                @*TODO: Display actual file content preview?*@
-                <label class="label">Preview</label>
-                @if (BackupModalMode == BackupOperationMode.Export)
-                {
-                    @if (BackupExportPreviewPackage != null)
-                    {
-                        <div class="content">
-                            <p><strong>TODO: File content preview</strong></p>
-                        </div>
-                    }
-                }
-                else
-                {
-                    @if (BackupLoadedPackage == null)
-                    {
-                        <p class="help">Select a backup file to preview its contents.</p>
-                    }
-                    else
-                    {
-                        <div class="content">
-                            <p><strong>File Created:</strong> @BackupLoadedPackage.CreatedAtUtc.ToLocalTime()</p>
-                            <p><strong>Source Device:</strong>
-                                Serial: @(BackupLoadedPackage.DeviceInfo.SerialNumber ?? "unknown"),
-                                Firmware: @(BackupLoadedPackage.DeviceInfo.FirmwareVersion ?? "unknown"),
-                                Platform: @(BackupLoadedPackage.DeviceInfo.Platform ?? "unknown")
-                            </p>
-                        </div>
+                <label class="label mb-2">Preview</label>
 
+                @if (BackupPackage != null)
+                {
+                    <div class="content">
+                        <p>
+                            <strong>File Created:</strong><br />
+                            <span class="ml-3">@BackupPackage.CreatedAtUtc.ToLocalTime().ToString("g")</span>
+                        </p>
+                        <p>
+                            <strong>Device Details:</strong><br />
+                            <span class="ml-3">Serial: @BackupPackage.DeviceInfo.SerialNumber</span><br />
+                            <span class="ml-3">Firmware: @BackupPackage.DeviceInfo.FirmwareVersion</span><br />
+                            <span class="ml-3">Platform: @BackupPackage.DeviceInfo.Platform</span>
+                        </p>
+                        <p>
+                            <strong>Device Settings:</strong><br />
+                            <span class="ml-3">Name: @BackupPackage.Settings?.DeviceName</span><br />
+                            <span class="ml-3">Time: @BackupPackage.Settings?.DeviceTime?.ToString("g")</span><br />
+                            <span class="ml-3">Extended Format: @BackupPackage.Settings?.ExtendedFormat</span><br />
+                            <span class="ml-3">User Extended Format: @BackupPackage.Settings?.UserExtendedFormat</span><br />
+                            <span class="ml-3">Face Version: @BackupPackage.Settings?.FaceVersion</span><br />
+                            <span class="ml-3">Fingerprint Version: @BackupPackage.Settings?.FingerprintVersion</span><br />
+                            <span class="ml-3">IP Address: @BackupPackage.Settings?.DeviceIp</span><br />
+                            <span class="ml-3">Subnet Mask: @BackupPackage.Settings?.SubnetMask</span><br />
+                            <span class="ml-3">Gateway IP: @BackupPackage.Settings?.GatewayIp</span><br />
+                            <span class="ml-3">MAC Address: @BackupPackage.Settings?.MacAddress</span>
+                        </p>
+                        <p>
+                            <strong>Records Details:</strong><br />
+                            <span class="ml-3">Users: @BackupPackage.Users?.Count</span><br />
+                            <span class="ml-3">Attendance: @BackupPackage.AttendanceRecords?.Count</span>
+                        </p>
+                    </div>
+
+                    @if (BackupModalMode == BackupOperationMode.Import)
+                    {
                         <p class="help is-danger">Importing will write the selected backup data to the connected ZKTeco device. This action cannot be undone.</p>
                     }
                 }
@@ -613,7 +631,7 @@
         }
         else
         {
-            <button type="button" class="button is-info" disabled="@(DisableImportExport || BackupLoadedPackage == null)" @onclick='ImportDeviceBackupAsync'>
+            <button type="button" class="button is-info" disabled="@(DisableImportExport || BackupPackage == null)" @onclick='ImportDeviceBackupAsync'>
                 <span class="material-icons icon">upload</span>
                 <span>Import</span>
             </button>
@@ -630,8 +648,8 @@
 
             @if (UserModalActionMessage != null)
             {
-                <div class=@(UserModalActionMessage.Success ? "auto-hide" : null)>
-                    <Message Title=@(UserModalActionMessage.Success ? null : "Error") class=@UserModalActionMessage.Class OnDeleteClicked="@(() => UserModalActionMessage = null)">
+                <div class='@(UserModalActionMessage.Success ? "action-message auto-hide-fast" : "action-message auto-hide-slow")'>
+                    <Message class=@UserModalActionMessage.Class OnDeleteClicked="@(() => UserModalActionMessage = null)">
                         @UserModalActionMessage?.Message
                     </Message>
                 </div>
