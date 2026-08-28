@@ -88,8 +88,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private readonly TooltipOptions BackupTooltipDisplayMode = TooltipOptions.Right | TooltipOptions.HasArrow | TooltipOptions.Multiline;
 
 	/// <summary>
-	/// Indicates whether the import/export action for the current <see cref="BackupModalMode"/> should be disabled,
-	/// either controls are globally disabled or no applicable sections have been selected.
+	/// Indicates whether the import-export action for the current <see cref="BackupModalMode"/> should be disabled, either controls are globally disabled or no applicable sections have been selected.
 	/// </summary>
 	private bool DisableImportExport =>
 		DisableControls ||
@@ -161,26 +160,26 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		get
 		{
 			var name = AttendanceFilterName?.Trim();
-			var cardPrefix = AttendanceFilterCard?.ToString();
+			var card = AttendanceFilterCard?.ToString();
 
-			var attendanceFilterPredicate = PredicateBuilder.Create<AttendanceDetailRow>();
+			var predicate = PredicateBuilder.Create<AttendanceDetailRow>();
 
 			if (AttendanceFilterFromTime.HasValue)
-				attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Timestamp >= AttendanceFilterFromTime.Value);
+				predicate = predicate.And(record => record.Timestamp >= AttendanceFilterFromTime.Value);
 
 			if (AttendanceFilterToTime.HasValue)
-				attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Timestamp <= AttendanceFilterToTime.Value);
+				predicate = predicate.And(record => record.Timestamp <= AttendanceFilterToTime.Value);
 
 			if (string.IsNullOrWhiteSpace(name) == false)
-				attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserName.Contains(name, StringComparison.OrdinalIgnoreCase));
+				predicate = predicate.And(record => record.UserName.Contains(name, StringComparison.OrdinalIgnoreCase));
 
-			if (string.IsNullOrWhiteSpace(cardPrefix) == false)
-				attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserCard != null && record.UserCard.Value.ToString().StartsWith(cardPrefix, StringComparison.Ordinal));
+			if (string.IsNullOrWhiteSpace(card) == false)
+				predicate = predicate.And(record => record.UserCard != null && record.UserCard.Value.ToString().StartsWith(card, StringComparison.Ordinal));
 
 			if (AttendanceFilterStatus.HasValue)
-				attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Status == AttendanceFilterStatus.Value);
+				predicate = predicate.And(record => record.Status == AttendanceFilterStatus.Value);
 
-			var filtered = Attendances.Where((attendanceFilterPredicate ?? PredicateBuilder.True<AttendanceDetailRow>()).Compile());
+			var filtered = Attendances.Where((predicate ?? PredicateBuilder.True<AttendanceDetailRow>()).Compile());
 
 			return AttendanceSort.CurrentSortBy switch
 			{
@@ -519,6 +518,26 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		ModalAddUserDisplayed = true;
 	}
 
+	private void OnModalAddUserDisplayedChanged()
+	{
+		if (ModalAddUserDisplayed == false)
+		{
+			if (NewUser.Index != 0 && OriginalUser != null)
+			{
+				NewUser.UserId = OriginalUser.UserId;
+				NewUser.Name = OriginalUser.Name;
+				NewUser.Index = OriginalUser.Index;
+				NewUser.Password = OriginalUser.Password;
+				NewUser.Privilege = OriginalUser.Privilege;
+				NewUser.Group = OriginalUser.Group;
+				NewUser.Card = OriginalUser.Card;
+			}
+
+			UserModalActionMessage = null;
+			OriginalUser = null;
+		}
+	}
+
 	private void CloseModalAddUser()
 	{
 		// Restore user on cancel
@@ -726,6 +745,15 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		ModalBackupDisplayed = true;
 	}
 
+	private void OnModalBackupDisplayedChanged()
+	{
+		if (ModalBackupDisplayed == false)
+		{
+			BackupModalActionMessage = null;
+			BackupPackage = null;
+		}
+	}
+
 	private void CloseBackupModal()
 	{
 		BackupModalActionMessage = null;
@@ -753,7 +781,6 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		}
 		catch (Exception ex)
 		{
-			BackupPackage = null;
 			BackupModalActionMessage = GetActionMessage("Select Backup File", false, failureDetail: $"failed loading backup file: {ex.Message}");
 		}
 	}
@@ -766,6 +793,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	/// </remarks>
 	private async Task ImportDeviceBackupAsync()
 	{
+		// Connection check
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
 			BackupModalActionMessage = null;
@@ -784,96 +812,79 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 		try
 		{
-			var detail = string.Empty;
-			bool success = false;
-
-			if (BackupPackage!.Users is not { Count: > 0 } users)
-				detail = "The selected backup does not contain any users to import.";
-
-			else
+			// Prepare import data
+			if (BackupPackage!.Users == null || BackupPackage.Users.Count == 0)
 			{
-				var existingUsers = ZkTecoClock.GetUsers() ?? [];
-				IEnumerable<ZkTecoUser> usersToAdd = users;
-				var nextIndex = 0;
-
-
-				var restoredUsersCount = 0;
-				var failedUsersCount = 0;
-				var deletedUsersCount = 0;
-				var failedDeletesCount = 0;
-
-				// Determine import mode and handle existing users accordingly
-				if (SelectedImportMode == ImportMode.WipeAndImport)
-				{
-					// Remove existing users if any
-					foreach (var existingUser in existingUsers)
-					{
-						if (ZkTecoClock.DeleteUser(existingUser))
-							deletedUsersCount++;
-						else
-							failedDeletesCount++;
-					}
-
-					nextIndex = 1;
-				}
-				else
-				{
-					// Merge mode: skip existing users
-					usersToAdd = users.Where(user => existingUsers.All(existing =>
-						!string.Equals(existing.UserId, user.UserId, StringComparison.OrdinalIgnoreCase)));
-
-					nextIndex = existingUsers.Count > 0 ? existingUsers.Max(u => u.Index) + 1 : 1;
-				}
-
-				foreach (var user in usersToAdd)
-				{
-					user.Index = nextIndex++;
-
-					if (ZkTecoClock.CreateUser(user))
-						restoredUsersCount++;
-					else
-						failedUsersCount++;
-				}
-
-				// Provide feedback on the import operation
-				if (restoredUsersCount == 0)
-				{
-					detail = "No users were imported.";
-				}
-				else
-				{
-					detail = $"Imported {restoredUsersCount} user(s).";
-					success = failedUsersCount == 0 && failedDeletesCount == 0;
-
-					// Refresh device data so local state reflects the import.
-					if (ZkTecoClock.RefreshData() == false)
-						detail += " Warning: device data could not be refreshed after import.";
-
-					await GetUsers(false);
-				}
-
-				if (failedUsersCount > 0)
-					detail += $" {failedUsersCount} user(s) could not be created.";
-
-				if (failedDeletesCount > 0)
-					detail += $" Removed {deletedUsersCount} existing user(s). {failedDeletesCount} existing user(s) could not be removed.";
+				BackupModalActionMessage = GetActionMessage("Import Device Backup", false, failureDetail: "The selected backup does not contain any users to import.");
+				return;
 			}
 
-			BackupActionMessage = GetActionMessage("Import Device Backup", success, successDetail: detail, failureDetail: detail);
+			var existing = ZkTecoClock.GetUsers() ?? [];
+			var imports = SelectedImportMode == ImportMode.MergeSkipExisting ?
+				BackupPackage.Users.Where(user => existing.All(existing => string.Equals(existing.UserId, user.UserId, StringComparison.OrdinalIgnoreCase) == false)).ToList() :
+				BackupPackage.Users;
+
+			var index = SelectedImportMode == ImportMode.MergeSkipExisting && existing.Count > 0 ?
+				existing.Max(u => u.Index) + 1 :
+				1;
+
+			var restoredUsersCount = 0;
+			var failedUsersCount = 0;
+			var deletedUsersCount = 0;
+			var failedDeletesCount = 0;
+
+			// Remove existing users
+			if (SelectedImportMode == ImportMode.WipeAndImport)
+			{
+				foreach (var user in existing)
+				{
+					if (ZkTecoClock.DeleteUser(user))
+						deletedUsersCount++;
+					else
+						failedDeletesCount++;
+				}
+			}
+
+			// Create new users
+			foreach (var user in imports)
+			{
+				if (ZkTecoClock.CreateUser(user))
+					restoredUsersCount++;
+				else
+					failedUsersCount++;
+
+				user.Index = index++;
+			}
+
+			// Provide feedback on the import operation
+			var detail = $"Imported {restoredUsersCount} user(s).";
+
+			if (deletedUsersCount > 0)
+				detail += $" Removed {deletedUsersCount} existing user(s).";
+
+			if (failedUsersCount > 0)
+				detail += $" {failedUsersCount} user(s) could not be created.";
+
+			if (failedDeletesCount > 0)
+				detail += $" {failedDeletesCount} existing user(s) could not be removed.";
+
+			BackupActionMessage = GetActionMessage("Import Device Backup", restoredUsersCount == imports.Count, detail, detail);
 			CloseBackupModal();
 		}
 		catch (Exception ex)
 		{
 			BackupModalActionMessage = GetActionMessage("Import Device Backup", false, failureDetail: $"failed importing device backup: {ex.Message}");
 		}
+
+		await GetUsers(false);
 	}
 
 	/// <summary>
 	/// Exports the current state of the connected ZKTeco device, including users and attendance records, to a JSON file.
 	/// </summary>
-	/// <returns></returns>
 	private async Task ExportDeviceBackupAsync()
 	{
+		// Connection check
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
 			BackupModalActionMessage = null;
@@ -890,21 +901,20 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 		await StateHasChangedAsync();
 
+		// Build and save backup package
 		try
 		{
-			// Reuse the cached preview package built when the modal was opened/sections were changed, avoiding a redundant round-trip to the device.
-			var backup = BackupPackage ?? BuildDeviceBackupPackage();
-
-			if (backup == null)
+			if (BackupPackage == null)
 			{
 				ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 				BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: "not connected to ZKTeco clock.");
+
 				return;
 			}
 
-			var fileName = await DeviceBackupService.SaveBackupAsync(backup, JSRuntime);
+			var name = await DeviceBackupService.SaveBackupAsync(BackupPackage, JSRuntime);
 
-			BackupActionMessage = GetActionMessage("Export Device Backup", true, successDetail: $"Device backup downloaded as '{fileName}'.");
+			BackupActionMessage = GetActionMessage("Export Device Backup", true, $"Device backup downloaded as '{name}'.");
 			CloseBackupModal();
 		}
 		catch (Exception ex)
@@ -934,9 +944,8 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	}
 
 	/// <summary>
-	/// Builds a DeviceBackupPackage containing the current state of the connected ZKTeco device, including users and attendance records.
+	/// Builds a device backup package containing the current state of the connected ZKTeco device, including users and attendance records.
 	/// </summary>
-	/// <returns>The constructed <see cref="DeviceBackupPackage"/>, or <see langword="null"/> when there is no connected device.</returns>
 	private DeviceBackupPackage? BuildDeviceBackupPackage()
 	{
 		if (ZkTecoClock == null)

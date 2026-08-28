@@ -413,7 +413,7 @@
             </Message>
         </div>
     }
-    
+
     <div class="columns is-variable is-1">
         <div class="column is-4-desktop is-4-widescreen is-3-fullhd is-2-4k">
             <button type="button" class="button is-info is-fullwidth my-1" disabled="@DisableControls" @onclick='GetAttendanceRecords'>
@@ -518,7 +518,7 @@
     </div>
 </Panel>
 
-<Modal Title=@($"Device {BackupModalMode.ToString()}") @bind-IsDisplayed=ModalBackupDisplayed foot-class="is-justify-content-center" card-style="width: 75%">
+<Modal Title=@($"Device {BackupModalMode.ToString()}") @bind-IsDisplayed=ModalBackupDisplayed @bind-IsDisplayed:after="OnModalBackupDisplayedChanged" foot-class="is-justify-content-center" card-style="width: 75%">
     <ModalBody>
         @if (BackupModalActionMessage != null)
         {
@@ -641,7 +641,7 @@
     </ModalFooter>
 </Modal>
 
-<Modal Title="@(NewUser.Index == 0 ? "Create User" : "Update User")" @bind-IsDisplayed=ModalAddUserDisplayed foot-class="is-justify-content-center">
+<Modal Title="@(NewUser.Index == 0 ? "Create User" : "Update User")" @bind-IsDisplayed=ModalAddUserDisplayed @bind-IsDisplayed:after="OnModalAddUserDisplayedChanged" foot-class="is-justify-content-center">
     <ModalBody>
         <EditForm Model="NewUser">
             <DataAnnotationsValidator />
