@@ -15,16 +15,13 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private static string AppVersion => typeof(App).Assembly.GetName().Version?.ToString() ?? "0.0.0";
 
 	[Inject]
-	private SavedDeviceService SavedDeviceService { get; set; } = default!;
+	private SavedDeviceService SavedDeviceService { get; init; } = default!;
 
 	[Inject]
-	private DeviceBackupService DeviceBackupService { get; set; } = default!;
+	private DeviceBackupService DeviceBackupService { get; init; } = default!;
 
-    //[Inject]
-    //private IContentWriter ContentWriter { get; init; } = default!;
-
-    [Inject]
-	private IJSRuntime JSRuntime { get; set; } = default!;
+	[Inject]
+	private IJSRuntime JSRuntime { get; init; } = default!;
 
 	private readonly PageModel InputModel = new();
 	private ZkTeco? ZkTecoClock;
@@ -48,7 +45,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private ActionMessage? UserModalActionMessage;
 	private ActionMessage? AttendanceActionMessage;
 	private ActionMessage? DeviceActionMessage;
-	private ActionMessage? BackupActionMessage;
+	private ActionMessage? BackupActionMessage;
 	private ActionMessage? BackupModalActionMessage;
 
 	private RecordCounts? DeviceStorageCounts;
@@ -60,35 +57,33 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private bool ModalBackupDisplayed;
 	private BackupOperationMode BackupModalMode = BackupOperationMode.Export;
 
-	private DeviceBackupPackage? BackupLoadedPackage;
+	private DeviceBackupPackage? BackupPackage;
 
-	private DeviceBackupPackage? BackupExportPreviewPackage;
+	[Display(Name = "Settings", Description = "Include the device settings.")]
+	private bool BackupIncludeSettings = true;
 
-    [Display(Name = "Settings", Description = "Include the device settings.")]
-    private bool BackupIncludeSettings = true;
+	[Display(Name = "Users", Description = "Include the users.")]
+	private bool BackupIncludeUsers = true;
 
-    [Display(Name = "Users", Description = "Include the users.")]
-    private bool BackupIncludeUsers = true;
+	[Display(Name = "Attendance", Description = "Include the attendance records.")]
+	private bool BackupIncludeAttendance = true;
 
-    [Display(Name = "Attendance", Description = "Include the attendance records.")]
-    private bool BackupIncludeAttendance = true;
-
-	[Display(Name = "Network settings (IP/subnet/gateway/MAC)", Description = "Include the network settings.")]
+	[Display(Name = "Network settings (IP, subnet, gateway, MAC)", Description = "Include the network settings.")]
 	private bool BackupIncludeNetworkSettings;
 
-    /// <summary>
-    /// The available import modes for importing data from a backup package.
-    /// </summary>
-    private readonly Dictionary<string, ImportMode> ImportModeOptions = new()
-    {
-        ["Wipe & Import (Recommended)"] = ImportMode.WipeAndImport,
-        ["Merge - Skip Existing Users"] = ImportMode.MergeSkipExisting
-    };
+	/// <summary>
+	/// The available import modes for importing data from a backup package.
+	/// </summary>
+	private readonly Dictionary<string, ImportMode> ImportModeOptions = new()
+	{
+		["Wipe & Import (Recommended)"] = ImportMode.WipeAndImport,
+		["Merge - Skip Existing Users"] = ImportMode.MergeSkipExisting
+	};
 
-    /// <summary>
-    /// The currently selected import mode for importing data from a backup package.
-    /// </summary>
-    private ImportMode SelectedImportMode = ImportMode.WipeAndImport;
+	/// <summary>
+	/// The currently selected import mode for importing data from a backup package.
+	/// </summary>
+	private ImportMode SelectedImportMode = ImportMode.WipeAndImport;
 
 	private readonly TooltipOptions BackupTooltipDisplayMode = TooltipOptions.Right | TooltipOptions.HasArrow | TooltipOptions.Multiline;
 
@@ -101,7 +96,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		(BackupModalMode == BackupOperationMode.Export && BackupIncludeSettings == false && BackupIncludeUsers == false && BackupIncludeAttendance == false) ||
 		(BackupModalMode == BackupOperationMode.Import && BackupIncludeUsers == false);
 
-    private string? UserFilterName;
+	private string? UserFilterName;
 	private Privilege? UserFilterPrivilege;
 	private int? UserFilterCard;
 
@@ -112,15 +107,15 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private int? AttendanceFilterStatus;
 
 
-    /// <summary>
-    /// Represents the current sort state for the user table, including the column being sorted and the sort direction (ascending or descending).
-    /// </summary>
-    private readonly SortState UserSort = new(nameof(ZkTecoUser.Name));
+	/// <summary>
+	/// Represents the current sort state for the user table, including the column being sorted and the sort direction (ascending or descending).
+	/// </summary>
+	private readonly SortState UserSort = new(nameof(ZkTecoUser.Name));
 
-    /// <summary>
-    /// Gets the list of users filtered by the current filter settings and sorted by the current sort settings.
-    /// </summary>
-    private IEnumerable<ZkTecoUser> FilteredUsers
+	/// <summary>
+	/// Gets the list of users filtered by the current filter settings and sorted by the current sort settings.
+	/// </summary>
+	private IEnumerable<ZkTecoUser> FilteredUsers
 	{
 		get
 		{
@@ -149,58 +144,58 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 				nameof(ZkTecoUser.Card) => UserSort.Ascending ? filtered.OrderBy(x => x.Card) : filtered.OrderByDescending(x => x.Card),
 				_ => filtered
 			};
-        }
+		}
 	}
 
 
-    /// <summary>
-    /// Represents the current sort state for the attendance table, including the column being sorted and the sort direction (ascending or descending).
-    /// </summary>
-    private readonly SortState AttendanceSort = new(nameof(AttendanceDetailRow.UserName));
+	/// <summary>
+	/// Represents the current sort state for the attendance table, including the column being sorted and the sort direction (ascending or descending).
+	/// </summary>
+	private readonly SortState AttendanceSort = new(nameof(AttendanceDetailRow.Timestamp));
 
-    /// <summary>
-    /// Gets the list of attendance records filtered by the current filter settings and sorted by the current sort settings.
-    /// </summary>
-    private IEnumerable<AttendanceDetailRow> FilteredAttendances
-    {
-        get
-        {
-            var name = AttendanceFilterName?.Trim();
-            var cardPrefix = AttendanceFilterCard?.ToString();
+	/// <summary>
+	/// Gets the list of attendance records filtered by the current filter settings and sorted by the current sort settings.
+	/// </summary>
+	private IEnumerable<AttendanceDetailRow> FilteredAttendances
+	{
+		get
+		{
+			var name = AttendanceFilterName?.Trim();
+			var cardPrefix = AttendanceFilterCard?.ToString();
 
-            var attendanceFilterPredicate = PredicateBuilder.Create<AttendanceDetailRow>();
+			var attendanceFilterPredicate = PredicateBuilder.Create<AttendanceDetailRow>();
 
-            if (AttendanceFilterFromTime.HasValue)
-                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Timestamp >= AttendanceFilterFromTime.Value);
+			if (AttendanceFilterFromTime.HasValue)
+				attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Timestamp >= AttendanceFilterFromTime.Value);
 
-            if (AttendanceFilterToTime.HasValue)
-                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Timestamp <= AttendanceFilterToTime.Value);
+			if (AttendanceFilterToTime.HasValue)
+				attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Timestamp <= AttendanceFilterToTime.Value);
 
-            if (string.IsNullOrWhiteSpace(name) == false)
-                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserName.Contains(name, StringComparison.OrdinalIgnoreCase));
+			if (string.IsNullOrWhiteSpace(name) == false)
+				attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserName.Contains(name, StringComparison.OrdinalIgnoreCase));
 
-            if (string.IsNullOrWhiteSpace(cardPrefix) == false)
-                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserCard != null && record.UserCard.Value.ToString().StartsWith(cardPrefix, StringComparison.Ordinal));
+			if (string.IsNullOrWhiteSpace(cardPrefix) == false)
+				attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.UserCard != null && record.UserCard.Value.ToString().StartsWith(cardPrefix, StringComparison.Ordinal));
 
-            if (AttendanceFilterStatus.HasValue)
-                attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Status == AttendanceFilterStatus.Value);
+			if (AttendanceFilterStatus.HasValue)
+				attendanceFilterPredicate = attendanceFilterPredicate.And(record => record.Status == AttendanceFilterStatus.Value);
 
-            var filtered = Attendances.Where((attendanceFilterPredicate ?? PredicateBuilder.True<AttendanceDetailRow>()).Compile());
+			var filtered = Attendances.Where((attendanceFilterPredicate ?? PredicateBuilder.True<AttendanceDetailRow>()).Compile());
 
 			return AttendanceSort.CurrentSortBy switch
-            {
+			{
 				nameof(AttendanceDetailRow.UserId) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.UserId) : filtered.OrderByDescending(x => x.UserId),
 				nameof(AttendanceDetailRow.UserName) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.UserName) : filtered.OrderByDescending(x => x.UserName),
 				nameof(AttendanceDetailRow.UserCard) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.UserCard) : filtered.OrderByDescending(x => x.UserCard),
 				nameof(AttendanceDetailRow.Timestamp) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.Timestamp) : filtered.OrderByDescending(x => x.Timestamp),
 				nameof(AttendanceDetailRow.Status) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.Status) : filtered.OrderByDescending(x => x.Status),
 				nameof(AttendanceDetailRow.Punch) => AttendanceSort.Ascending ? filtered.OrderBy(x => x.Punch) : filtered.OrderByDescending(x => x.Punch),
-                _ => filtered
-            };
-        }
-    }
+				_ => filtered
+			};
+		}
+	}
 
-    private List<SavedDevice> SavedDevices = [];
+	private List<SavedDevice> SavedDevices = [];
 
 	private bool DisableSubmit => string.IsNullOrWhiteSpace(InputModel.IpAddress) ||
 		InputModel.Port < 1 ||
@@ -210,8 +205,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private bool DisableControls => ZkTecoClock == null || ZkTecoClock.IsConnected == false;
 
 	private bool DisableCreateUser => DisableControls ||
-		string.IsNullOrWhiteSpace(NewUser.Name) ||
-		string.IsNullOrWhiteSpace(NewUser.UserId);
+		string.IsNullOrWhiteSpace(NewUser.Name);
 
 	private readonly TooltipOptions TooltipTop = TooltipOptions.Top | TooltipOptions.HasArrow | TooltipOptions.Multiline;
 
@@ -230,8 +224,8 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		InputDateTimeOptions.CloseOnDateClicked |
 		InputDateTimeOptions.ValidateTextInput;
 
-    /// <inheritdoc />
-    protected override void OnInitialized()
+	/// <inheritdoc />
+	protected override void OnInitialized()
 	{
 		SavedDevices = SavedDeviceService.Load();
 	}
@@ -316,11 +310,8 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			return;
 		}
 
-		// Register error handler
-		var errors = new List<string>();
-
-		CommandError onCommandError = errors.Add;
-		ZkTecoClock.NotifyCommandError += onCommandError;
+		DeviceActionMessage = null;
+		await StateHasChangedAsync();
 
 		// Get details
 		try
@@ -345,18 +336,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 			DeviceStorageCounts = ZkTecoClock.GetStorageDetails();
 		}
-		finally
+		catch
 		{
-			ZkTecoClock.NotifyCommandError -= onCommandError;
+			DeviceActionMessage = GetActionMessage("Get Device Details", false, failureDetail: $"loaded partial device details with communication error(s).");
+			return;
 		}
 
 		// Report status
-		var error = string.Join(Environment.NewLine, errors.Distinct(StringComparer.Ordinal));
-		var success = errors.Count == 0;
-
-		DeviceActionMessage = GetActionMessage("Get Device Details", success, "loaded device details.", $"loaded partial device details with communication errors:{Environment.NewLine}{error}");
-
-		await StateHasChangedAsync();
+		DeviceActionMessage = GetActionMessage("Get Device Details", true, "loaded device details.");
 	}
 
 	private async Task EnableDevice()
@@ -367,11 +354,12 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			return;
 		}
 
+		DeviceActionMessage = null;
+		await StateHasChangedAsync();
+
 		var success = ZkTecoClock.EnableDevice();
 
 		DeviceActionMessage = GetActionMessage("Enable Device", success, "device enabled.", "failed enabling ZKTeco device.");
-
-		await StateHasChangedAsync();
 	}
 
 	private async Task DisableDevice()
@@ -382,11 +370,12 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			return;
 		}
 
+		DeviceActionMessage = null;
+		await StateHasChangedAsync();
+
 		var success = ZkTecoClock.DisableDevice();
 
 		DeviceActionMessage = GetActionMessage("Disable Device", success, "device disabled.", "failed disabling ZKTeco device.");
-
-		await StateHasChangedAsync();
 	}
 
 	private async Task RestartDevice()
@@ -397,14 +386,15 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			return;
 		}
 
+		DeviceActionMessage = null;
+		await StateHasChangedAsync();
+
 		var success = ZkTecoClock.RestartDevice();
 
 		DeviceActionMessage = GetActionMessage("Restart Device", success, "restart success.", "failed restarting ZKTeco device.");
 
 		if (success)
 			ZkTecoClock = null;
-
-		await StateHasChangedAsync();
 	}
 
 	private async Task ShutdownDevice()
@@ -415,18 +405,22 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			return;
 		}
 
+		DeviceActionMessage = null;
+		await StateHasChangedAsync();
+
 		var success = ZkTecoClock.ShutdownDevice();
 
 		DeviceActionMessage = GetActionMessage("Shutdown Device", success, "shutdown success.", "failed turning off ZKTeco device.");
 
 		if (success)
 			ZkTecoClock = null;
-
-		await StateHasChangedAsync();
 	}
 
 	private async Task ClearAndRefresh()
 	{
+		DeviceActionMessage = null;
+		await StateHasChangedAsync();
+
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 		else if (ZkTecoClock.ClearBuffer() == false)
@@ -437,8 +431,6 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: "failed refreshing device data.");
 		else
 			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", true, "cleared errors and refreshed data.");
-
-		await StateHasChangedAsync();
 	}
 
 	private async Task SetClockTime()
@@ -449,13 +441,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			return;
 		}
 
+		DeviceActionMessage = null;
+		await StateHasChangedAsync();
+
 		var success = InputModel.ClockTime != null
 			? ZkTecoClock.SetTime(InputModel.ClockTime.Value)
 			: ZkTecoClock.SetTime();
 
 		DeviceActionMessage = GetActionMessage("Set Device Time", success, "device time updated.", "failed setting device time on ZKTeco device.");
-
-		await StateHasChangedAsync();
 	}
 
 	private async Task SetDisplayText()
@@ -466,12 +459,13 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			return;
 		}
 
+		DeviceActionMessage = null;
+		await StateHasChangedAsync();
+
 		var displayText = string.IsNullOrWhiteSpace(InputModel.DisplayText) ? "Welcome" : InputModel.DisplayText;
 		var success = ZkTecoClock.SetDisplayText(displayText);
 
 		DeviceActionMessage = GetActionMessage("Set Device Display Text", success, "device display text updated.", "failed setting display text on ZKTeco device.");
-
-		await StateHasChangedAsync();
 	}
 
 	private async Task ClearDisplayText()
@@ -482,11 +476,12 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			return;
 		}
 
+		DeviceActionMessage = null;
+		await StateHasChangedAsync();
+
 		var success = ZkTecoClock.ClearDisplayText();
 
 		DeviceActionMessage = GetActionMessage("Clear Device Display Text", success, "device display text cleared.", "failed clearing display text on ZKTeco device.");
-
-		await StateHasChangedAsync();
 	}
 
 	private async Task GetUsers()
@@ -503,6 +498,9 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		}
 
 		Users.Clear();
+		UserManagementActionMessage = null;
+
+		await StateHasChangedAsync();
 
 		var users = ZkTecoClock.GetUsers();
 		var success = users != null;
@@ -511,14 +509,8 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			Users.AddRange(users!);
 
 		if (showMessage)
-		{
-			UserManagementActionMessage = null;
-
-			await StateHasChangedAsync();
-
 			UserManagementActionMessage = GetActionMessage("Get Users", success, $"loaded {Users.Count} user(s).", "failed reading users from the ZKTeco device.");
-		}
-    }
+	}
 
 	private void OpenModalAddUser()
 	{
@@ -552,10 +544,12 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		// Connection check
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
+			UserModalActionMessage = null;
+			await StateHasChangedAsync();
+
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 			UserModalActionMessage = GetActionMessage("Save User", false, failureDetail: "not connected to ZKTeco clock.");
 
-			await StateHasChangedAsync();
 			return;
 		}
 
@@ -565,9 +559,23 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		var add = NewUser.Index == 0;
 
 		if (add)
+		{
 			NewUser.Index = index;
 
+			do
+			{
+				if (string.IsNullOrEmpty(NewUser.UserId))
+					NewUser.UserId = Random.Shared.Next(short.MaxValue, short.MaxValue * 3).ToString();
+			}
+			while (existing != null && existing.Any(x => string.Equals(x.UserId, NewUser.UserId, StringComparison.OrdinalIgnoreCase)));
+		}
+
 		// Save user
+		UserManagementActionMessage = null;
+		UserModalActionMessage = null;
+
+		await StateHasChangedAsync();
+
 		var userName = NewUser.Name;
 		var action = add ? "Create User" : "Update User";
 
@@ -577,7 +585,6 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 				Users.Add(NewUser);
 
 			ModalAddUserDisplayed = false;
-			UserModalActionMessage = null;
 
 			// Cleanup and status message
 			NewUser = new();
@@ -589,8 +596,6 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		{
 			UserModalActionMessage = GetActionMessage(action, false, failureDetail: $"failed saving user '{userName}' to the ZKTeco device.");
 		}
-
-		await StateHasChangedAsync();
 	}
 
 	/// <summary>
@@ -613,14 +618,15 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			return;
 		}
 
+		UserManagementActionMessage = null;
+		await StateHasChangedAsync();
+
 		var success = ZkTecoClock.DeleteUser(user);
 
 		if (success)
 			Users.Remove(user);
 
 		UserManagementActionMessage = GetActionMessage("Delete User", success, $"deleted user '{user.UserId}'.", $"failed deleting user '{user.UserId}' from the ZKTeco device.");
-
-		await StateHasChangedAsync();
 	}
 
 	private async Task GetAttendanceRecords()
@@ -632,11 +638,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			return;
 		}
 
+		Attendances.Clear();
+		AttendanceActionMessage = null;
+
+		await StateHasChangedAsync();
+
 		// Ensure users are loaded
 		if (Users.Count == 0)
 			await GetUsers(false);
-
-		Attendances.Clear();
 
 		// Get attendance records
 		var records = ZkTecoClock.GetAttendance();
@@ -653,8 +662,6 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 		// Update status
 		AttendanceActionMessage = GetActionMessage("Get Attendance", success, $"loaded {Attendances.Count} attendance record(s).", "failed reading attendance records from the ZKTeco device.");
-
-		await StateHasChangedAsync();
 	}
 
 	private async Task ClearAttendanceRecords()
@@ -665,14 +672,15 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			return;
 		}
 
+		AttendanceActionMessage = null;
+		await StateHasChangedAsync();
+
 		var success = ZkTecoClock.ClearAttendance();
 
 		if (success)
 			Attendances.Clear();
 
 		AttendanceActionMessage = GetActionMessage("Delete Attendance", success, "deleted all attendance records.", "failed deleting attendance records from the ZKTeco device.");
-
-		await StateHasChangedAsync();
 	}
 
 	private void OpenDeleteAttendanceModal()
@@ -710,19 +718,18 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	{
 		BackupModalMode = BackupOperationMode.Import;
 		BackupModalActionMessage = null;
-        BackupIncludeSettings = false;
-        BackupIncludeUsers = true;
-        BackupIncludeAttendance = false;
-        BackupIncludeNetworkSettings = false;
-		BackupLoadedPackage = null;
-        ModalBackupDisplayed = true;
+		BackupIncludeSettings = false;
+		BackupIncludeUsers = true;
+		BackupIncludeAttendance = false;
+		BackupIncludeNetworkSettings = false;
+		BackupPackage = null;
+		ModalBackupDisplayed = true;
 	}
 
 	private void CloseBackupModal()
 	{
 		BackupModalActionMessage = null;
-		BackupLoadedPackage = null;
-		BackupExportPreviewPackage = null;
+		BackupPackage = null;
 		ModalBackupDisplayed = false;
 	}
 
@@ -733,19 +740,20 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private async Task OnBackupFileSelected(InputFileChangeEventArgs args)
 	{
 		BackupModalActionMessage = null;
-		BackupLoadedPackage = null;
+		BackupPackage = null;
+
+		await StateHasChangedAsync();
 
 		try
 		{
-            var max = 100 * 1_048_576;
+			var max = 10 * 1_048_576;
 			await using var stream = args.File.OpenReadStream(max);
-			var selection = await DeviceBackupService.LoadBackupFromStreamAsync(stream, args.File.Name);
 
-			BackupLoadedPackage = selection.Backup;
+			BackupPackage = await DeviceBackupService.LoadBackupFromStreamAsync(stream);
 		}
 		catch (Exception ex)
 		{
-			BackupLoadedPackage = null;
+			BackupPackage = null;
 			BackupModalActionMessage = GetActionMessage("Select Backup File", false, failureDetail: $"failed loading backup file: {ex.Message}");
 		}
 	}
@@ -758,47 +766,55 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	/// </remarks>
 	private async Task ImportDeviceBackupAsync()
 	{
-
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
+			BackupModalActionMessage = null;
+			await StateHasChangedAsync();
+
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 			BackupModalActionMessage = GetActionMessage("Import Device Backup", false, failureDetail: "not connected to ZKTeco clock.");
+
 			return;
 		}
+
+		BackupModalActionMessage = null;
+		BackupActionMessage = null;
+
+		await StateHasChangedAsync();
 
 		try
 		{
 			var detail = string.Empty;
 			bool success = false;
 
-			if (BackupLoadedPackage!.Users is not { Count: > 0 } users)
+			if (BackupPackage!.Users is not { Count: > 0 } users)
 				detail = "The selected backup does not contain any users to import.";
 
 			else
 			{
 				var existingUsers = ZkTecoClock.GetUsers() ?? [];
 				IEnumerable<ZkTecoUser> usersToAdd = users;
-                var nextIndex = 0;
+				var nextIndex = 0;
 
 
-                var restoredUsersCount = 0;
+				var restoredUsersCount = 0;
 				var failedUsersCount = 0;
 				var deletedUsersCount = 0;
 				var failedDeletesCount = 0;
 
-                // Determine import mode and handle existing users accordingly
-                if (SelectedImportMode == ImportMode.WipeAndImport)
+				// Determine import mode and handle existing users accordingly
+				if (SelectedImportMode == ImportMode.WipeAndImport)
 				{
 					// Remove existing users if any
-                    foreach (var existingUser in existingUsers)
-                    {
-                        if (ZkTecoClock.DeleteUser(existingUser))
-                            deletedUsersCount++;
-                        else
-                            failedDeletesCount++;
-                    }
+					foreach (var existingUser in existingUsers)
+					{
+						if (ZkTecoClock.DeleteUser(existingUser))
+							deletedUsersCount++;
+						else
+							failedDeletesCount++;
+					}
 
-                    nextIndex = 1;
+					nextIndex = 1;
 				}
 				else
 				{
@@ -809,22 +825,22 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 					nextIndex = existingUsers.Count > 0 ? existingUsers.Max(u => u.Index) + 1 : 1;
 				}
 
-                foreach (var user in usersToAdd)
-                {
-                    user.Index = nextIndex++;
-
-                    if (ZkTecoClock.CreateUser(user))
-                        restoredUsersCount++;
-                    else
-                        failedUsersCount++;
-                }
-
-                // Provide feedback on the import operation
-                if (restoredUsersCount == 0)
+				foreach (var user in usersToAdd)
 				{
-                    detail = "No users were imported.";
-                }
-                else
+					user.Index = nextIndex++;
+
+					if (ZkTecoClock.CreateUser(user))
+						restoredUsersCount++;
+					else
+						failedUsersCount++;
+				}
+
+				// Provide feedback on the import operation
+				if (restoredUsersCount == 0)
+				{
+					detail = "No users were imported.";
+				}
+				else
 				{
 					detail = $"Imported {restoredUsersCount} user(s).";
 					success = failedUsersCount == 0 && failedDeletesCount == 0;
@@ -843,10 +859,8 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 					detail += $" Removed {deletedUsersCount} existing user(s). {failedDeletesCount} existing user(s) could not be removed.";
 			}
 
-            BackupActionMessage = GetActionMessage("Import Device Backup", success, successDetail: detail, failureDetail: detail);
-            await StateHasChangedAsync();
-
-            CloseBackupModal();
+			BackupActionMessage = GetActionMessage("Import Device Backup", success, successDetail: detail, failureDetail: detail);
+			CloseBackupModal();
 		}
 		catch (Exception ex)
 		{
@@ -862,15 +876,24 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	{
 		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
 		{
+			BackupModalActionMessage = null;
+			await StateHasChangedAsync();
+
 			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 			BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: "not connected to ZKTeco clock.");
+
 			return;
 		}
+
+		BackupModalActionMessage = null;
+		BackupActionMessage = null;
+
+		await StateHasChangedAsync();
 
 		try
 		{
 			// Reuse the cached preview package built when the modal was opened/sections were changed, avoiding a redundant round-trip to the device.
-			var backup = BackupExportPreviewPackage ?? BuildDeviceBackupPackage();
+			var backup = BackupPackage ?? BuildDeviceBackupPackage();
 
 			if (backup == null)
 			{
@@ -882,14 +905,13 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			var fileName = await DeviceBackupService.SaveBackupAsync(backup, JSRuntime);
 
 			BackupActionMessage = GetActionMessage("Export Device Backup", true, successDetail: $"Device backup downloaded as '{fileName}'.");
-			await StateHasChangedAsync();
 			CloseBackupModal();
-        }
-        catch (Exception ex)
+		}
+		catch (Exception ex)
 		{
 			BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: $"Failed exporting device backup: {ex.Message}");
-        }
-    }
+		}
+	}
 
 	/// <summary>
 	/// Uncheck "Network Settings" if "Settings" is unchecked, then refresh the cached export preview.
@@ -908,7 +930,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	private void RefreshBackupExportPreview()
 	{
 		if (BackupModalMode == BackupOperationMode.Export)
-			BackupExportPreviewPackage = BuildDeviceBackupPackage();
+			BackupPackage = BuildDeviceBackupPackage();
 	}
 
 	/// <summary>
@@ -920,39 +942,46 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		if (ZkTecoClock == null)
 			return null;
 
-		var users = BackupIncludeUsers ? ZkTecoClock.GetUsers() ?? [] : null;
-		var attendanceRecords = BackupIncludeAttendance ? ZkTecoClock.GetAttendance() ?? [] : null;
-		var settings = BackupIncludeSettings
-			? new BackupDeviceSettings
+		List<ZkTecoUser>? users = null;
+		BackupDeviceSettings? settings = null;
+
+		if (BackupIncludeSettings)
+			settings = new BackupDeviceSettings
 			{
-				DeviceName = ZkTecoClock.GetDeviceName(),
+				DeviceName = ZkTecoClock.GetDeviceName()?.Split('\0').First(),
 				DeviceTime = ZkTecoClock.GetTime(),
-				ExtendedFormat = ZkTecoClock.GetDeviceExtendedFormat(),
-				UserExtendedFormat = ZkTecoClock.GetDeviceUserExtendedFormat(),
-				FaceVersion = ZkTecoClock.GetDeviceFaceVersion(),
-				FingerprintVersion = ZkTecoClock.GetDeviceFingerprintVersion(),
-				DeviceIp = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceIp() : null,
-				SubnetMask = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceSubnetMask() : null,
-				GatewayIp = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceGatewayIp() : null,
-				MacAddress = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceMac() : null,
-			}
-			: null;
+				ExtendedFormat = ZkTecoClock.GetDeviceExtendedFormat()?.Split('\0').First(),
+				UserExtendedFormat = ZkTecoClock.GetDeviceUserExtendedFormat()?.Split('\0').First(),
+				FaceVersion = ZkTecoClock.GetDeviceFaceVersion()?.Split('\0').First(),
+				FingerprintVersion = ZkTecoClock.GetDeviceFingerprintVersion()?.Split('\0').First(),
+				DeviceIp = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceIp()?.Split('\0').First() : null,
+				SubnetMask = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceSubnetMask()?.Split('\0').First() : null,
+				GatewayIp = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceGatewayIp()?.Split('\0').First() : null,
+				MacAddress = BackupIncludeNetworkSettings ? ZkTecoClock.GetDeviceMac()?.Split('\0').First() : null
+			};
+
+		if (BackupIncludeUsers)
+		{
+			users = ZkTecoClock.GetUsers() ?? [];
+
+			foreach (var user in users)
+				user.Password = user.Password?.Split('\0').First();
+		}
 
 		return new DeviceBackupPackage
 		{
 			CreatedAtUtc = DateTime.UtcNow,
 			DeviceInfo = new BackupDeviceInfo
 			{
-				SerialNumber = ZkTecoClock.GetDeviceSerial(),
-				FirmwareVersion = ZkTecoClock.GetFirmwareVersion(),
-				Platform = ZkTecoClock.GetDevicePlatform(),
+				SerialNumber = ZkTecoClock.GetDeviceSerial()?.Split('\0').First(),
+				FirmwareVersion = ZkTecoClock.GetFirmwareVersion()?.Split('\0').First(),
+				Platform = ZkTecoClock.GetDevicePlatform()?.Split('\0').First()
 			},
 			Settings = settings,
 			Users = users,
-			AttendanceRecords = attendanceRecords,
+			AttendanceRecords = BackupIncludeAttendance ? ZkTecoClock.GetAttendance() ?? [] : null
 		};
 	}
-
 
 	private void Reset()
 	{
@@ -967,8 +996,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		AttendanceActionMessage = null;
 		DeviceActionMessage = null;
 		BackupModalActionMessage = null;
-		BackupLoadedPackage = null;
-		BackupExportPreviewPackage = null;
+		BackupPackage = null;
 		DeviceDetailsMessage = null;
 		DeviceStorageCounts = null;
 
@@ -986,38 +1014,38 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		UserFilterName = null;
 		UserFilterPrivilege = null;
 		UserFilterCard = null;
-    }
+	}
 
-    /// <summary>
-    /// Resets all attendance-table filters to show the full list after reconnecting or clearing state.
-    /// </summary>
-    private void ClearAttendanceFilters()
-    {
-        AttendanceFilterFromTime = null;
-        AttendanceFilterToTime = null;
-        AttendanceFilterName = null;
-        AttendanceFilterCard = null;
-        AttendanceFilterStatus = null;
-    }
+	/// <summary>
+	/// Resets all attendance-table filters to show the full list after reconnecting or clearing state.
+	/// </summary>
+	private void ClearAttendanceFilters()
+	{
+		AttendanceFilterFromTime = null;
+		AttendanceFilterToTime = null;
+		AttendanceFilterName = null;
+		AttendanceFilterCard = null;
+		AttendanceFilterStatus = null;
+	}
 
-    /// <summary>
-    ///	Creates an <see cref="ActionMessage"/> to represent the result of a user-management or device operation.
-    /// </summary>
-    /// <param name="action">The name of the action being performed.</param>
-    /// <param name="success">Indicates whether the action was successful.</param>
-    /// <param name="successDetail">Optional detailed message for a successful action.</param>
-    /// <param name="failureDetail">Optional detailed message for a failed action.</param>
-    private ActionMessage GetActionMessage(string action, bool success, string? successDetail = null, string? failureDetail = null)
+	/// <summary>
+	///	Creates an <see cref="ActionMessage"/> to represent the result of a user-management or device operation.
+	/// </summary>
+	/// <param name="action">The name of the action being performed.</param>
+	/// <param name="success">Indicates whether the action was successful.</param>
+	/// <param name="successDetail">Optional detailed message for a successful action.</param>
+	/// <param name="failureDetail">Optional detailed message for a failed action.</param>
+	private ActionMessage GetActionMessage(string action, bool success, string? successDetail = null, string? failureDetail = null)
 	{
 		var detail = success ? (successDetail ?? "action succeeded.") : (failureDetail ?? "action failed.");
 
 		return new ActionMessage(success, success ? "is-success" : "is-danger", $"[{action}] {(success ? "Success" : "Fail")}: {detail}");
 	}
 
-    /// <summary>
-    /// Represents one attendance row enriched with user details for table display.
-    /// </summary>
-    private sealed class AttendanceDetailRow : ZkTecoAttendance
+	/// <summary>
+	/// Represents one attendance row enriched with user details for table display.
+	/// </summary>
+	private sealed class AttendanceDetailRow : ZkTecoAttendance
 	{
 		public AttendanceDetailRow(ZkTecoAttendance attendance, string userName, int? userCard) : base(attendance.UserId, attendance.Timestamp, attendance.Index, attendance.Status, attendance.Punch)
 		{
@@ -1029,34 +1057,34 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		public int? UserCard { get; }
 	}
 
-    /// <summary>
-    /// Represents a user-management operation message with UI style metadata.
-    /// </summary>
-    /// <param name="Class">The CSS class to apply for styling the message, including optional auto-hide behavior.</param>
-    /// <param name="Message">The message text to display.</param>
-    private sealed record ActionMessage(bool Success, string Class, string Message);
+	/// <summary>
+	/// Represents a user-management operation message with UI style metadata.
+	/// </summary>
+	/// <param name="Class">The CSS class to apply for styling the message, including optional auto-hide behavior.</param>
+	/// <param name="Message">The message text to display.</param>
+	private sealed record ActionMessage(bool Success, string Class, string Message);
 
-    /// <summary>
-    /// Represents the current sort state for a table, including the column being sorted and the sort direction (ascending or descending).
-    /// </summary>
-    /// <param name="defaultSortColumn">The name of the column to sort by initially.</param>
-    private sealed class SortState(string defaultSortColumn)
+	/// <summary>
+	/// Represents the current sort state for a table, including the column being sorted and the sort direction (ascending or descending).
+	/// </summary>
+	/// <param name="defaultSortColumn">The name of the column to sort by initially.</param>
+	private sealed class SortState(string defaultSortColumn)
 	{
-        /// <summary>
-        /// Name of the column currently being sorted.
-        /// </summary>
-        public string CurrentSortBy { get; private set; } = defaultSortColumn;
+		/// <summary>
+		/// Name of the column currently being sorted.
+		/// </summary>
+		public string CurrentSortBy { get; private set; } = defaultSortColumn;
 
-        /// <summary>
-        /// Indicates whether the current sort direction is ascending (true) or descending (false).
-        /// </summary>
-        public bool Ascending { get; private set; } = true;
+		/// <summary>
+		/// Indicates whether the current sort direction is ascending (true) or descending (false).
+		/// </summary>
+		public bool Ascending { get; private set; } = true;
 
-        /// <summary>
+		/// <summary>
 		/// Sorts the by the specified column, toggling the direction if the column is already selected.
-        /// </summary>
-        /// <param name="column">The name of the column to sort by.</param>
-        public void SortBy(string column)
+		/// </summary>
+		/// <param name="column">The name of the column to sort by.</param>
+		public void SortBy(string column)
 		{
 			if (CurrentSortBy == column)
 			{
@@ -1069,24 +1097,24 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 			}
 		}
 
-        /// <summary>
-        /// Returns the appropriate CSS class for a table header based on whether it is the current sort column and the sort direction.
-        /// </summary>
+		/// <summary>
+		/// Returns the appropriate CSS class for a table header based on whether it is the current sort column and the sort direction.
+		/// </summary>
 		/// <param name="column">The name of the column to sort by.</param>
 		/// <returns>The CSS class to apply to the table header.</returns>
-        public string GetThClass(string column)
+		public string GetThClass(string column)
 		{
 			return CurrentSortBy == column
 				? "is-clickable is-selected"
 				: "is-clickable";
 		}
 
-        /// <summary>
-        /// Returns the appropriate Material Icon name for a table header based on whether it is the current sort column and the sort direction.
-        /// </summary>
-        /// <param name="column">The name of the column to sort by.</param>
-        /// <returns>The name of the Material Icon to display, or null if the column is not the current sort column.</returns>
-        public string? GetThSortArrow(string column)
+		/// <summary>
+		/// Returns the appropriate Material Icon name for a table header based on whether it is the current sort column and the sort direction.
+		/// </summary>
+		/// <param name="column">The name of the column to sort by.</param>
+		/// <returns>The name of the Material Icon to display, or null if the column is not the current sort column.</returns>
+		public string? GetThSortArrow(string column)
 		{
 			if (CurrentSortBy == column)
 				return Ascending ? "arrow_upward" : "arrow_downward";
@@ -1104,13 +1132,13 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		Import,
 	}
 
-    private enum ImportMode
-    {
-        WipeAndImport,
-        MergeSkipExisting
-    }
+	private enum ImportMode
+	{
+		WipeAndImport,
+		MergeSkipExisting
+	}
 
-    private class PageModel
+	private class PageModel
 	{
 		/// <summary>
 		/// IP Address of the ZKTeco device to connect to.
