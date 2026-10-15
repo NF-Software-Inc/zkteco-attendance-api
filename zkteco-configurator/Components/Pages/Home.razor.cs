@@ -3,6 +3,7 @@ using easy_core;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
+using System.Diagnostics.CodeAnalysis;
 using System.ComponentModel.DataAnnotations;
 using zkteco_attendance_api;
 using zkteco_configurator.Models;
@@ -13,6 +14,7 @@ namespace zkteco_configurator.Components.Pages;
 public sealed partial class Home : EasyComponentBase, IDisposable
 {
 	private static string AppVersion => typeof(App).Assembly.GetName().Version?.ToString() ?? "0.0.0";
+	private const string ConnectionRequiredMessage = "not connected to ZKTeco clock.";
 
 	[Inject]
 	private SavedDeviceService SavedDeviceService { get; init; } = default!;
@@ -201,7 +203,13 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		InputModel.Port > 65_535 ||
 		string.IsNullOrWhiteSpace(InputModel.Password);
 
-	private bool DisableControls => ZkTecoClock == null || ZkTecoClock.IsConnected == false;
+	private bool DisableControls => HasValidConnection == false;
+
+	/// <summary>
+	/// Indicates whether the ZKTeco clock is connected.
+	/// </summary>
+	[MemberNotNullWhen(true, nameof(ZkTecoClock))]
+	private bool HasValidConnection => ZkTecoClock != null && ZkTecoClock.IsConnected;
 
 	private bool DisableCreateUser => DisableControls ||
 		string.IsNullOrWhiteSpace(NewUser.Name);
@@ -302,15 +310,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task GetDeviceDetails()
 	{
-		// Connection check
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
 		DeviceActionMessage = null;
 		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
+		{
+			DeviceActionMessage = GetActionMessage("Get Device Details", false, failureDetail: ConnectionRequiredMessage);
+			return;
+		}
 
 		// Get details
 		try
@@ -347,14 +354,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task EnableDevice()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
 		DeviceActionMessage = null;
 		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
+		{
+			DeviceActionMessage = GetActionMessage("Enable Device", false, failureDetail: ConnectionRequiredMessage);
+			return;
+		}
 
 		var success = ZkTecoClock.EnableDevice();
 
@@ -363,14 +370,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task DisableDevice()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
 		DeviceActionMessage = null;
 		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
+		{
+			DeviceActionMessage = GetActionMessage("Disable Device", false, failureDetail: ConnectionRequiredMessage);
+			return;
+		}
 
 		var success = ZkTecoClock.DisableDevice();
 
@@ -379,14 +386,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task RestartDevice()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
 		DeviceActionMessage = null;
 		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
+		{
+			DeviceActionMessage = GetActionMessage("Restart Device", false, failureDetail: ConnectionRequiredMessage);
+			return;
+		}
 
 		var success = ZkTecoClock.RestartDevice();
 
@@ -398,14 +405,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task ShutdownDevice()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
 		DeviceActionMessage = null;
 		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
+		{
+			DeviceActionMessage = GetActionMessage("Shutdown Device", false, failureDetail: ConnectionRequiredMessage);
+			return;
+		}
 
 		var success = ZkTecoClock.ShutdownDevice();
 
@@ -420,9 +427,13 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		DeviceActionMessage = null;
 		await StateHasChangedAsync();
 
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-		else if (ZkTecoClock.ClearBuffer() == false)
+		if (HasValidConnection == false)
+		{
+			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: ConnectionRequiredMessage);
+			return;
+		}
+
+		if (ZkTecoClock.ClearBuffer() == false)
 			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: "failed clearing the device buffer.");
 		else if (ZkTecoClock.ClearError() == false)
 			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: "failed clearing device errors.");
@@ -434,14 +445,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task SetClockTime()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
 		DeviceActionMessage = null;
 		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
+		{
+			DeviceActionMessage = GetActionMessage("Set Device Time", false, failureDetail: ConnectionRequiredMessage);
+			return;
+		}
 
 		var success = InputModel.ClockTime != null
 			? ZkTecoClock.SetTime(InputModel.ClockTime.Value)
@@ -452,14 +463,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task SetDisplayText()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
 		DeviceActionMessage = null;
 		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
+		{
+			DeviceActionMessage = GetActionMessage("Set Device Display Text", false, failureDetail: ConnectionRequiredMessage);
+			return;
+		}
 
 		var displayText = string.IsNullOrWhiteSpace(InputModel.DisplayText) ? "Welcome" : InputModel.DisplayText;
 		var success = ZkTecoClock.SetDisplayText(displayText);
@@ -469,14 +480,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task ClearDisplayText()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
 		DeviceActionMessage = null;
 		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
+		{
+			DeviceActionMessage = GetActionMessage("Clear Device Display Text", false, failureDetail: ConnectionRequiredMessage);
+			return;
+		}
 
 		var success = ZkTecoClock.ClearDisplayText();
 
@@ -490,16 +501,17 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task GetUsers(bool showMessage)
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		UserManagementActionMessage = null;
+		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
 		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			if (showMessage)
+				UserManagementActionMessage = GetActionMessage("Get Users", false, failureDetail: ConnectionRequiredMessage);
 			return;
 		}
 
 		Users.Clear();
-		UserManagementActionMessage = null;
-
-		await StateHasChangedAsync();
 
 		var users = ZkTecoClock.GetUsers();
 		var success = users != null;
@@ -560,15 +572,12 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task CreateUser()
 	{
-		// Connection check
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		UserModalActionMessage = null;
+		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
 		{
-			UserModalActionMessage = null;
-			await StateHasChangedAsync();
-
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			UserModalActionMessage = GetActionMessage("Save User", false, failureDetail: "not connected to ZKTeco clock.");
-
+			UserModalActionMessage = GetActionMessage("Save User", false, failureDetail: ConnectionRequiredMessage);
 			return;
 		}
 
@@ -591,7 +600,6 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 		// Save user
 		UserManagementActionMessage = null;
-		UserModalActionMessage = null;
 
 		await StateHasChangedAsync();
 
@@ -631,14 +639,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task DeleteUser(ZkTecoUser user)
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
 		UserManagementActionMessage = null;
 		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
+		{
+			UserManagementActionMessage = GetActionMessage("Delete User", false, failureDetail: ConnectionRequiredMessage);
+			return;
+		}
 
 		var success = ZkTecoClock.DeleteUser(user);
 
@@ -650,17 +658,16 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task GetAttendanceRecords()
 	{
-		// Connection check
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		AttendanceActionMessage = null;
+		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
 		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
+			AttendanceActionMessage = GetActionMessage("Get Attendance", false, failureDetail: ConnectionRequiredMessage);
 			return;
 		}
 
 		Attendances.Clear();
-		AttendanceActionMessage = null;
-
-		await StateHasChangedAsync();
 
 		// Ensure users are loaded
 		if (Users.Count == 0)
@@ -685,14 +692,14 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task ClearAttendanceRecords()
 	{
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
-		{
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			return;
-		}
-
 		AttendanceActionMessage = null;
 		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
+		{
+			AttendanceActionMessage = GetActionMessage("Delete Attendance", false, failureDetail: ConnectionRequiredMessage);
+			return;
+		}
 
 		var success = ZkTecoClock.ClearAttendance();
 
@@ -793,19 +800,15 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	/// </remarks>
 	private async Task ImportDeviceBackupAsync()
 	{
-		// Connection check
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		BackupModalActionMessage = null;
+		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
 		{
-			BackupModalActionMessage = null;
-			await StateHasChangedAsync();
-
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			BackupModalActionMessage = GetActionMessage("Import Device Backup", false, failureDetail: "not connected to ZKTeco clock.");
-
+			BackupModalActionMessage = GetActionMessage("Import Device Backup", false, failureDetail: ConnectionRequiredMessage);
 			return;
 		}
 
-		BackupModalActionMessage = null;
 		BackupActionMessage = null;
 
 		await StateHasChangedAsync();
@@ -884,21 +887,16 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	/// </summary>
 	private async Task ExportDeviceBackupAsync()
 	{
-		// Connection check
-		if (ZkTecoClock == null || ZkTecoClock.IsConnected == false)
+		BackupModalActionMessage = null;
+		await StateHasChangedAsync();
+
+		if (HasValidConnection == false)
 		{
-			BackupModalActionMessage = null;
-			await StateHasChangedAsync();
-
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-			BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: "not connected to ZKTeco clock.");
-
+			BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: ConnectionRequiredMessage);
 			return;
 		}
 
-		BackupModalActionMessage = null;
 		BackupActionMessage = null;
-
 		await StateHasChangedAsync();
 
 		// Build and save backup package
@@ -906,9 +904,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		{
 			if (BackupPackage == null)
 			{
-				ConnectionStatusMessage = "Not connected to ZKTeco clock.";
-				BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: "not connected to ZKTeco clock.");
-
+				BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: "no backup data is available to export.");
 				return;
 			}
 
