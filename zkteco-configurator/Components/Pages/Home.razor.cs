@@ -204,6 +204,11 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private bool DisableControls => ZkTecoClock == null || ZkTecoClock.IsConnected == false;
 
+	/// <summary>
+	/// Validates that the ZKTeco clock is connected before an operation.
+	/// </summary>
+	/// <param name="setStatusMessage">Whether to set the connection status message when validation fails.</param>
+	/// <returns><see langword="true"/> if the clock is connected; otherwise, <see langword="false"/>.</returns>
 	[MemberNotNullWhen(true, nameof(ZkTecoClock))]
 	private bool ValidateConnection(bool setStatusMessage = true)
 	{
@@ -414,11 +419,11 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task ClearAndRefresh()
 	{
-		DeviceActionMessage = null;
-		await StateHasChangedAsync();
-
 		if (ValidateConnection() == false)
 			return;
+
+		DeviceActionMessage = null;
+		await StateHasChangedAsync();
 
 		if (ZkTecoClock.ClearBuffer() == false)
 			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: "failed clearing the device buffer.");
@@ -546,12 +551,11 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 
 	private async Task CreateUser()
 	{
-		if (ValidateConnection(setStatusMessage: false) == false)
+		if (ValidateConnection() == false)
 		{
 			UserModalActionMessage = null;
 			await StateHasChangedAsync();
 
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 			UserModalActionMessage = GetActionMessage("Save User", false, failureDetail: "not connected to ZKTeco clock.");
 
 			return;
@@ -768,12 +772,11 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	/// </remarks>
 	private async Task ImportDeviceBackupAsync()
 	{
-		if (ValidateConnection(setStatusMessage: false) == false)
+		if (ValidateConnection() == false)
 		{
 			BackupModalActionMessage = null;
 			await StateHasChangedAsync();
 
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 			BackupModalActionMessage = GetActionMessage("Import Device Backup", false, failureDetail: "not connected to ZKTeco clock.");
 
 			return;
@@ -858,12 +861,11 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 	/// </summary>
 	private async Task ExportDeviceBackupAsync()
 	{
-		if (ValidateConnection(setStatusMessage: false) == false)
+		if (ValidateConnection() == false)
 		{
 			BackupModalActionMessage = null;
 			await StateHasChangedAsync();
 
-			ConnectionStatusMessage = "Not connected to ZKTeco clock.";
 			BackupModalActionMessage = GetActionMessage("Export Device Backup", false, failureDetail: "not connected to ZKTeco clock.");
 
 			return;
