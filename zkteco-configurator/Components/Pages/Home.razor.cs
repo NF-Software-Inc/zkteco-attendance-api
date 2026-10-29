@@ -428,12 +428,8 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		await StateHasChangedAsync();
 
 		if (HasValidConnection == false)
-		{
 			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: ConnectionRequiredMessage);
-			return;
-		}
-
-		if (ZkTecoClock.ClearBuffer() == false)
+		else if (ZkTecoClock.ClearBuffer() == false)
 			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: "failed clearing the device buffer.");
 		else if (ZkTecoClock.ClearError() == false)
 			DeviceActionMessage = GetActionMessage("Clear Errors and Refresh", false, failureDetail: "failed clearing device errors.");
@@ -508,6 +504,7 @@ public sealed partial class Home : EasyComponentBase, IDisposable
 		{
 			if (showMessage)
 				UserManagementActionMessage = GetActionMessage("Get Users", false, failureDetail: ConnectionRequiredMessage);
+
 			return;
 		}
 
