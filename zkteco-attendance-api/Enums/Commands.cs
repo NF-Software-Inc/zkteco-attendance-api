@@ -11,6 +11,11 @@
 		Unknown = 0,
 
 		/// <summary>
+		/// Reads a table of the device database, such as the fingerprint templates.
+		/// </summary>
+		ReadDatabase = 7,
+
+		/// <summary>
 		/// Adds a new user to the ZKTeco device.
 		/// </summary>
 		CreateUser = 8,
@@ -19,6 +24,11 @@
 		/// Retrieves user data from the ZKTeco device.
 		/// </summary>
 		ReadUsers = 9,
+
+		/// <summary>
+		/// Reads a single fingerprint template, identified by the user and finger index (same code as <see cref="ReadUsers"/>, the data sent decides which is performed).
+		/// </summary>
+		ReadFingerprint = 9,
 
 		/// <summary>
 		/// Retrieves a machine configuration detail from the ZKTeco device.
@@ -41,6 +51,11 @@
 		DeleteUser = 18,
 
 		/// <summary>
+		/// Deletes all fingerprint templates of a user.
+		/// </summary>
+		DeleteUserFingerprints = 19,
+
+		/// <summary>
 		/// Checks to see how many records of each type exist on the ZKTeco device.
 		/// </summary>
 		CheckStorage = 50,
@@ -54,6 +69,26 @@
 		/// Deletes all text messages from on the display of the ZKTeco device.
 		/// </summary>
 		ClearDisplay = 67,
+
+		/// <summary>
+		/// Transfers a fingerprint template from the device buffer to a user.
+		/// </summary>
+		WriteFingerprint = 87,
+
+		/// <summary>
+		/// Gets the checksum of the device buffer.
+		/// </summary>
+		ChecksumBuffer = 119,
+
+		/// <summary>
+		/// Deletes a single fingerprint template from a user.
+		/// </summary>
+		DeleteFingerprint = 134,
+
+		/// <summary>
+		/// Reads the face templates of a user (undocumented by the manufacturer).
+		/// </summary>
+		ReadFace = 150,
 
 		/// <summary>
 		/// Gets the current time from the ZKTeco device.

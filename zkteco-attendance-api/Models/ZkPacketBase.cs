@@ -30,6 +30,10 @@ namespace zkteco_attendance_api
 			var items = new int[] { (int)Command, ConnectionId, ResponseId };
 			var data = Data.Partition(2, false).Select(x => (int)BitConverter.ToUInt16(x, 0));
 
+			// A trailing odd byte counts as a final 16 bit word, leaving it out gives a wrong checksum that the device silently ignores.
+			if (Data.Length % 2 == 1)
+				data = data.Concat(new[] { (int)Data[Data.Length - 1] });
+
 			foreach (var item in items.Concat(data))
 			{
 				current += item;

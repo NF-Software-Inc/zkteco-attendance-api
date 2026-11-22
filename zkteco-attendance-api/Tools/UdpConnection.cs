@@ -30,6 +30,17 @@ namespace zkteco_attendance_api
 		}
 
 		/// <inheritdoc/>
+		public int Timeout
+		{
+			get => Client.Client.ReceiveTimeout;
+			set
+			{
+				Client.Client.ReceiveTimeout = value;
+				Client.Client.SendTimeout = value;
+			}
+		}
+
+		/// <inheritdoc/>
 		public bool IsConnected { get; private set; }
 
 		/// <inheritdoc/>

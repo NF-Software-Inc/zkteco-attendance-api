@@ -23,6 +23,11 @@ namespace zkteco_attendance_api
 		int ResponseId { get; set; }
 
 		/// <summary>
+		/// The time in milliseconds to wait for the device to send or receive data before giving up.
+		/// </summary>
+		int Timeout { get; set; }
+
+		/// <summary>
 		/// Notifies data was sent to the ZKTeco device and returns the bytes that were sent.
 		/// </summary>
 		event SentData? NotifySentData;

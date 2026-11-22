@@ -104,6 +104,95 @@ namespace zkteco_attendance_api
 				return null;
 		}
 
+		/// <inheritdoc cref="ICommand.SendCommandForData(Commands, byte[])" />
+		public virtual IZkPacket? SendCommandForData(Commands command, byte[] data)
+		{
+			var tcp = Connection as TcpConnection;
+
+			if (tcp == null)
+				return null;
+
+			var packet = new TPacket()
+			{
+				Command = command,
+				ConnectionId = Connection.ConnectionId,
+				ResponseId = Connection.ResponseId,
+				Data = data
+			};
+
+			if (Connection.SendPacket(packet) == false)
+			{
+				NotifyCommandError?.Invoke("Failed sending data to ZKTeco device.");
+				return null;
+			}
+
+			var first = ReceiveTcpMessage(tcp);
+
+			if (first == null)
+			{
+				// No reply: the device ignored the command. Clean up so the next command starts from a consistent state.
+				tcp.DiscardPendingData();
+				Connection.ResponseId = packet.ResponseId;
+				return null;
+			}
+
+			Connection.ResponseId = first.ResponseId;
+
+			// The device returned the data directly.
+			if (first.Command == Commands.SendData)
+				return new ZkPacketBase() { Command = Commands.Success, ConnectionId = first.ConnectionId, ResponseId = first.ResponseId, Data = first.Data };
+
+			// Anything else is a refusal (for example the requested item does not exist), let the caller decide.
+			if (first.Command != Commands.PrepareData || first.Data.Length < 4)
+				return first;
+
+			// The device announced the size and sends the data in following messages, ending with an acknowledgement.
+			var size = BitConverter.ToInt32(first.Data, 0);
+
+			if (size < 0 || size > 1_048_576)
+			{
+				NotifyCommandError?.Invoke("Invalid data size announced by ZKTeco device.");
+				return null;
+			}
+
+			using var stream = new MemoryStream();
+
+			while (stream.Length < size)
+			{
+				var block = ReceiveTcpMessage(tcp);
+
+				if (block == null || block.Command != Commands.SendData)
+				{
+					NotifyCommandError?.Invoke("Invalid data block received from ZKTeco device.");
+					return null;
+				}
+
+				stream.Write(block.Data, 0, block.Data.Length);
+			}
+
+			var ack = ReceiveTcpMessage(tcp);
+
+			if (ack == null || ack.Command != Commands.Success)
+				NotifyCommandError?.Invoke("Missing acknowledgement after receiving data from ZKTeco device.");
+			else
+				Connection.ResponseId = ack.ResponseId;
+
+			return new ZkPacketBase() { Command = Commands.Success, ConnectionId = first.ConnectionId, ResponseId = Connection.ResponseId, Data = stream.ToArray() };
+		}
+
+		private static IZkPacket? ReceiveTcpMessage(TcpConnection tcp)
+		{
+			var payload = tcp.ReceiveFullPacket();
+
+			if (payload.Length < ZkPacketBase.DefaultHeaderLength)
+				return null;
+
+			var result = ZkPacketBase.ParseHeader(payload[..ZkPacketBase.DefaultHeaderLength]);
+			result.Data = payload[ZkPacketBase.DefaultHeaderLength..];
+
+			return result;
+		}
+
 		protected virtual IZkPacket GetRemainingData(byte[] data)
 		{
 			var total = BitConverter.ToInt32(data) + 4;

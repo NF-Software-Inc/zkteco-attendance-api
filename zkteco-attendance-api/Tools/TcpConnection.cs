@@ -12,6 +12,7 @@ namespace zkteco_attendance_api
 	internal class TcpConnection : IConnection
 	{
 		private const int CommandTimeoutMs = 2_000;
+		private const int MaximumPacketLength = 1 << 20;
 		private readonly Socket Socket;
 		private readonly IPEndPoint Endpoint;
 
@@ -34,6 +35,17 @@ namespace zkteco_attendance_api
 
 		/// <inheritdoc/>
 		public bool IsConnected => Socket.Connected;
+
+		/// <inheritdoc/>
+		public int Timeout
+		{
+			get => Socket.ReceiveTimeout;
+			set
+			{
+				Socket.ReceiveTimeout = value;
+				Socket.SendTimeout = value;
+			}
+		}
 
 		/// <inheritdoc/>
 		public int ConnectionId { get; set; }
@@ -146,6 +158,74 @@ namespace zkteco_attendance_api
 			{
 				return Array.Empty<byte>();
 			}
+		}
+
+		/// <summary>
+		/// Receives exactly one complete message from the device, regardless of how it was split across network packets, and returns everything after the TCP header.
+		/// </summary>
+		/// <remarks>
+		/// Unlike <see cref="ReceivePacket(int)"/>, this uses the length declared in the TCP header, so it neither returns partial messages nor consumes part of the following message.
+		/// </remarks>
+		internal byte[] ReceiveFullPacket()
+		{
+			if (IsConnected == false)
+				throw new InvalidOperationException("Connection is not established.");
+
+			try
+			{
+				var header = ReceiveExactly(8);
+
+				if (BitConverter.ToUInt16(header, 0) != TcpPacket.Header1 || BitConverter.ToUInt16(header, 2) != TcpPacket.Header2)
+					throw new Exception("Invalid TCP header.");
+
+				var length = BitConverter.ToUInt32(header, 4);
+
+				if (length > MaximumPacketLength)
+					throw new Exception("Invalid TCP packet length.");
+
+				var payload = ReceiveExactly((int)length);
+
+				NotifyReceivedData?.Invoke(payload);
+				return payload;
+			}
+			catch
+			{
+				return Array.Empty<byte>();
+			}
+		}
+
+		/// <summary>
+		/// Discards any data waiting to be read, so a late or partial reply to a failed command isn't mistaken for the reply to the next one.
+		/// </summary>
+		internal void DiscardPendingData()
+		{
+			try
+			{
+				while (Socket.Available > 0)
+					Socket.Receive(new byte[Socket.Available], SocketFlags.None);
+			}
+			catch
+			{
+				// Nothing to discard.
+			}
+		}
+
+		private byte[] ReceiveExactly(int length)
+		{
+			var buffer = new byte[length];
+			var offset = 0;
+
+			while (offset < length)
+			{
+				var received = Socket.Receive(buffer, offset, length - offset, SocketFlags.None);
+
+				if (received == 0)
+					throw new IOException("Connection closed by the ZKTeco device.");
+
+				offset += received;
+			}
+
+			return buffer;
 		}
 
 		/// <inheritdoc/>

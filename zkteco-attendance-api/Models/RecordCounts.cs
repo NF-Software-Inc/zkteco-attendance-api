@@ -64,5 +64,15 @@
 		/// The maximum number of fingerprints on the device.
 		/// </summary>
 		public int MaximumFingers { get; set; }
+
+		/// <summary>
+		/// The number of faces on the device, or 0 if the device does not report it.
+		/// </summary>
+		public int Faces { get; set; }
+
+		/// <summary>
+		/// The maximum number of faces on the device, or 0 if the device does not report it.
+		/// </summary>
+		public int MaximumFaces { get; set; }
 	}
 }
